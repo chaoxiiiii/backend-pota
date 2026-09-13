@@ -230,21 +230,6 @@ def run_pipeline():
     print("=" * 60)
 
 
-# ============================================================
-# MANUAL RUN
-# ============================================================
-
-if "--run-now" in sys.argv:
-
-    print()
-    print("=" * 60)
-    print("MANUAL ETL RUN")
-    print("=" * 60)
-
-    run_pipeline()
-
-    sys.exit(0)
-
 
 # ============================================================
 # QUARTERLY SCHEDULER
@@ -278,16 +263,37 @@ scheduler.add_job(
 # START SCHEDULER
 # ============================================================
 
-print()
-print("=" * 60)
-print("eSAKA QUARTERLY ETL SCHEDULER")
-print("=" * 60)
+def start_scheduler():
 
-print("Schedule: January, April, July, October")
-print("Time: 8:00 AM Asia/Manila")
-print("Source: PSA OpenSTAT")
+    print()
+    print("=" * 60)
+    print("eSAKA QUARTERLY ETL SCHEDULER")
+    print("=" * 60)
 
-print()
-print("Scheduler is running...")
+    print("Schedule: January, April, July, October")
+    print("Time: 8:00 AM Asia/Manila")
+    print("Source: PSA OpenSTAT")
 
-scheduler.start()
+    print()
+    print("Scheduler is running...")
+
+    scheduler.start()
+
+# ============================================================
+# COMMAND LINE ENTRY
+# ============================================================
+
+if __name__ == "__main__":
+
+    if "--run-now" in sys.argv:
+
+        print()
+        print("=" * 60)
+        print("MANUAL ETL RUN")
+        print("=" * 60)
+
+        run_pipeline()
+
+        sys.exit(0)
+
+    start_scheduler()

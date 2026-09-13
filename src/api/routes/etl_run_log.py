@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from fastapi import BackgroundTasks
+from src.etl_pipeline.scheduler import run_pipeline
+
 from src.core.database import get_db
 from src.models.etl_run_log import ETLRunLog
 
@@ -51,3 +54,13 @@ def read_etl_run_log(
     )
 
     return logs
+
+@router.post("/manual-run")
+def manual_run_etl(
+    background_tasks: BackgroundTasks
+):
+    background_tasks.add_task(run_pipeline)
+
+    return {
+        "message": "ETL pipeline manual run started."
+    }

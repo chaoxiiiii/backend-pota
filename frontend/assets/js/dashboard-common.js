@@ -297,7 +297,6 @@ function initModalListeners(){
 
 /* ---------- Global Lifecycle Setup ---------- */
 document.addEventListener('DOMContentLoaded', () => {
-  initSidebarToggle();
   initNotifDropdown();
   initModalListeners();
 });

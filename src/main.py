@@ -5,6 +5,7 @@ from src.models.report_submission import ReportSubmission
 from src.models.report_validation_history import ReportValidationHistory
 from src.api.routes import raw_plant_reports
 from src.api.routes import etl_run_log
+from src.api.routes.alert_thresholds import router as alert_thresholds_router
 from src.api.routes import (
     users,
     auth,
@@ -21,7 +22,6 @@ from src.api.routes import (
     report_submission,
     audit_logs,
     email,
-    report_submission,
 )
 
 
@@ -147,11 +147,6 @@ app.include_router(
     tags=["Report Submissions"]
 )
 
-app.include_router(
-    report_submission.router,
-    prefix="/api/report-submissions",
-    tags=["Report Submissions"]
-)
 
 app.include_router(
     etl_run_log.router,
@@ -164,6 +159,13 @@ app.include_router(
     prefix="/api/raw-plant-reports", 
     tags=["Raw Plant Reports"]
 )
+
+app.include_router(
+    alert_thresholds_router,
+    prefix="/api/alert-thresholds",
+    tags=["Alert Thresholds"]
+)
+
 
 
 

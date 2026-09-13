@@ -12,16 +12,6 @@ const REPORT_DATA = {
 };
 
 
-const municipalities = [
-  { name: 'San Fernando', lat: 15.0333, lng: 120.6900, status: 'balanced', detail: 'Rice supply matches demand' },
-  { name: 'Angeles City', lat: 15.1450, lng: 120.5930, status: 'deficit', detail: 'Vegetable demand exceeds supply by 15%' },
-  { name: 'Mabalacat', lat: 15.2226, lng: 120.5730, status: 'surplus', detail: 'Onion supply exceeds demand by 22%' },
-  { name: 'Guagua', lat: 14.9797, lng: 120.6353, status: 'deficit', detail: 'Corn demand exceeds supply by 9%' },
-  { name: 'Lubao', lat: 14.9333, lng: 120.6000, status: 'balanced', detail: 'Rice supply matches demand' },
-  { name: 'Porac', lat: 15.0667, lng: 120.5333, status: 'no-data', detail: 'No recent report submitted' },
-  { name: 'Candaba', lat: 15.0961, lng: 120.8228, status: 'surplus', detail: 'Fish supply exceeds demand by 30%' },
-  { name: 'Arayat', lat: 15.1428, lng: 120.7472, status: 'no-data', detail: 'No recent report submitted' }
-];
 
 
 const STATUS_COLORS = {
@@ -43,20 +33,83 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+
 // ---------- Sidebar & Navigation ----------
 function initSidebar() {
-  const hamburgerBtn = document.getElementById('hamburgerBtn');
-  const sidebar = document.getElementById('sidebar');
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const sidebar = document.getElementById("sidebar");
 
+    if (!hamburgerBtn || !sidebar) return;
 
-  if (hamburgerBtn && sidebar) {
-    hamburgerBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-      setTimeout(() => {
-        if (mapInstance) mapInstance.invalidateSize();
-      }, 300);
+    let hoverTimer = null;
+
+    // Open sidebar when hovering hamburger
+    hamburgerBtn.addEventListener("mouseenter", function() {
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
+        }
+
+        setTimeout(function() {
+            sidebar.classList.add("open");
+
+            // Fix Leaflet map size after sidebar opens
+            setTimeout(function() {
+                if (mapInstance) {
+                    mapInstance.invalidateSize();
+                }
+            }, 300);
+
+        }, 100);
     });
-  }
+
+    // Close sidebar when mouse leaves
+    sidebar.addEventListener("mouseleave", function() {
+        hoverTimer = setTimeout(function() {
+            sidebar.classList.remove("open");
+        }, 200);
+    });
+
+    // Cancel close timer when mouse goes back to sidebar
+    sidebar.addEventListener("mouseenter", function() {
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
+        }
+    });
+
+    // Close when clicking outside
+    document.addEventListener("click", function(event) {
+        const isClickInsideSidebar = sidebar.contains(event.target);
+        const isClickOnHamburger = hamburgerBtn.contains(event.target);
+
+        if (!isClickInsideSidebar && !isClickOnHamburger) {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    // Close sidebar after clicking navigation item
+    sidebar.querySelectorAll(".nav-item").forEach(function(item) {
+        item.addEventListener("click", function() {
+            sidebar.classList.remove("open");
+        });
+    });
+
+    // Close sidebar using Escape key
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    // Close sidebar on sign out
+    const signoutBtn = sidebar.querySelector(".signout");
+
+    if (signoutBtn) {
+        signoutBtn.addEventListener("click", function() {
+            sidebar.classList.remove("open");
+        });
+    }
 }
 
 
@@ -128,14 +181,14 @@ function initSignout() {
 }
 
 
-// ---------- Leaflet Map Setup ----------
 function initMap() {
   const mapEl = document.getElementById('map');
   if (!mapEl) return;
 
-
-  const pampangaBounds = L.latLngBounds([14.85, 120.35], [15.35, 120.95]);
-
+  const pampangaBounds = L.latLngBounds(
+    [14.85, 120.35],
+    [15.35, 120.95]
+  );
 
   mapInstance = L.map('map', {
     maxBounds: pampangaBounds,
@@ -143,32 +196,140 @@ function initMap() {
     minZoom: 10
   }).setView([15.0794, 120.6200], 10);
 
+  L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 18
+    }
+  ).addTo(mapInstance);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 18
-  }).addTo(mapInstance);
+  loadMunicipalityMapData();
+}
 
-
-  municipalities.forEach(m => {
-    const marker = L.circleMarker([m.lat, m.lng], {
-      radius: 9,
-      fillColor: STATUS_COLORS[m.status],
-      color: '#fff',
-      weight: 2,
-      fillOpacity: 0.9
-    }).addTo(mapInstance);
-
-
-    marker.bindPopup(
-      `<div class="popup-title">${m.name}</div>` +
-      `<div class="popup-status">${m.detail}</div>`
+async function loadMunicipalityMapData() {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/planting-intents/municipality-map`,
+      {
+        method: 'GET',
+        headers: getAuthHeaders(false)
+      }
     );
-  });
 
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
 
-  const bounds = L.latLngBounds(municipalities.map(m => [m.lat, m.lng]));
-  mapInstance.fitBounds(bounds, { padding: [30, 30] });
+    const result = await response.json();
+
+    console.log(
+      'Provincial Municipality Map Data:',
+      result
+    );
+
+    if (!result.data || !Array.isArray(result.data)) {
+      console.warn('No municipality map data found.');
+      return;
+    }
+
+    // Convert backend data into easy lookup
+    const municipalityDataMap = {};
+
+    result.data.forEach(item => {
+      municipalityDataMap[
+        item.municipality.trim().toLowerCase()
+      ] = item;
+    });
+
+    const markers = [];
+
+    municipalities.forEach(municipality => {
+      const backendData =
+        municipalityDataMap[
+          municipality.name.trim().toLowerCase()
+        ];
+
+      let status = 'no-data';
+      let popupContent = `
+        <div class="popup-title">
+          ${municipality.name}
+        </div>
+      `;
+
+      if (
+        backendData &&
+        Array.isArray(backendData.commodities) &&
+        backendData.commodities.length > 0
+      ) {
+        popupContent += `
+          <div class="popup-status">
+            <strong>Commodity Status</strong><br><br>
+        `;
+
+        backendData.commodities.forEach(item => {
+
+          if (item.status === 'OVERSUPPLY') {
+            status = 'surplus';
+          } else if (item.status === 'DEFICIT') {
+            status = 'deficit';
+          } else if (item.status === 'NORMAL') {
+            status = 'balanced';
+          }
+
+          popupContent += `
+            <strong>${item.commodity}</strong><br>
+            Status:
+            <strong>${item.status}</strong>
+            <br><br>
+          `;
+        });
+
+        popupContent += `</div>`;
+      } else {
+        popupContent += `
+          <div class="popup-status">
+            No recent report submitted
+          </div>
+        `;
+      }
+
+      const marker = L.circleMarker(
+        [municipality.lat, municipality.lng],
+        {
+          radius: 9,
+          fillColor: STATUS_COLORS[status],
+          color: '#fff',
+          weight: 2,
+          fillOpacity: 0.9
+        }
+      ).addTo(mapInstance);
+
+      marker.bindPopup(popupContent);
+
+      markers.push([
+        municipality.lat,
+        municipality.lng
+      ]);
+    });
+
+    if (markers.length > 0) {
+      const bounds = L.latLngBounds(markers);
+
+      mapInstance.fitBounds(
+        bounds,
+        {
+          padding: [30, 30]
+        }
+      );
+    }
+
+  } catch (error) {
+    console.error(
+      'Failed to load provincial municipality map:',
+      error
+    );
+  }
 }
 
 

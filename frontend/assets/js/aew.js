@@ -1,5 +1,5 @@
 /* ============================================================
-   eSAKA — AEW DASHBOARD
+   E SAKA — AEW DASHBOARD
    Complete Frontend JavaScript
 ============================================================ */
 
@@ -62,7 +62,9 @@ let mapInstance = null;
 let currentOfftakeRequest = null;
 let OFFTAKE_REQUESTS_DATA = [];
 
+
 // Forecasting
+
 let FORECASTS_DATA = [];
 let priceChartInstance = null;
 
@@ -77,6 +79,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initSidebar();
     initViewNavigation();
     initMap();
+    loadMunicipalityMapData();
     initFarmerSubviews();
     initPlantingIntent();
     initOfftakeRequest();
@@ -86,6 +89,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupUserProfile();
     initForecastResults();
     initReporting();
+    initNotificationBell();
 
     await fetchFarmers();
     await fetchPlantingIntents();
@@ -298,6 +302,98 @@ function initMap() {
         attribution: "&copy; OpenStreetMap contributors",
         maxZoom: 18
     }).addTo(mapInstance);
+}
+
+/* ============================================================
+   MUNICIPALITY COORDINATES & MAP DATA
+============================================================ */
+
+const municipalityCoordinates = {
+    "Angeles": [15.1450, 120.5887],
+    "Apalit": [14.9470, 120.7700],
+    "Arayat": [15.1500, 120.7690],
+    "Bacolor": [15.0000, 120.6520],
+    "Candaba": [15.0950, 120.8260],
+    "Floridablanca": [14.9770, 120.5280],
+    "Guagua": [14.9650, 120.6350],
+    "Lubao": [14.9400, 120.6000],
+    "Mabalacat": [15.2230, 120.5740],
+    "Macabebe": [14.9080, 120.7150],
+    "Masantol": [14.8960, 120.7100],
+    "Mexico": [15.0640, 120.7190],
+    "Minalin": [14.9670, 120.6840],
+    "Porac": [15.0710, 120.5420],
+    "San Fernando": [15.0343, 120.6840],
+    "San Luis": [15.0400, 120.7870],
+    "San Simon": [14.9990, 120.7800],
+    "Santa Ana": [15.0950, 120.7720],
+    "Santa Rita": [15.0190, 120.6110],
+    "Santo Tomas": [14.9950, 120.7090]
+};
+
+async function loadMunicipalityMapData() {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/planting-intents/municipality-map`,
+            {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("AEW Municipality Map Data:", result);
+
+        if (!result.data || !Array.isArray(result.data)) {
+            console.warn("No municipality map data found.");
+            return;
+        }
+
+        result.data.forEach(municipalityData => {
+            const municipality = municipalityData.municipality;
+            const coordinates = municipalityCoordinates[municipality];
+
+            if (!coordinates) {
+                console.warn(`No coordinates for ${municipality}`);
+                return;
+            }
+
+            let popupContent = `
+                <div style="min-width:200px;">
+                    <strong>Municipality:</strong>
+                    ${municipality}
+                    <br><br>
+            `;
+
+            if (municipalityData.commodities && Array.isArray(municipalityData.commodities)) {
+                municipalityData.commodities.forEach(item => {
+                    popupContent += `
+                        <strong>Commodity:</strong>
+                        ${item.commodity}
+                        <br>
+                        <strong>Status:</strong>
+                        ${item.status}
+                        <br><br>
+                    `;
+                });
+            }
+
+            popupContent += `</div>`;
+
+            L.marker(coordinates)
+                .addTo(mapInstance)
+                .bindPopup(popupContent);
+        });
+
+    } catch (error) {
+        console.error("Failed to load AEW municipality map data:", error);
+    }
 }
 
 /* ============================================================
@@ -4724,7 +4820,7 @@ function initOfftakeRequest() {
         await submitOfftakeRequest();
     });
 
-    document.getElementById("closeOfftakeSubmittedBtn")?.addEventListener("click", function() {
+    document.getElementById("closeOfftakeSuccessBtn")?.addEventListener("click", function() {
         const modal = document.getElementById("offtakeSuccessModal");
         if (modal) modal.classList.remove("show");
         if (submittedModal) submittedModal.classList.remove("show");
@@ -6114,3 +6210,216 @@ function updateChart(commodity) {
 }
 
 console.log("Price Trend Chart functions loaded!");
+
+/* ============================================================
+   AEW NOTIFICATION BELL
+============================================================ */
+
+async function initNotificationBell() {
+    const bell = document.getElementById("notificationBell");
+    const dropdown = document.getElementById("notificationDropdown");
+
+    if (!bell || !dropdown) return;
+
+    bell.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        dropdown.classList.toggle("show");
+
+        if (dropdown.classList.contains("show")) {
+            await loadAEWNotifications();
+        }
+    });
+
+    document.addEventListener("click", (event) => {
+        if (!bell.contains(event.target)) {
+            dropdown.classList.remove("show");
+        }
+    });
+
+    // Load once on page load
+    await loadAEWNotifications();
+}
+
+
+/* ============================================================
+   LOAD AEW NOTIFICATIONS
+============================================================ */
+
+async function loadAEWNotifications() {
+    const notificationList = document.getElementById("notificationList");
+    const notificationDot = document.getElementById("notificationDot");
+
+    if (!notificationList) return;
+
+    try {
+        notificationList.innerHTML = `
+            <div class="notification-empty">
+                Loading notifications...
+            </div>
+        `;
+
+        const mapResponse = await fetch(
+            `${API_BASE_URL}/api/planting-intents/municipality-map`,
+            {
+                method: "GET",
+                headers: getAuthHeaders()
+            }
+        );
+
+        if (!mapResponse.ok) {
+            throw new Error(`Map API error: ${mapResponse.status}`);
+        }
+
+        const mapResult = await mapResponse.json();
+
+        if (!mapResult.data || !Array.isArray(mapResult.data)) {
+            showNoNotifications();
+            return;
+        }
+
+        const alerts = [];
+
+        for (const municipalityData of mapResult.data) {
+            const municipality = municipalityData.municipality;
+
+            if (!municipalityData.commodities || !Array.isArray(municipalityData.commodities)) {
+                continue;
+            }
+
+            for (const item of municipalityData.commodities) {
+                const commodity = item.commodity;
+
+                try {
+                    const alertResponse = await fetch(
+                        `${API_BASE_URL}/api/alert-thresholds/oversupply/${encodeURIComponent(commodity)}?municipality=${encodeURIComponent(municipality)}`,
+                        {
+                            method: "GET",
+                            headers: getAuthHeaders()
+                        }
+                    );
+
+                    if (!alertResponse.ok) {
+                        continue;
+                    }
+
+                    const alertData = await alertResponse.json();
+
+                    if (alertData.status === "OVERSUPPLY") {
+                        const supply = Number(alertData.projected_supply || 0);
+                        const demand = Number(alertData.base_demand || 0);
+                        let surplusPercentage = 0;
+
+                        if (demand > 0) {
+                            surplusPercentage = ((supply - demand) / demand) * 100;
+                        }
+
+                        alerts.push({
+                            commodity: alertData.commodity || commodity,
+                            municipality: alertData.municipality || municipality,
+                            supply: supply,
+                            demand: demand,
+                            surplusPercentage: surplusPercentage,
+                            date: new Date()
+                        });
+                    }
+                } catch (error) {
+                    console.warn(`Failed to check ${commodity} in ${municipality}:`, error);
+                }
+            }
+        }
+
+        renderAEWNotifications(alerts);
+
+        if (notificationDot) {
+            notificationDot.style.display = alerts.length > 0 ? "block" : "none";
+        }
+
+    } catch (error) {
+        console.error("Failed to load AEW notifications:", error);
+        notificationList.innerHTML = `
+            <div class="notification-empty">
+                No new notifications.
+            </div>
+        `;
+        if (notificationDot) {
+            notificationDot.style.display = "none";
+        }
+    }
+}
+
+
+/* ============================================================
+   RENDER NOTIFICATIONS
+============================================================ */
+
+function renderAEWNotifications(alerts) {
+    const notificationList = document.getElementById("notificationList");
+
+    if (!notificationList) return;
+
+    if (!alerts.length) {
+        showNoNotifications();
+        return;
+    }
+
+    notificationList.innerHTML = "";
+
+    alerts.forEach(alert => {
+        const item = document.createElement("div");
+        item.className = "notification-item";
+        item.style.padding = "12px 18px";
+        item.style.borderBottom = "1px solid var(--border-light)";
+        item.style.fontSize = "13px";
+
+        item.innerHTML = `
+            <div class="notification-title" style="font-weight:700; color:#C0392B; margin-bottom:4px;">
+                🔴 ${escapeHtml(alert.commodity)} Oversupply Risk
+            </div>
+            <div class="notification-details" style="color:var(--muted); line-height:1.4;">
+                <strong>${escapeHtml(alert.municipality)}</strong><br>
+                Supply: ${formatKg(alert.supply)}<br>
+                Demand: ${formatKg(alert.demand)}<br>
+                Surplus: +${Math.round(alert.surplusPercentage)}%
+            </div>
+        `;
+
+        notificationList.appendChild(item);
+    });
+}
+
+
+/* ============================================================
+   NO NOTIFICATIONS
+============================================================ */
+
+function showNoNotifications() {
+    const notificationList = document.getElementById("notificationList");
+    const notificationDot = document.getElementById("notificationDot");
+
+    if (notificationList) {
+        notificationList.innerHTML = `
+            <div class="notification-empty" style="padding: 20px; text-align: center; color: var(--muted); font-size: 13px;">
+                No new notifications.
+            </div>
+        `;
+    }
+
+    if (notificationDot) {
+        notificationDot.style.display = "none";
+    }
+}
+
+
+/* ============================================================
+   FORMAT KG
+============================================================ */
+
+function formatKg(value) {
+    return `${Number(value || 0).toLocaleString(
+        "en-US",
+        {
+            maximumFractionDigits: 2
+        }
+    )} kg`;
+}
+

@@ -52,4 +52,3 @@ class PlantingIntent(Base):
         back_populates="planting_intent",
     )
 
-    report_planting_intents = relationship("ReportPlantingIntent", back_populates="planting_intent")

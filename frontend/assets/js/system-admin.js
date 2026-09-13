@@ -145,6 +145,78 @@ function initializeLoggedInUser() {
     return true;
 }
 
+// --- PAGINATION STATE ---
+let currentUserPage = 1;
+const usersPerPage = 7;
+let cachedUsers = [];
+
+let currentAuditPage = 1;
+const auditPerPage = 7;
+let cachedAuditLogs = [];
+
+function renderPagination(totalItems, itemsPerPage, currentPage, onPageChange) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    return {
+        currentPage,
+        totalPages,
+        paginatedSlice: (array) => {
+            const start = (currentPage - 1) * itemsPerPage;
+            return array.slice(start, start + itemsPerPage);
+        },
+        updateUI: (infoId, prevBtnId, nextBtnId, numbersId) => {
+            const infoEl = document.getElementById(infoId);
+            const prevBtn = document.getElementById(prevBtnId);
+            const nextBtn = document.getElementById(nextBtnId);
+            const numbersEl = document.getElementById(numbersId);
+
+            const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+            if (infoEl) infoEl.textContent = `Showing ${startItem}-${endItem} of ${totalItems}`;
+            if (prevBtn) prevBtn.disabled = currentPage === 1;
+            if (nextBtn) nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+
+            if (numbersEl) {
+                numbersEl.innerHTML = "";
+                
+                // Ellipsis Truncation Logic para hindi sumabog ang UI kapag marami nang pages
+                let pages = [];
+                if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                } else {
+                    if (currentPage <= 4) {
+                        pages = [1, 2, 3, 4, 5, '...', totalPages];
+                    } else if (currentPage >= totalPages - 3) {
+                        pages = [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                    } else {
+                        pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+                    }
+                }
+
+                pages.forEach(p => {
+                    if (p === '...') {
+                        const span = document.createElement("span");
+                        span.textContent = "...";
+                        span.style.padding = "5px 8px";
+                        span.style.color = "var(--muted)";
+                        numbersEl.appendChild(span);
+                    } else {
+                        const btn = document.createElement("button");
+                        btn.type = "button";
+                        btn.className = `btn-page ${p === currentPage ? "active" : ""}`;
+                        btn.textContent = p;
+                        btn.addEventListener("click", () => onPageChange(p));
+                        numbersEl.appendChild(btn);
+                    }
+                });
+            }
+        }
+    };
+}
+
 
 /* ============================================================
    ADMIN ROLE
@@ -321,32 +393,24 @@ async function loadUsers() {
             );
         }
 
-        let users = [];
+       let users = [];
 
         if (Array.isArray(data)) {
-
             users = data;
-
         }
         else if (Array.isArray(data.users)) {
-
             users = data.users;
-
         }
         else if (Array.isArray(data.data)) {
-
             users = data.data;
-
         }
         else {
-
-            throw new Error(
-                "Unexpected response format."
-            );
+            throw new Error("Unexpected response format.");
         }
 
-        if (users.length === 0) {
+        cachedUsers = users;
 
+        if (cachedUsers.length === 0) {
             userRows.innerHTML = `
                 <tr>
                     <td colspan="5" style="text-align:center;">
@@ -354,13 +418,24 @@ async function loadUsers() {
                     </td>
                 </tr>
             `;
-
+            renderPagination(0, usersPerPage, currentUserPage, () => {}).updateUI("paginationInfo", "prevPageBtn", "nextPageBtn", "pageNumberBtns");
             return;
         }
 
-        userRows.innerHTML = "";
+        const pagination = renderPagination(
+            cachedUsers.length, 
+            usersPerPage, 
+            currentUserPage, 
+            (newPage) => {
+                currentUserPage = newPage;
+                loadUsers();
+            }
+        );
 
-        users.forEach(user => {
+        userRows.innerHTML = "";
+        const paginatedUsers = pagination.paginatedSlice(cachedUsers);
+
+        paginatedUsers.forEach(user => {
 
             const row =
                 document.createElement("tr");
@@ -426,7 +501,7 @@ async function loadUsers() {
 
                 <td>
                     <span
-                        class="status-pill ${
+                        class="status-badge ${
                             isActive
                                 ? "active"
                                 : "inactive"
@@ -456,6 +531,8 @@ async function loadUsers() {
 
             userRows.appendChild(row);
         });
+
+        pagination.updateUI("paginationInfo", "prevPageBtn", "nextPageBtn", "pageNumberBtns");
 
         document
             .querySelectorAll(
@@ -496,173 +573,95 @@ async function loadUsers() {
 
 
 /* ============================================================
-   ACTIVATE / DEACTIVATE USER
+   ACTIVATE / DEACTIVATE USER (Custom Modal)
    PATCH /api/users/{user_id}/status
 ============================================================ */
 
 async function toggleUserStatus(button) {
 
-    const userId =
-        button.dataset.userId;
-
-    const currentStatus =
-        button.dataset.active === "true";
+    const userId = button.dataset.userId;
+    const currentStatus = button.dataset.active === "true";
 
     if (!userId) {
-
         alert("User ID is missing.");
-
         return;
     }
 
-    const action =
-        currentStatus
-            ? "deactivate"
-            : "reactivate";
+    const modal = document.getElementById("confirmStatusModal");
+    const titleEl = document.getElementById("statusModalTitle");
+    const descEl = document.getElementById("statusModalDesc");
+    const finalBtn = document.getElementById("finalStatusBtn");
+    const cancelBtn = document.getElementById("cancelStatusBtn");
 
-    const confirmation =
-        confirm(
-            currentStatus
-                ? "Are you sure you want to deactivate this user?"
-                : "Are you sure you want to reactivate this user?"
-        );
+    if (!modal) return;
 
-    if (!confirmation) {
-        return;
+    if (titleEl) titleEl.textContent = currentStatus ? "Confirm Deactivation" : "Confirm Reactivation";
+    if (descEl) descEl.textContent = currentStatus ? "Are you sure you want to deactivate this user?" : "Are you sure you want to reactivate this user?";
+    
+    if (currentStatus) {
+        finalBtn.className = "btn-primary btn-danger";
+        finalBtn.textContent = "Deactivate";
+    } else {
+        finalBtn.className = "btn-primary";
+        finalBtn.textContent = "Reactivate";
     }
 
-    button.disabled = true;
-    button.textContent = "Updating...";
+    modal.classList.add("show");
 
-    try {
+    const newFinalBtn = finalBtn.cloneNode(true);
+    finalBtn.parentNode.replaceChild(newFinalBtn, finalBtn);
 
-        console.log(
-            `Attempting to ${action} user:`,
-            userId
-        );
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
 
-        const response =
-            await fetch(
+    document.getElementById("cancelStatusBtn").addEventListener("click", () => {
+        modal.classList.remove("show");
+    });
+
+    document.getElementById("finalStatusBtn").addEventListener("click", async () => {
+        modal.classList.remove("show");
+        
+        button.disabled = true;
+        button.textContent = "Updating...";
+
+        try {
+            const response = await fetch(
                 `${API_BASE_URL}/api/users/${userId}/status`,
                 {
                     method: "PATCH",
-
-                    headers:
-                        getAuthHeaders(),
-
-                    body:
-                        JSON.stringify({
-                            is_active:
-                                !currentStatus
-                        })
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ is_active: !currentStatus })
                 }
             );
 
-        let data = {};
-
-        try {
-            data = await response.json();
-        }
-        catch {
-            data = {};
-        }
-
-        console.log(
-            "PATCH user status:",
-            {
-                userId,
-                sent: {
-                    is_active:
-                        !currentStatus
-                },
-                status:
-                    response.status,
-                response:
-                    data
+            let data = {};
+            try {
+                data = await response.json();
+            } catch {
+                data = {};
             }
-        );
 
-        if (response.status === 401) {
-            handleUnauthorized();
-            return;
+            if (response.status === 401) {
+                handleUnauthorized();
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error(getErrorMessage(data, "Failed to update user status."));
+            }
+
+            await loadUsers();
+            await loadAuditLogs();
         }
-
-        if (response.status === 403) {
-
-            throw new Error(
-                getErrorMessage(
-                    data,
-                    "You do not have permission to change user status."
-                )
-            );
+        catch (error) {
+            console.error("Toggle user status error:", error);
+            alert(error.message || "Unable to update user status.");
+            button.disabled = false;
+            button.textContent = currentStatus ? "Deactivate" : "Reactivate";
         }
-
-        if (response.status === 404) {
-
-            throw new Error(
-                getErrorMessage(
-                    data,
-                    "User not found."
-                )
-            );
-        }
-
-        if (response.status === 422) {
-
-            throw new Error(
-                getErrorMessage(
-                    data,
-                    "Invalid user status data."
-                )
-            );
-        }
-
-        if (!response.ok) {
-
-            throw new Error(
-                getErrorMessage(
-                    data,
-                    "Failed to update user status."
-                )
-            );
-        }
-
-        console.log(
-            `User ${userId} successfully ${action}d.`,
-            data
-        );
-
-        await loadUsers();
-
-        await loadAuditLogs();
-
-    }
-    catch (error) {
-
-        console.error(
-            "Toggle user status error:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Unable to update user status."
-        );
-
-        button.disabled = false;
-
-        button.textContent =
-            currentStatus
-                ? "Deactivate"
-                : "Reactivate";
-    }
+    });
 }
 
-
-/* ============================================================
-   CREATE ACCOUNT
-   POST /api/users
-============================================================ */
 
 /* ============================================================
    CREATE ACCOUNT
@@ -763,7 +762,6 @@ async function createAccount(event) {
 
     try {
 
-        // ✅ FIXED: Correct API endpoint
         const response =
             await fetch(
                 `${API_BASE_URL}/api/users/users`,
@@ -885,7 +883,7 @@ async function createAccount(event) {
         await loadUsers();
         await loadAuditLogs();
 
-        alert("✅ Account created successfully!");
+        alert("Account created successfully!");
 
     }
     catch (error) {
@@ -1027,7 +1025,9 @@ async function loadAuditLogs() {
             );
         }
 
-        if (logs.length === 0) {
+        cachedAuditLogs = logs;
+
+        if (cachedAuditLogs.length === 0) {
 
             auditLogRows.innerHTML = `
                 <tr>
@@ -1039,13 +1039,24 @@ async function loadAuditLogs() {
                     </td>
                 </tr>
             `;
-
+            renderPagination(0, auditPerPage, currentAuditPage, () => {}).updateUI("auditPaginationInfo", "auditPrevPageBtn", "auditNextPageBtn", "auditPageNumberBtns");
             return;
         }
 
-        auditLogRows.innerHTML = "";
+        const pagination = renderPagination(
+            cachedAuditLogs.length,
+            auditPerPage,
+            currentAuditPage,
+            (newPage) => {
+                currentAuditPage = newPage;
+                loadAuditLogs();
+            }
+        );
 
-        logs.forEach(log => {
+        auditLogRows.innerHTML = "";
+        const paginatedLogs = pagination.paginatedSlice(cachedAuditLogs);
+
+        paginatedLogs.forEach(log => {
 
             const row =
                 document.createElement("tr");
@@ -1122,6 +1133,8 @@ async function loadAuditLogs() {
 
             auditLogRows.appendChild(row);
         });
+
+        pagination.updateUI("auditPaginationInfo", "auditPrevPageBtn", "auditNextPageBtn", "auditPageNumberBtns");
 
         document
             .querySelectorAll(
@@ -1399,6 +1412,282 @@ async function loadETLRunLogs() {
     }
 }
 
+/* ============================================================
+   MANUAL ETL RUN
+   POST /api/etl-run-log/manual-run
+============================================================ */
+
+
+async function manualRunETL() {
+
+    const manualRunBtn =
+        document.getElementById("manualRunBtn");
+
+    if (!manualRunBtn) {
+        console.warn(
+            "Manual ETL button #manualRunBtn not found."
+        );
+        return;
+    }
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to run the ETL pipeline manually?"
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    manualRunBtn.disabled = true;
+    manualRunBtn.textContent = "Running ETL...";
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_BASE_URL}/api/etl-run-log/manual-run`,
+                {
+                    method: "POST",
+                    headers: getAuthHeaders()
+                }
+            );
+
+        let data = {};
+
+        try {
+            data = await response.json();
+        }
+        catch {
+            data = {};
+        }
+
+        console.log(
+            "POST /api/etl-run-log/manual-run:",
+            response.status,
+            data
+        );
+
+        if (response.status === 401) {
+            handleUnauthorized();
+            return;
+        }
+
+        if (response.status === 403) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "You do not have permission to run the ETL pipeline."
+                )
+            );
+        }
+
+        if (!response.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Failed to start ETL pipeline."
+                )
+            );
+        }
+
+        /*
+         * ETL has started in the background.
+         * Do NOT show completion alert yet.
+         */
+        console.log(
+            "ETL pipeline started. Waiting for completion..."
+        );
+
+        /*
+         * Wait until the ETL logs show that
+         * all 7 steps have finished.
+         */
+        await waitForETLCompletion();
+
+        /*
+         * Refresh ETL logs after completion.
+         */
+        await loadETLRunLogs();
+
+        /*
+         * FINAL SUCCESS MESSAGE
+         */
+        alert(
+            "ETL Pipeline Completed Successfully!"
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            "Manual ETL run error:",
+            error
+        );
+
+        alert(
+            "❌ ETL Pipeline Failed.\n\n" +
+            (
+                error.message ||
+                "Unable to complete the ETL pipeline."
+            )
+        );
+
+    }
+    finally {
+
+        manualRunBtn.disabled = false;
+        manualRunBtn.textContent = "Manual Run";
+
+    }
+}
+
+
+/* ============================================================
+   WAIT FOR ETL COMPLETION
+============================================================ */
+
+async function waitForETLCompletion() {
+
+    const maxAttempts = 60;
+
+    const interval = 3000;
+
+    for (
+        let attempt = 1;
+        attempt <= maxAttempts;
+        attempt++
+    ) {
+
+        console.log(
+            `Checking ETL status... Attempt ${attempt}/${maxAttempts}`
+        );
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_BASE_URL}/api/etl-run-log/`,
+                    {
+                        method: "GET",
+                        headers: getAuthHeaders()
+                    }
+                );
+
+            if (response.status === 401) {
+                handleUnauthorized();
+                throw new Error("Session expired.");
+            }
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Unable to check ETL run status."
+                );
+            }
+
+            const data =
+                await response.json();
+
+            let logs = [];
+
+            if (Array.isArray(data)) {
+
+                logs = data;
+
+            }
+            else if (Array.isArray(data.logs)) {
+
+                logs = data.logs;
+
+            }
+            else if (Array.isArray(data.data)) {
+
+                logs = data.data;
+            }
+
+            /*
+             * We expect 7 ETL steps.
+             */
+            if (logs.length >= 7) {
+
+                /*
+                 * Get the newest 7 logs.
+                 */
+                const latestLogs =
+                    logs
+                        .slice(0, 7);
+
+                /*
+                 * Check if all 7 are finished.
+                 */
+                const allFinished =
+                    latestLogs.every(
+                        log =>
+                            log.status &&
+                            (
+                                log.status.toLowerCase() ===
+                                    "success" ||
+
+                                log.status.toLowerCase() ===
+                                    "failed"
+                            )
+                    );
+
+                if (allFinished) {
+
+                    const hasFailed =
+                        latestLogs.some(
+                            log =>
+                                log.status &&
+                                log.status.toLowerCase() ===
+                                    "failed"
+                        );
+
+                    if (hasFailed) {
+
+                        throw new Error(
+                            "One or more ETL steps failed."
+                        );
+                    }
+
+                    console.log(
+                        "All 7 ETL steps completed successfully."
+                    );
+
+                    return true;
+                }
+            }
+
+        }
+        catch (error) {
+
+            console.error(
+                "ETL status check error:",
+                error
+            );
+
+            throw error;
+        }
+
+        /*
+         * Wait 3 seconds before checking again.
+         */
+        await new Promise(
+            resolve =>
+                setTimeout(
+                    resolve,
+                    interval
+                )
+        );
+    }
+
+    throw new Error(
+        "ETL pipeline is taking too long to complete."
+    );
+}
 
 
 /* ============================================================
@@ -1533,40 +1822,26 @@ async function viewAuditLog(logId) {
                 )
                 : "None";
 
-        const details = `
+        const contentContainer = document.getElementById("modalAuditContent");
+        if (contentContainer) {
+            contentContainer.innerHTML = `
+                <div><b>Log ID:</b> ${escapeHTML(data.log_id ?? "—")}</div>
+                <div><b>User ID:</b> ${escapeHTML(data.user_id ?? "—")}</div>
+                <div><b>Action:</b> <span class="role" style="background: var(--green-light); color: var(--green-dark);">${escapeHTML(data.action ?? "—")}</span></div>
+                <div><b>Resource Type:</b> ${escapeHTML(data.resource_type ?? "—")}</div>
+                <div><b>Resource ID:</b> ${escapeHTML(data.resource_id ?? "—")}</div>
+                <div><b>Created At:</b> ${escapeHTML(formatAuditDate(data.created_at))}</div>
+                <div><b>IP Address:</b> ${escapeHTML(data.ip_address ?? "—")}</div>
+                <div><b>User Agent:</b> ${escapeHTML(data.user_agent ?? "—")}</div>
+                <div style="margin-top: 4px;"><b>Old Values:</b><pre style="background: #F6F3EB; padding: 8px; border-radius: 6px; font-size: 12px; margin-top: 4px; overflow-x: auto;">${escapeHTML(oldValues)}</pre></div>
+                <div style="margin-top: 4px;"><b>New Values:</b><pre style="background: #F6F3EB; padding: 8px; border-radius: 6px; font-size: 12px; margin-top: 4px; overflow-x: auto;">${escapeHTML(newValues)}</pre></div>
+            `;
+        }
 
-Audit Log #${data.log_id ?? "—"}
-
-User ID:
-${data.user_id ?? "—"}
-
-Action:
-${data.action ?? "—"}
-
-Resource Type:
-${data.resource_type ?? "—"}
-
-Resource ID:
-${data.resource_id ?? "—"}
-
-Created At:
-${formatAuditDate(data.created_at)}
-
-Old Values:
-${oldValues}
-
-New Values:
-${newValues}
-
-IP Address:
-${data.ip_address ?? "—"}
-
-User Agent:
-${data.user_agent ?? "—"}
-
-        `;
-
-        alert(details);
+        const auditModal = document.getElementById("auditDetailModal");
+        if (auditModal) {
+            auditModal.classList.add("show");
+        }
 
     }
     catch (error) {
@@ -1948,6 +2223,131 @@ function initializeAuditSearch() {
     );
 }
 
+/* ============================================================
+   SEARCH ETL RUN LOGS
+============================================================ */
+
+function initializeETLSearch() {
+
+    const searchInput =
+        document.getElementById(
+            "searchETL"
+        );
+
+    if (!searchInput) {
+        return;
+    }
+
+    searchInput.addEventListener(
+        "input",
+        () => {
+
+            const search =
+                searchInput.value
+                    .trim()
+                    .toLowerCase();
+
+            document
+                .querySelectorAll(
+                    "#etlRows tr"
+                )
+                .forEach(row => {
+
+                    const text =
+                        row.textContent
+                            .toLowerCase();
+
+                    row.style.display =
+                        text.includes(search)
+                            ? ""
+                            : "none";
+                });
+        }
+    );
+}
+/* ============================================================
+   SIDEBAR (Hover-Based)
+============================================================ */
+
+function initHoverSidebar() {
+
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const sidebar = document.getElementById("sidebar");
+
+    if (!hamburgerBtn || !sidebar) return;
+
+    let hoverTimer = null;
+
+    // Open sidebar when hovering hamburger
+    hamburgerBtn.addEventListener("mouseenter", function () {
+
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
+        }
+
+        sidebar.classList.add("open");
+
+        setTimeout(function () {
+            if (window.leafletMap) {
+                window.leafletMap.invalidateSize();
+            }
+        }, 300);
+    });
+
+    // Keep sidebar open when mouse enters sidebar
+    sidebar.addEventListener("mouseenter", function () {
+
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
+        }
+    });
+
+    // Close sidebar when mouse leaves
+    sidebar.addEventListener("mouseleave", function () {
+
+        hoverTimer = setTimeout(function () {
+            sidebar.classList.remove("open");
+        }, 200);
+    });
+
+    // Close when clicking outside
+    document.addEventListener("click", function (event) {
+
+        const isInsideSidebar = sidebar.contains(event.target);
+        const isHamburger = hamburgerBtn.contains(event.target);
+
+        if (!isInsideSidebar && !isHamburger) {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    // Close after clicking nav item
+    sidebar.querySelectorAll(".nav-item").forEach(function (item) {
+
+        item.addEventListener("click", function () {
+            sidebar.classList.remove("open");
+        });
+    });
+
+    // Close with Escape key
+    document.addEventListener("keydown", function (event) {
+
+        if (event.key === "Escape") {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    // Close on sign out
+    const signoutBtn = sidebar.querySelector(".signout");
+
+    if (signoutBtn) {
+        signoutBtn.addEventListener("click", function () {
+            sidebar.classList.remove("open");
+        });
+    }
+}
 
 /* ============================================================
    DOM READY
@@ -1982,11 +2382,15 @@ document.addEventListener(
             initViewSwitching();
         }
 
+        // ✅ SIDEBAR — dito mo ilalagay
+    if (typeof  initHoverSidebar === "function") {
+        initHoverSidebar();
+    }
+
 
         /* USERS */
 
         loadUsers();
-
 
         /* AUDIT LOGS */
 
@@ -1996,12 +2400,86 @@ document.addEventListener(
 
         loadETLRunLogs();
 
+        /* MANUAL ETL RUN */
+
+        const manualRunBtn =
+            document.getElementById("manualRunBtn");
+
+        if (manualRunBtn) {
+
+            manualRunBtn.addEventListener(
+                "click",
+                manualRunETL
+            );
+
+        }
+
 
         /* SEARCH */
 
         initializeUserSearch();
-
         initializeAuditSearch();
+        initializeETLSearch();
+
+
+        // User Pagination Next/Prev bindings
+        const prevPageBtn = document.getElementById("prevPageBtn");
+        const nextPageBtn = document.getElementById("nextPageBtn");
+
+        if (prevPageBtn) {
+            prevPageBtn.addEventListener("click", () => {
+                if (currentUserPage > 1) {
+                    currentUserPage--;
+                    loadUsers();
+                }
+            });
+        }
+
+        if (nextPageBtn) {
+            nextPageBtn.addEventListener("click", () => {
+                currentUserPage++;
+                loadUsers();
+            });
+        }
+
+
+        // Audit Log Pagination Next/Prev bindings
+        const auditPrevBtn = document.getElementById("auditPrevPageBtn");
+        const auditNextBtn = document.getElementById("auditNextPageBtn");
+
+        if (auditPrevBtn) {
+            auditPrevBtn.addEventListener("click", () => {
+                if (currentAuditPage > 1) {
+                    currentAuditPage--;
+                    loadAuditLogs();
+                }
+            });
+        }
+
+        if (auditNextBtn) {
+            auditNextBtn.addEventListener("click", () => {
+                currentAuditPage++;
+                loadAuditLogs();
+            });
+        }
+
+
+        /* CLOSE AUDIT LOG MODAL */
+        const closeAuditBtn = document.getElementById("closeAuditModalBtn");
+        const closeAuditX = document.getElementById("closeAuditModalX");
+        const auditModal = document.getElementById("auditDetailModal");
+
+        if (closeAuditBtn && auditModal) {
+            closeAuditBtn.addEventListener("click", () => {
+                auditModal.classList.remove("show");
+            });
+        }
+
+        if (closeAuditX && auditModal) {
+            closeAuditX.addEventListener("click", () => {
+                auditModal.classList.remove("show");
+            });
+        }
 
 
         /* ADD ACCOUNT */
@@ -2017,7 +2495,6 @@ document.addEventListener(
                 "click",
                 () => {
 
-                    // Show the Add Account form directly
                     const addAccountView =
                         document.getElementById(
                             "view-add-account"
@@ -2038,7 +2515,6 @@ document.addEventListener(
                             "active-view"
                         );
 
-                        // Update nav highlight
                         document
                             .querySelectorAll(
                                 ".nav-item"
@@ -2051,7 +2527,6 @@ document.addEventListener(
 
                     } else {
 
-                        // Fallback: open modal or alert
                         alert(
                             "Add Account form is not available. Please check the page."
                         );
@@ -2084,7 +2559,6 @@ document.addEventListener(
                         form.reset();
                     }
 
-                    // Go back to users view
                     const addAccountView =
                         document.getElementById(
                             "view-add-account"
@@ -2105,7 +2579,6 @@ document.addEventListener(
                             "active-view"
                         );
 
-                        // Update nav highlight
                         document
                             .querySelectorAll(
                                 ".nav-item"
@@ -2116,7 +2589,6 @@ document.addEventListener(
                                 );
                             });
 
-                        // Highlight Manage Users nav item
                         document
                             .querySelector(
                                 '.nav-item[data-view="users"]'
@@ -2127,7 +2599,6 @@ document.addEventListener(
 
                     } else {
 
-                        // Fallback: reload users view
                         document
                             .querySelectorAll(
                                 ".view"
@@ -2332,39 +2803,56 @@ document.addEventListener(
                 "signOutButton"
             );
 
-        if (signOut) {
+        const logoutModal =
+            document.getElementById(
+                "confirmLogoutModal"
+            );
+
+        const cancelLogoutBtn =
+            document.getElementById(
+                "cancelLogoutBtn"
+            );
+
+        const finalLogoutBtn =
+            document.getElementById(
+                "finalLogoutBtn"
+            );
+
+        if (signOut && logoutModal) {
 
             signOut.addEventListener(
                 "click",
                 event => {
-
                     event.preventDefault();
+                    logoutModal.classList.add("show");
+                }
+            );
+        }
 
-                    localStorage.removeItem(
-                        "access_token"
-                    );
+        if (cancelLogoutBtn && logoutModal) {
+            cancelLogoutBtn.addEventListener(
+                "click",
+                () => {
+                    logoutModal.classList.remove("show");
+                }
+            );
+        }
 
-                    localStorage.removeItem(
-                        "token_type"
-                    );
+        if (finalLogoutBtn) {
+            finalLogoutBtn.addEventListener(
+                "click",
+                () => {
+                    localStorage.removeItem("access_token");
+                    localStorage.removeItem("token_type");
+                    localStorage.removeItem("user_id");
+                    localStorage.removeItem("username");
+                    localStorage.removeItem("role");
 
-                    localStorage.removeItem(
-                        "user_id"
-                    );
-
-                    localStorage.removeItem(
-                        "username"
-                    );
-
-                    localStorage.removeItem(
-                        "role"
-                    );
-
-                    window.location.href =
-                        "../index.html";
+                    window.location.href = "../index.html";
                 }
             );
         }
 
     }
 );
+

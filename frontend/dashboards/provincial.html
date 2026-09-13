@@ -1214,42 +1214,129 @@
 <script>
 
 
-  // ============================================================
-  // SIDEBAR & VIEW SWITCHING
-  // ============================================================
+  
 
+// ============================================================
+// SIDEBAR
+// ============================================================
 
-  const hamburgerBtn =
-    document.getElementById("hamburgerBtn");
+const hamburgerBtn = document.getElementById("hamburgerBtn");
+const sidebar = document.getElementById("sidebar");
 
+if (hamburgerBtn && sidebar) {
 
-  const sidebar =
-    document.getElementById("sidebar");
+  let hoverTimer = null;
 
+  // ==========================================================
+  // OPEN SIDEBAR WHEN HOVERING HAMBURGER
+  // ==========================================================
 
+  hamburgerBtn.addEventListener("mouseenter", function () {
 
-
-  hamburgerBtn.addEventListener(
-    "click",
-    () => {
-
-
-      sidebar.classList.toggle("open");
-
-
-      setTimeout(() => {
-
-
-        if (window.leafletMap) {
-          window.leafletMap.invalidateSize();
-        }
-
-
-      }, 300);
-
-
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      hoverTimer = null;
     }
-  );
+
+    sidebar.classList.add("open");
+
+    setTimeout(function () {
+      if (window.leafletMap) {
+        window.leafletMap.invalidateSize();
+      }
+    }, 300);
+
+  });
+
+
+  // ==========================================================
+  // KEEP SIDEBAR OPEN WHEN MOUSE ENTERS SIDEBAR
+  // ==========================================================
+
+  sidebar.addEventListener("mouseenter", function () {
+
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      hoverTimer = null;
+    }
+
+  });
+
+
+  // ==========================================================
+  // CLOSE SIDEBAR WHEN MOUSE LEAVES
+  // ==========================================================
+
+  sidebar.addEventListener("mouseleave", function () {
+
+    hoverTimer = setTimeout(function () {
+      sidebar.classList.remove("open");
+    }, 200);
+
+  });
+
+
+  // ==========================================================
+  // CLOSE WHEN CLICKING OUTSIDE
+  // ==========================================================
+
+  document.addEventListener("click", function (event) {
+
+    const isInsideSidebar =
+      sidebar.contains(event.target);
+
+    const isHamburger =
+      hamburgerBtn.contains(event.target);
+
+    if (!isInsideSidebar && !isHamburger) {
+      sidebar.classList.remove("open");
+    }
+
+  });
+
+
+  // ==========================================================
+  // CLOSE AFTER CLICKING NAV ITEM
+  // ==========================================================
+
+  sidebar.querySelectorAll(".nav-item").forEach(function (item) {
+
+    item.addEventListener("click", function () {
+      sidebar.classList.remove("open");
+    });
+
+  });
+
+
+  // ==========================================================
+  // CLOSE WITH ESCAPE
+  // ==========================================================
+
+  document.addEventListener("keydown", function (event) {
+
+    if (event.key === "Escape") {
+      sidebar.classList.remove("open");
+    }
+
+  });
+
+
+  // ==========================================================
+  // CLOSE ON SIGN OUT
+  // ==========================================================
+
+  const signoutBtn =
+    sidebar.querySelector(".signout");
+
+  if (signoutBtn) {
+
+    signoutBtn.addEventListener("click", function () {
+      sidebar.classList.remove("open");
+    });
+
+  }
+
+}
 
 
 
@@ -1410,17 +1497,179 @@
   ).addTo(map);
 
 
+ // ============================================================
+// API BASE URL
+// ============================================================
 
+const API_BASE_URL =
+    "http://127.0.0.1:8000";
+
+
+// ============================================================
+// MUNICIPALITY COORDINATES
+// ============================================================
+
+const municipalityCoordinates = {
+
+    "Angeles": [15.1450, 120.5887],
+    "Apalit": [14.9470, 120.7700],
+    "Arayat": [15.1500, 120.7690],
+    "Bacolor": [15.0000, 120.6520],
+    "Candaba": [15.0950, 120.8260],
+    "Floridablanca": [14.9770, 120.5280],
+    "Guagua": [14.9650, 120.6350],
+    "Lubao": [14.9400, 120.6000],
+    "Mabalacat": [15.2230, 120.5740],
+    "Macabebe": [14.9080, 120.7150],
+    "Magalang": [15.2160, 120.6630],
+    "Masantol": [14.8960, 120.7100],
+    "Mexico": [15.0640, 120.7190],
+    "Minalin": [14.9670, 120.6840],
+    "Porac": [15.0710, 120.5420],
+    "San Fernando": [15.0343, 120.6840],
+    "San Luis": [15.0400, 120.7870],
+    "San Simon": [14.9990, 120.7800],
+    "Santa Ana": [15.0950, 120.7720],
+    "Santa Rita": [15.0190, 120.6110],
+    "Santo Tomas": [14.9950, 120.7090]
+
+};
+
+
+// ============================================================
+// LOAD MUNICIPALITY MAP DATA
+// ============================================================
+
+async function loadMunicipalityMapData() {
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/planting-intents/municipality-map`,
+            {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+        }
+
+        const result =
+            await response.json();
+
+        console.log(
+            "Provincial Municipality Map Data:",
+            result
+        );
+
+        if (
+            !result.data ||
+            !Array.isArray(result.data)
+        ) {
+            console.warn(
+                "No municipality map data found."
+            );
+            return;
+        }
+
+        result.data.forEach(
+            municipalityData => {
+
+                const municipality =
+                    municipalityData.municipality;
+
+                const coordinates =
+                    municipalityCoordinates[
+                        municipality
+                    ];
+
+                if (!coordinates) {
+                    console.warn(
+                        `No coordinates found for municipality: ${municipality}`
+                    );
+                    return;
+                }
+
+                let popupContent = `
+                    <div style="min-width:200px;">
+
+                        <strong>
+                            Municipality:
+                        </strong>
+                        ${municipality}
+
+                        <br><br>
+                `;
+
+                if (
+                    municipalityData.commodities &&
+                    Array.isArray(
+                        municipalityData.commodities
+                    )
+                ) {
+
+                    municipalityData.commodities.forEach(
+                        item => {
+
+                            popupContent += `
+                                <strong>
+                                    Commodity:
+                                </strong>
+                                ${item.commodity}
+
+                                <br>
+
+                                <strong>
+                                    Status:
+                                </strong>
+                                ${item.status}
+
+                                <br><br>
+                            `;
+
+                        }
+                    );
+
+                }
+
+                popupContent += `
+                    </div>
+                `;
+
+                L.marker(coordinates)
+                    .addTo(map)
+                    .bindPopup(
+                        popupContent
+                    );
+
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load provincial municipality map data:",
+            error
+        );
+
+    }
+
+}
+
+
+// CALL MAP DATA
+
+loadMunicipalityMapData();
 
   // ============================================================
   // PROVINCIAL REPORTS
   // ============================================================
-
-
-  const API_BASE_URL =
-    "http://127.0.0.1:8000";
-
-
 
 
   const PROVINCIAL_REPORTS_ENDPOINT =

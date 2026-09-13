@@ -3,286 +3,493 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-
-
-
   <title>System Admin — eSaka</title>
-
-
 
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-
-
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Inter:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  >
-
-
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 
   <link rel="stylesheet" href="../assets/css/base.css">
-  <link rel="stylesheet" href="../assets/css/components.css">
 
 
-
-
-<style>
-    .hidden {
-        display: none !important;
+  <style>
+    :root {
+      --cream: #F2EDE1;
+      --white: #FBF8F1;
+      --ink: #2E2A22;
+      --muted: #625E52;
+      --border: #DFD8C6;
+      --border-light: #ECE5D4;
+      --green: #5B6B4F;
+      --green-dark: #445439;
+      --green-light: #E7EDDF;
+      --brown: #C08A4E;
+      --gold: #C9A15A;
+      --status-confirmed: #2E7D32;
+      --status-submitted: #D97706;
+      --status-rejected: #C0392B;
+      --topbar-height: 72px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
     }
 
-    .btn-disabled-filter {
-        opacity: 0.4;
-        cursor: default;
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    .api-error {
-        color: #8C2A1C;
-        text-align: center;
-        padding: 20px;
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
     }
 
-    .alert-container-card {
-        padding: 24px;
+
+    a { color: inherit; }
+    button, input, select, textarea { font-family: inherit; }
+
+
+    /* --- TOPBAR --- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      background: var(--cream);
+      border-bottom: 1.5px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 2100;
+      height: var(--topbar-height);
     }
 
-    .alert-list {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
 
-    .alert-card {
-        background: #E2E2E2;
-        border-radius: 14px;
-        padding: 18px 24px;
-        cursor: pointer;
-        transition: 0.2s ease;
+
+    .hamburger {
+      background: #FFF;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.2s ease;
     }
 
-    .alert-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+
+    .hamburger:hover {
+      background: var(--green-light);
+      border-color: var(--green);
     }
 
-    .alert-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 8px;
+
+    .hamburger span {
+      display: block;
+      width: 20px;
+      height: 2.5px;
+      background: var(--ink);
+      border-radius: 2px;
     }
 
-    .alert-title-group {
-        display: flex;
-        align-items: center;
-        gap: 12px;
+
+    .logos {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    .alert-title {
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--ink);
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 18px;
     }
 
-    .sev-pill {
-        display: inline-block;
-        font-size: 11.5px;
-        font-weight: 600;
-        padding: 3px 12px;
-        border-radius: 999px;
+
+    .bell-wrap {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease, background 0.2s ease;
     }
 
-    .sev-pill.high {
-        background: #E8C3B9;
-        color: #8C2A1C;
+
+    .bell-wrap:hover {
+      background: var(--green-dark);
+      transform: scale(1.04);
     }
 
-    .sev-pill.medium {
-        background: #E5DA9D;
-        color: #7A6310;
+
+    .bell-wrap svg {
+      width: 18px;
+      height: 18px;
+      fill: #fff;
     }
 
-    .sev-pill.low {
-        background: #D1E0D7;
-        color: #2D6A4F;
+
+    .bell-dot {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 9px;
+      height: 9px;
+      background: #C0392B;
+      border-radius: 50%;
+      border: 2px solid var(--cream);
     }
 
-    .status-pill-btn {
-        border: none;
-        font-size: 12px;
-        font-weight: 600;
-        padding: 5px 16px;
-        border-radius: 999px;
-        cursor: pointer;
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.7);
+      padding: 6px 14px 6px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
     }
 
-    .status-pill-btn.unresolved {
-        background: #E8B4AC;
-        color: #8B2D22;
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--green);
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
     }
 
-    .status-pill-btn.acknowledged {
-        background: #A3D9B1;
-        color: #1E5C31;
+
+    .user-text {
+      text-align: left;
+      line-height: 1.2;
     }
 
-    .alert-desc {
-        font-size: 13px;
-        color: #555;
-        line-height: 1.45;
-        margin: 0 0 12px;
+
+    .user-name {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--ink);
     }
 
-    .alert-stats {
-        display: flex;
-        align-items: center;
-        gap: 36px;
-        font-size: 12.5px;
-        color: #666;
+
+    .user-role {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--brown);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
-    .alert-stats span b {
-        color: #222;
-        font-weight: 600;
+
+    /* --- SIDEBAR --- */
+    .layout {
+      display: flex;
+      min-height: calc(100vh - var(--topbar-height));
     }
 
-    .alert-date {
-        margin-left: auto;
-        font-size: 12px;
-        color: #777;
+
+    .sidebar {
+      width: 230px;
+      background: var(--green);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px 12px;
+      flex-shrink: 0;
+      position: fixed;
+      top: var(--topbar-height);
+      left: -230px;
+      bottom: 0;
+      z-index: 2000;
+      transition: left .28s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .alert-detail-box {
-        max-width: 460px;
-        text-align: left;
-        padding: 28px 32px;
+
+    .sidebar.open {
+      left: 0;
     }
 
-    .alert-modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 16px;
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
 
-    .alert-modal-header h2 {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--green);
-        margin: 0;
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      color: #E8E5DD;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      width: 100%;
+      text-align: left;
+      transition: all 0.2s ease;
     }
 
-    .modal-stats-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        background: #F6F3EB;
-        padding: 14px 18px;
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        margin-bottom: 24px;
-        font-size: 13px;
+
+    .nav-item svg {
+      width: 19px;
+      height: 19px;
+      fill: currentColor;
+      flex-shrink: 0;
     }
 
-    .modal-stats-grid div {
-        color: var(--muted);
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #FFFFFF;
     }
 
-    .modal-stats-grid div b {
-        color: var(--ink);
-        display: block;
-        font-size: 14px;
-        margin-top: 2px;
+
+    .nav-item.active {
+      background: var(--green-dark);
+      color: #FFFFFF;
+      font-weight: 700;
     }
 
-    .modal-actions-row {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
+
+    .signout {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      color: #FFC0C0;
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: rgba(0, 0, 0, 0.08);
+      border-radius: var(--radius-sm);
+      width: 100%;
+      transition: all 0.2s ease;
     }
 
-    .action-btn:disabled {
-        opacity: 0.6;
-        cursor: wait;
+
+    .signout svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
     }
 
-    .loading-row {
-        text-align: center;
-        padding: 20px;
+
+    .signout:hover {
+      background: rgba(192, 57, 43, 0.25);
+      color: #FFF;
     }
 
-    .add-account-row {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 16px;
+
+    /* --- MAIN CONTENT & ACTION PANELS --- */
+    .main {
+      flex: 1;
+      padding: 32px 40px;
+      min-width: 0;
     }
 
-    /* ============================================================
-       USER TABLE - CLEAN MODERN STYLES
-    ============================================================ */
 
+    .view { display: none; }
+    .view.active-view { display: block; }
+
+
+    .main-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+
+    .main-header h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--green-dark);
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+
+
+    .card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 22px 24px;
+    }
+
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--green);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+
+    /* --- SEARCH BOX & HEADER ACTIONS --- */
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #FFFFFF;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      min-width: 260px;
+      transition: all 0.2s ease;
+    }
+
+
+    .search-box:focus-within {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
+    }
+
+
+    .search-box svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: var(--muted);
+      stroke-width: 2.4;
+      flex-shrink: 0;
+    }
+
+
+    .search-box input {
+      border: none;
+      outline: none;
+      font-size: 13.5px;
+      width: 100%;
+      background: transparent;
+      color: var(--ink);
+    }
+
+
+    .filter-btn {
+      background: #FFFFFF;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+
+    .filter-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: var(--muted);
+    }
+
+
+    .filter-btn:hover:not(:disabled) {
+      background: var(--cream);
+      border-color: var(--green);
+    }
+
+
+    /* --- CLEAN ACCESSIBLE DATA TABLES --- */
     .table-wrapper {
         overflow-x: auto;
         border-radius: 8px;
-        border: 1px solid #e8e4de;
+        border: 1px solid var(--border);
         margin-top: 8px;
     }
 
+
     table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 14px;
-        min-width: 600px;
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
     }
 
-    thead {
-        background: #f8f6f2;
-    }
 
     thead th {
-        text-align: left;
-        padding: 14px 18px;
-        font-weight: 600;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #5a554a;
-        border-bottom: 2px solid #e0dcd4;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      padding: 12px 14px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-bottom: 1.5px solid var(--border);
+      background: #f8f6f2;
     }
+
 
     tbody td {
-        padding: 12px 18px;
-        border-bottom: 1px solid #edeae4;
-        vertical-align: middle;
+      padding: 13px 14px;
+      font-size: 13.5px;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--border-light);
+      color: var(--ink);
     }
 
-    tbody tr:last-child td {
-        border-bottom: none;
+
+    tbody tr {
+      transition: background 0.15s ease;
     }
 
-    tbody tr:hover {
-        background: #faf8f5;
+
+    tbody tr:hover td {
+      background: #F3EEE4;
     }
 
-    /* Name */
-    .name-pill {
-        font-weight: 500;
-        color: #1e1a16;
-    }
 
-    /* Username */
-    .username-pill {
-        color: #5a554a;
-        font-size: 13px;
-    }
+    .name-pill { font-weight: 500; color: #1e1a16; }
+    .username-pill { color: #5a554a; font-size: 13px; }
 
-    /* Role Badges */
+
     .role {
         display: inline-block;
         padding: 3px 12px;
@@ -292,1475 +499,719 @@
         letter-spacing: 0.3px;
     }
 
-    /* Status Badge */
+
     .status-badge {
-    display: inline-block;
-    padding: 4px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: 20px;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    }
-
-    .status-badge.active {
-        background: #e6f4ea;
-        color: #1e1a16 !important; /* FORCE BLACK */
-    }
-
-    .status-badge.inactive {
-        background: #fce8e6;
-        color: #1e1a16 !important; /* FORCE BLACK */
+      display: inline-block;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
     }
 
 
-    /* Action Buttons */
+    .status-badge.active { background: #e6f4ea; color: #1e1a16 !important; }
+    .status-badge.inactive { background: #fce8e6; color: #1e1a16 !important; }
+
+
+    /* --- BUTTONS --- */
+    .btn-primary {
+      appearance: none;
+      background: var(--green);
+      color: #FFF;
+      border: none;
+      font-size: 13.5px;
+      font-weight: 700;
+      padding: 9px 20px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--green-dark);
+      transform: translateY(-1px);
+    }
+
+
+    .btn-secondary {
+      appearance: none;
+      border: 1.5px solid var(--border);
+      background: #FFFFFF;
+      color: var(--ink);
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 9px 20px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--cream);
+      border-color: var(--green);
+    }
+
+
+    .btn-danger { background: #A1382B !important; color: #FFF !important; }
+    .btn-danger:hover { background: #84281D !important; }
+
+
     .btn-deactivate,
-    .btn-reactivate {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 6px 18px;
-        font-size: 13px;
-        font-weight: 500;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        font-family: inherit;
-        min-width: 100px;
-        white-space: nowrap;
+    .btn-reactivate,
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 16px;
+      font-size: 12.5px;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      min-width: 95px;
+      white-space: nowrap;
     }
 
-    .btn-deactivate {
-        background: #fce8e6;
-        color: #b3261e;
+
+    .btn-deactivate { background: #fce8e6; color: #b3261e; }
+    .btn-deactivate:hover { background: #f5d0cc; transform: translateY(-1px); }
+    .btn-reactivate { background: #e6f4ea; color: #1e7e34; }
+    .btn-reactivate:hover { background: #c8e6d0; transform: translateY(-1px); }
+
+
+    .action-btn {
+      border: 1.5px solid var(--border);
+      background: #FFFFFF;
+      color: var(--ink);
     }
 
-    .btn-deactivate:hover {
-        background: #f5d0cc;
-        transform: translateY(-1px);
+
+    .action-btn:hover:not(:disabled) {
+      background: var(--cream);
+      border-color: var(--green);
+      color: var(--green-dark);
     }
 
-    .btn-deactivate:active {
-        transform: translateY(0);
+
+    td:last-child, thead th:last-child {
+      text-align: center !important;
     }
 
-    .btn-reactivate {
-        background: #e6f4ea;
-        color: #1e7e34;
+
+    /* --- FORM LAYOUT & INPUT FIELDS --- */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px 30px;
     }
 
-    .btn-reactivate:hover {
-        background: #c8e6d0;
-        transform: translateY(-1px);
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
     }
 
-    .btn-reactivate:active {
-        transform: translateY(0);
+
+    .form-field label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--ink);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
     }
 
-    /* Actions Column */
-    td:last-child {
-        text-align: center !important;
+
+    .form-field input,
+    .form-field select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      outline: none;
+      background: #FFFFFF;
+      color: var(--ink);
+      transition: all 0.2s ease;
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-        .table-wrapper {
-            border-radius: 0;
-        }
-        
-        table {
-            font-size: 13px;
-        }
-        
-        thead th,
-        tbody td {
-            padding: 10px 12px;
-        }
-        
-        .btn-deactivate,
-        .btn-reactivate {
-            padding: 4px 12px;
-            font-size: 12px;
-            min-width: 80px;
-        }
+
+    .form-field input:focus,
+    .form-field select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
     }
-</style>
 
 
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+    }
 
 
+    /* --- PAGINATION STYLES --- */
+    .pagination-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      font-size: 12.5px;
+      color: var(--muted);
+    }
 
+
+    .pagination-controls { display: flex; align-items: center; gap: 6px; }
+    .page-numbers-wrap { display: flex; gap: 4px; }
+
+
+    .btn-page {
+      padding: 5px 11px;
+      border: 1px solid var(--border);
+      background: #FFF;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--ink);
+      transition: all 0.15s ease;
+    }
+
+
+    .btn-page:hover:not(:disabled) {
+      background: #EDE7D8;
+      border-color: var(--green);
+    }
+
+
+    .btn-page.active {
+      background: var(--green);
+      color: #FFF;
+      border-color: var(--green);
+    }
+
+
+    .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
+
+
+    /* --- ALERTS & PILLS --- */
+    .alert-container-card { padding: 24px; }
+    .alert-list { display: flex; flex-direction: column; gap: 16px; }
+
+
+    .alert-card {
+      background: #F6F3EB;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px 24px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+
+    .alert-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+      border-color: var(--green);
+    }
+
+
+    .alert-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+
+    .alert-title-group { display: flex; align-items: center; gap: 12px; }
+    .alert-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+
+
+    .sev-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+
+    .sev-pill.high { background: #C0392B; color: #FFFFFF; }
+    .sev-pill.medium { background: #D97706; color: #FFFFFF; }
+    .sev-pill.low { background: var(--status-confirmed); color: #FFFFFF; }
+
+
+    .status-pill-btn {
+      border: none;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+
+    .status-pill-btn.unresolved { background: #FADBD8; color: #922B21; }
+    .status-pill-btn.acknowledged { background: var(--green-light); color: var(--green-dark); }
+
+
+    .alert-desc {
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0 0 12px;
+    }
+
+
+    .alert-stats {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+
+    .alert-stats span b { color: var(--ink); font-weight: 700; }
+    .alert-date { margin-left: auto; font-size: 12.5px; color: var(--muted); }
+
+
+    /* --- MODALS --- */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(30, 35, 28, 0.6);
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+    }
+
+
+    .modal-overlay.show { display: flex; }
+
+
+    .modal-box {
+      background: var(--cream);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 32px 38px;
+      text-align: center;
+      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.2);
+      max-width: 440px;
+      width: 90%;
+    }
+
+
+    .modal-box h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--green);
+      margin-bottom: 10px;
+    }
+
+
+    .modal-box p {
+      font-size: 14px;
+      color: var(--ink);
+      margin-bottom: 22px;
+      line-height: 1.45;
+    }
+
+
+    .modal-actions { display: flex; justify-content: center; gap: 12px; }
+
+
+    .alert-detail-box { max-width: 480px; text-align: left; }
+
+
+    .alert-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+
+    .alert-modal-header h2 { font-size: 18px; font-weight: 800; color: var(--green); margin: 0; }
+
+
+    .modal-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: #FFFFFF;
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+
+
+    .modal-stats-grid div { color: var(--muted); }
+    .modal-stats-grid div b { color: var(--ink); display: block; font-size: 14px; margin-top: 2px; }
+
+
+    .modal-actions-row { display: flex; justify-content: flex-end; gap: 12px; }
+    .modal-title { font-size: 20px; font-weight: 800; color: var(--green); margin-bottom: 16px; }
+    .modal-ok { margin-top: 8px; }
+    .loading-row { text-align: center; padding: 24px; color: var(--muted); }
+  </style>
+</head>
 <body>
 
 
-
-
 <div class="topbar">
-
-
-
-
   <div class="topbar-left">
-
-
-
-
-    <button
-      class="hamburger"
-      id="hamburgerBtn"
-      aria-label="Toggle navigation"
-      type="button"
-    >
-      <span></span>
-      <span></span>
-      <span></span>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
+      <span></span><span></span><span></span>
     </button>
-
-
-
-
     <div class="logos">
-
-
-
-
-      <svg class="seal" viewBox="0 0 100 100">
-        <circle
-          cx="50"
-          cy="50"
-          r="46"
-          fill="none"
-          stroke="#5B6B4F"
-          stroke-width="3"
-        />
-
-
-
-
-        <path
-          d="M50 20 C35 30,30 45,50 65 C70 45,65 30,50 20Z"
-          fill="#5B6B4F"
-        />
-
-
-
-
-        <path
-          d="M50 30 L50 62"
-          stroke="#F2EDE1"
-          stroke-width="2"
-        />
-      </svg>
-
-
-
-
-      <div class="brand-logo">
-        <svg viewBox="0 0 200 170">
-          <g
-            fill="none"
-            stroke="#8C6A4A"
-            stroke-width="3"
-            stroke-linecap="round"
-          >
-            <path d="M8 90 C40 40,90 20,150 15"/>
-            <path d="M8 90 C45 55,95 40,155 45"/>
-            <path d="M8 90 C50 78,100 72,158 82"/>
-            <path d="M8 90 C45 105,95 118,150 130"/>
-            <path d="M8 90 C40 130,85 150,130 158"/>
-          </g>
-        </svg>
-      </div>
-
-
-
-
-      <span class="brand-word">eSaka</span>
-
-
-
-
+      <img src="../assets/images/esakalogo.png" alt="eSaka Logo" style="height: 40px; width: auto; display: block;">
+      <img src="../assets/images/esakaname.png" alt="eSaka Name" style="height: 28px; width: auto; display: block;">
     </div>
   </div>
 
 
-
-
   <div class="topbar-right">
-
-
-
-
-    <div
-      class="bell-wrap"
-      id="bellBtn"
-      aria-label="Notifications"
-    >
-      <svg viewBox="0 0 24 24">
-        <path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/>
-      </svg>
-
-
-
-
+    <div class="bell-wrap" id="bellBtn" aria-label="Notifications">
+      <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
       <span class="bell-dot"></span>
     </div>
 
 
-
-
-    <div
-      class="notif-dropdown"
-      id="notifDropdown"
-    >
-      <div class="notif-header">
-        Notifications
-      </div>
-
-
-
-
-      <button class="notif-item" type="button">
-        <b>System updated</b> successfully to v1.2.
-      </button>
-    </div>
-
-
-
-
     <div class="user-info">
-
-
-
-
+      <div class="avatar">SA</div>
       <div class="user-text">
-
-
-
-
-        <div
-          class="user-name"
-          id="loggedInUserName"
-        >
-          System Admin
-        </div>
-
-
-
-
-        <div
-          class="user-role"
-          id="loggedInUserRole"
-        >
-          System Administrator
-        </div>
-
-
-
-
+        <div class="user-name" id="loggedInUserName">System Admin</div>
+        <div class="user-role" id="loggedInUserRole">System Administrator</div>
       </div>
-
-
-
-
-      <div class="avatar">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/>
-        </svg>
-      </div>
-
-
-
-
     </div>
-
-
-
-
   </div>
-
-
-
-
 </div>
 
 
-
-
-
-
-
-
 <div class="layout">
-
-
-
-
   <nav class="sidebar" id="sidebar">
-
-
-
-
     <div class="nav-list">
-
-
-
-
-      <button
-        class="nav-item active"
-        type="button"
-        data-view="users"
-      >
-        <svg viewBox="0 0 24 24">
-          <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-        </svg>
+      <button class="nav-item active" type="button" data-view="users">
+        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
         Manage Users
       </button>
-
-
-
-
-      <button
-        class="nav-item"
-        type="button"
-        data-view="etl"
-      >
-        <svg viewBox="0 0 24 24">
-          <path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h18v2H3z"/>
-        </svg>
+      <button class="nav-item" type="button" data-view="etl">
+        <svg viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h18v2H3z"/></svg>
         Monitor ETL Pipeline
       </button>
-
-
-
-
-      <button
-        class="nav-item"
-        type="button"
-        data-view="alerts"
-      >
-        <svg viewBox="0 0 24 24">
-          <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-        </svg>
-        Alert Log
-      </button>
-
-
-
-
-      <button
-        class="nav-item"
-        type="button"
-        data-view="audit"
-      >
-        <svg viewBox="0 0 24 24">
-          <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
-        </svg>
+      <button class="nav-item" type="button" data-view="audit">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
         Audit Log
       </button>
-
-
-
-
     </div>
 
 
-
-
-    <a
-      class="signout"
-      href="../index.html"
-      id="signOutButton"
-    >
-      <svg viewBox="0 0 24 24">
-        <path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/>
-      </svg>
+    <a class="signout" href="../index.html" id="signOutButton">
+      <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
       Sign Out
     </a>
-
-
-
-
   </nav>
-
-
-
-
-
-
 
 
   <main class="main">
 
 
-
-
-    <section
-      class="view active-view"
-      id="view-users"
-    >
-
-
-
-
+    <section class="view active-view" id="view-users">
       <div class="main-header">
-
-
-
-
         <h1>All Users</h1>
-
-
-
-
-        <div class="search-row">
-
-
-
-
-          <div class="search-box">
-
-
-
-
-            <svg viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="7"/>
-              <line
-                x1="21"
-                y1="21"
-                x2="16.65"
-                y2="16.65"
-              />
-            </svg>
-
-
-
-
-            <input
-              type="text"
-              id="searchUsers"
-              placeholder="Search users..."
-            >
-
-
-
-
+        <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
+          <div class="search-row" style="margin: 0;">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="searchUsers" placeholder="Search users...">
+            </div>
+        
           </div>
-
-
-
-
-          <button
-            class="filter-btn btn-disabled-filter"
-            type="button"
-            disabled
-          >
-            <svg viewBox="0 0 24 24">
-              <path d="M3 4h18v2l-7 8v6l-4-2v-4L3 6z"/>
-            </svg>
-          </button>
-
-
-
-
+          <button class="btn-primary" id="addAccountBtn" type="button" style="white-space: nowrap;">+ Add Account</button>
         </div>
-
-
-
-
       </div>
-
-
 
 
       <div class="card">
-    <div class="card-title">
-        User Account Management
-    </div>
-
-    <div class="table-wrapper">
-        <table>
+        <div class="card-title">User Account Management</div>
+        <div class="table-wrapper">
+          <table>
             <thead>
-                <tr>
-                    <th style="text-align:left; padding:12px 16px;">Name</th>
-                    <th style="text-align:left; padding:12px 16px;">Username</th>
-                    <th style="text-align:left; padding:12px 16px;">Role</th>
-                    <th style="text-align:left; padding:12px 16px;">Status</th>
-                    <th style="text-align:center; padding:12px 16px;">Actions</th>
-                </tr>
+              <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
             </thead>
-            <tbody id="userRows">
-                <!-- Rows populated by JavaScript -->
+            <tbody id="userRows" data-page-size="7">
+              <tr><td colspan="5" class="loading-row">Loading users...</td></tr>
             </tbody>
-        </table>
-    </div>
-</div>
+          </table>
+        </div>
 
 
-
-
-
-      <!-- Add Account button is now on the RIGHT -->
-      <div class="add-account-row">
-
-
-
-
-        <button
-          class="btn-primary"
-          id="addAccountBtn"
-          type="button"
-        >
-          Add Account
-        </button>
+        <div class="pagination-container">
+          <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
+          <div class="pagination-controls" id="paginationControls">
+            <button class="btn-page" id="prevPageBtn" type="button" disabled>&laquo; Prev</button>
+            <div id="pageNumberBtns" class="page-numbers-wrap"></div>
+            <button class="btn-page" id="nextPageBtn" type="button">Next &raquo;</button>
+          </div>
+        </div>
       </div>
     </section>
+
 
     <section class="view" id="view-add-account">
-
-    <div class="main-header">
+      <div class="main-header">
         <h1>Add New Account</h1>
-    </div>
+      </div>
 
-    <div class="card">
 
+      <div class="card">
         <form id="addAccountForm" novalidate>
-
-            <div class="form-grid">
-
-                <div class="form-field">
-                    <label for="firstName">First Name *</label>
-                    <input type="text" id="firstName" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="lastName">Last Name *</label>
-                    <input type="text" id="lastName" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="newUsername">Username *</label>
-                    <input type="text" id="newUsername" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="newEmail">Email *</label>
-                    <input type="email" id="newEmail" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="newPassword">Password *</label>
-                    <input type="password" id="newPassword" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="phoneNumber">Phone Number *</label>
-                    <input type="tel" id="phoneNumber" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="confirmPassword">Confirm Password *</label>
-                    <input type="password" id="confirmPassword" required>
-                </div>
-
-                <div class="form-field">
-                    <label for="roleSelect">Role *</label>
-                    <select id="roleSelect" required>
-                        <option value="" disabled selected>Select a role</option>
-                        <option value="System Administrator">System Administrator</option>
-                        <option value="DA-RFO Officer">DA-RFO Officer</option>
-                        <option value="Provincial Coordinator">Provincial Coordinator</option>
-                        <option value="Municipal Coordinator">Municipal Coordinator</option>
-                        <option value="Agricultural Extension Worker">Agricultural Extension Worker</option>
-                    </select>
-                </div>
-
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="firstName">First Name *</label>
+              <input type="text" id="firstName" required>
             </div>
-
-            <div class="form-actions">
-                <button type="button" class="btn-secondary" id="cancelAddAccount">Cancel</button>
-                <button type="submit" class="btn-primary">Create Account</button>
+            <div class="form-field">
+              <label for="lastName">Last Name *</label>
+              <input type="text" id="lastName" required>
             </div>
+            <div class="form-field">
+              <label for="newUsername">Username *</label>
+              <input type="text" id="newUsername" required>
+            </div>
+            <div class="form-field">
+              <label for="newEmail">Email *</label>
+              <input type="email" id="newEmail" required>
+            </div>
+            <div class="form-field">
+              <label for="newPassword">Password *</label>
+              <input type="password" id="newPassword" required>
+            </div>
+            <div class="form-field">
+              <label for="phoneNumber">Phone Number *</label>
+              <input type="tel" id="phoneNumber" required>
+            </div>
+            <div class="form-field">
+              <label for="confirmPassword">Confirm Password *</label>
+              <input type="password" id="confirmPassword" required>
+            </div>
+            <div class="form-field">
+              <label for="roleSelect">Role *</label>
+              <select id="roleSelect" required>
+                <option value="" disabled selected>Select a role</option>
+                <option value="System Administrator">System Administrator</option>
+                <option value="DA-RFO">DA-RFO</option>
+                <option value="Provincial Coordinator">Provincial Coordinator</option>
+                <option value="Municipal Coordinator">Municipal Coordinator</option>
+                <option value="AEW">AEW</option>
+              </select>
+            </div>
+          </div>
 
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" id="cancelAddAccount">Cancel</button>
+            <button type="submit" class="btn-primary">Create Account</button>
+          </div>
         </form>
-
-    </div>
-
-</section>
+      </div>
+    </section>
 
 
-
-
-
-
-
-
-    <section
-      class="view"
-      id="view-etl"
-    >
-
-
-
-
+    <section class="view" id="view-etl">
       <div class="main-header">
-
-
-
-
         <h1>ETL Pipeline Run Logs</h1>
-
-
-
-
-        <div class="search-row">
-
-
-
-
-          <div class="search-box">
-
-
-
-
-            <svg viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="7"/>
-              <line
-                x1="21"
-                y1="21"
-                x2="16.65"
-                y2="16.65"
-              />
-            </svg>
-
-
-
-
-            <input
-              type="text"
-              id="searchETL"
-              placeholder="Search logs..."
-            >
-
-
-
-
+        <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
+          <div class="search-row" style="margin: 0;">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="searchETL" placeholder="Search logs...">
+            </div>
           </div>
-
-
-
-
+          <button class="btn-primary" id="manualRunBtn" type="button" style="white-space: nowrap;">Manual Run</button>
         </div>
-
-
-
-
       </div>
-
-
-
-
-
-
 
 
       <div class="card">
-
-
-
-
-        <div class="card-title">
-          ETL Pipeline Run Log
+        <div class="card-title">ETL Pipeline Run Log</div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Run Date/Time</th>
+                <th>Data Source</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="etlRows">
+              <tr><td colspan="3" class="loading-row">No ETL logs available.</td></tr>
+            </tbody>
+          </table>
         </div>
-
-
-
-
-      
-<table>
-
-    <thead>
-
-        <tr>
-            <th>Run Date/Time</th>
-            <th>Data Source</th>
-            <th>Status</th>
-        </tr>
-
-    </thead>
-
-    <tbody id="etlRows">
-
-        <tr>
-            <td
-                colspan="3"
-                style="text-align:center;"
-            >
-                Loading ETL logs...
-            </td>
-        </tr>
-
-    </tbody>
-
-</table>
-
-
-
-
-
-
-
       </div>
-
-
-
-
-
-
-
-
-      <div class="manual-run-row">
-
-
-
-
-        <button
-          class="btn-primary outline"
-          id="manualRunBtn"
-          type="button"
-        >
-          Manual Run
-        </button>
-
-
-
-
-      </div>
-
-
-
-
     </section>
 
 
-
-
-
-
-
-
-    <section
-      class="view"
-      id="view-alerts"
-    >
-
-
-
-
+    <section class="view" id="view-audit">
       <div class="main-header">
-
-
-
-
-        <h1>System Alert Logs</h1>
-
-
-
-
-        <div class="search-row">
-
-
-
-
-          <div class="search-box">
-
-
-
-
-            <svg viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="7"/>
-              <line
-                x1="21"
-                y1="21"
-                x2="16.65"
-                y2="16.65"
-              />
-            </svg>
-
-
-
-
-            <input
-              type="text"
-              id="searchAlerts"
-              placeholder="Search alerts..."
-            >
-
-
-
-
-          </div>
-
-
-
-
-        </div>
-
-
-
-
-      </div>
-
-
-
-
-
-
-
-
-      <div class="card alert-container-card">
-
-
-
-
-        <div
-          class="alert-list"
-          id="alertList"
-        >
-
-
-
-
-          <div
-            class="alert-card"
-            data-severity="high"
-          >
-
-
-
-
-            <div class="alert-top">
-
-
-
-
-              <div class="alert-title-group">
-
-
-
-
-                <span class="alert-title">
-                  Onion Oversupply Risk — Region III
-                </span>
-
-
-
-
-                <span class="sev-pill high">
-                  High
-                </span>
-
-
-
-
-              </div>
-
-
-
-
-              <button
-                class="status-pill-btn unresolved"
-                type="button"
-              >
-                Unresolved
-              </button>
-
-
-
-
-            </div>
-
-
-
-
-
-
-
-
-            <p class="alert-desc">
-              Projected supply of 280,000 kg exceeds
-              demand by 40%. Recommend coordinating
-              with buyers or adjusting planting schedules.
-            </p>
-
-
-
-
-
-
-
-
-            <div class="alert-stats">
-
-
-
-
-              <span>
-                Supply:
-                <b>280t</b>
-              </span>
-
-
-
-
-              <span>
-                Demand:
-                <b>200t</b>
-              </span>
-
-
-
-
-              <span>
-                Surplus:
-                <b>+40%</b>
-              </span>
-
-
-
-
-              <span class="alert-date">
-                2026-05-10
-              </span>
-
-
-
-
-            </div>
-
-
-
-
-          </div>
-
-
-
-
-
-
-
-
-          <div
-            class="alert-card"
-            data-severity="medium"
-          >
-
-
-
-
-            <div class="alert-top">
-
-
-
-
-              <div class="alert-title-group">
-
-
-
-
-                <span class="alert-title">
-                  Tomato Oversupply Risk — CALABARZON
-                </span>
-
-
-
-
-                <span class="sev-pill medium">
-                  Medium
-                </span>
-
-
-
-
-              </div>
-
-
-
-
-              <button
-                class="status-pill-btn acknowledged"
-                type="button"
-              >
-                Acknowledged
-              </button>
-
-
-
-
-            </div>
-
-
-
-
-
-
-
-
-            <p class="alert-desc">
-              Tomato supply in Lipa City area is 31%
-              above projected demand. Monitor closely
-              and notify buyers.
-            </p>
-
-
-
-
-
-
-
-
-            <div class="alert-stats">
-
-
-
-
-              <span>
-                Supply:
-                <b>210t</b>
-              </span>
-
-
-
-
-              <span>
-                Demand:
-                <b>160t</b>
-              </span>
-
-
-
-
-              <span>
-                Surplus:
-                <b>+31%</b>
-              </span>
-
-
-
-
-              <span class="alert-date">
-                2026-05-08
-              </span>
-
-
-
-
-            </div>
-
-
-
-
-          </div>
-
-
-
-
-        </div>
-
-
-
-
-      </div>
-
-
-
-
-    </section>
-
-
-
-
-
-
-
-
-    <section
-      class="view"
-      id="view-audit"
-    >
-
-
-
-
-      <div class="main-header">
-
-
-
-
         <h1>System Audit Logs</h1>
-
-
-
-
         <div class="search-row">
-
-
-
-
           <div class="search-box">
-
-
-
-
-            <svg viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="7"/>
-              <line
-                x1="21"
-                y1="21"
-                x2="16.65"
-                y2="16.65"
-              />
-            </svg>
-
-
-
-
-            <input
-              type="text"
-              id="searchAudit"
-              placeholder="Search audit logs..."
-            >
-
-
-
-
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchAudit" placeholder="Search audit logs...">
           </div>
-
-
-
-
         </div>
-
-
-
-
       </div>
-
-
-
-
-
-
 
 
       <div class="card">
-
-
-
-
-        <div class="card-title">
-          Platform Audit Log
+        <div class="card-title">Platform Audit Log</div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Log ID</th>
+                <th>User ID</th>
+                <th>Action</th>
+                <th>Resource Type</th>
+                <th>Resource ID</th>
+                <th>Timestamp</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="auditLogRows" data-page-size="7">
+              <tr><td colspan="7" class="loading-row">Loading audit logs...</td></tr>
+            </tbody>
+          </table>
         </div>
 
 
-
-
-        <table>
-
-
-
-
-          <thead>
-
-
-
-
-            <tr>
-              <th>Log ID</th>
-              <th>User ID</th>
-              <th>Action</th>
-              <th>Resource Type</th>
-              <th>Resource ID</th>
-              <th>Timestamp</th>
-              <th>Details</th>
-            </tr>
-
-
-
-
-          </thead>
-
-
-
-
-          <tbody id="auditLogRows">
-
-
-
-
-            <tr>
-
-
-
-
-              <td
-                colspan="7"
-                style="text-align:center;"
-              >
-                Loading audit logs...
-              </td>
-
-
-
-
-            </tr>
-
-
-
-
-          </tbody>
-
-
-
-
-        </table>
-
-
-
-
+        <div class="pagination-container">
+          <span class="pagination-info" id="auditPaginationInfo">Showing 0 of 0</span>
+          <div class="pagination-controls" id="auditPaginationControls">
+            <button class="btn-page" id="auditPrevPageBtn" type="button" disabled>&laquo; Prev</button>
+            <div id="auditPageNumberBtns" class="page-numbers-wrap"></div>
+            <button class="btn-page" id="auditNextPageBtn" type="button">Next &raquo;</button>
+          </div>
+        </div>
       </div>
-
-
-
-
     </section>
-
-
 
 
   </main>
-
-
-
-
 </div>
 
 
-
-
-
-
-
-
-<!-- SUCCESS MODAL -->
-
-
-
-
-<div
-  class="modal-overlay"
-  id="successModal"
->
-
-
-
-
+<div class="modal-overlay" id="successModal">
   <div class="modal-box">
-
-
-
-
-    <p class="modal-title">
-      Account Created Successfully
-    </p>
-
-
-
-
-    <button
-      class="btn-primary modal-ok"
-      id="modalOkBtn"
-      type="button"
-    >
-      OK
-    </button>
-
-
-
-
+    <p class="modal-title">Account Created Successfully</p>
+    <button class="btn-primary modal-ok" id="modalOkBtn" type="button">OK</button>
   </div>
-
-
-
-
 </div>
 
 
-
-
-
-
-
-
-<!-- ALERT MODAL -->
-
-
-
-
-<div
-  class="modal-overlay"
-  id="alertDetailModal"
->
-
-
-
-
-  <div class="modal-box alert-detail-box">
-
-
-
-
+<!-- AUDIT LOG DETAIL MODAL -->
+<div class="modal-overlay" id="auditDetailModal">
+  <div class="modal-box alert-detail-box" style="max-width: 520px; text-align: left;">
     <div class="alert-modal-header">
-
-
-
-
-      <h2 id="modalAlertTitle">
-        Alert Details
-      </h2>
-
-
-
-
-      <span
-        id="modalAlertSev"
-        class="sev-pill high"
-      >
-        High
-      </span>
-
-
-
-
+      <h2 id="modalAuditTitle">Audit Log Details</h2>
+      <button type="button" class="btn-secondary" id="closeAuditModalX" style="padding: 4px 10px; font-size: 12px;">✕</button>
     </div>
-
-
-
-
-    <p id="modalAlertDesc"></p>
-
-
-
-
-
-
-
-
-    <div class="modal-stats-grid">
-
-
-
-
-      <div>
-        Supply:
-        <b id="modalAlertSupply"></b>
-      </div>
-
-
-
-
-      <div>
-        Demand:
-        <b id="modalAlertDemand"></b>
-      </div>
-
-
-
-
-      <div>
-        Surplus:
-        <b id="modalAlertSurplus"></b>
-      </div>
-
-
-
-
-      <div>
-        Date Logged:
-        <b id="modalAlertDate"></b>
-      </div>
-
-
-
-
+   
+    <div id="modalAuditContent" style="max-height: 350px; overflow-y: auto; font-size: 13.5px; color: var(--ink); display: flex; flex-direction: column; gap: 10px; background: #FFFFFF; padding: 16px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); margin-bottom: 20px;">
     </div>
-
-
-
-
-
-
 
 
     <div class="modal-actions-row">
-
-
-
-
-      <button
-        class="btn-secondary"
-        id="closeAlertModalBtn"
-        type="button"
-      >
-        Close
-      </button>
-
-
-
-
-      <button
-        class="btn-primary"
-        id="toggleAlertStatusBtn"
-        type="button"
-      >
-        Acknowledge Alert
-      </button>
-
-
-
-
+      <button class="btn-primary" id="closeAuditModalBtn" type="button">Close</button>
     </div>
-
-
-
-
   </div>
-
-
-
-
 </div>
 
 
+<div class="modal-overlay" id="alertDetailModal">
+  <div class="modal-box alert-detail-box">
+    <div class="alert-modal-header">
+      <h2 id="modalAlertTitle">Alert Details</h2>
+      <span id="modalAlertSev" class="sev-pill high">High</span>
+    </div>
+    <p id="modalAlertDesc" class="alert-desc"></p>
 
 
+    <div class="modal-stats-grid">
+      <div>Supply: <b id="modalAlertSupply"></b></div>
+      <div>Demand: <b id="modalAlertDemand"></b></div>
+      <div>Surplus: <b id="modalAlertSurplus"></b></div>
+      <div>Date Logged: <b id="modalAlertDate"></b></div>
+    </div>
 
 
-<script src="../assets/js/logout.js"></script>
+    <div class="modal-actions-row">
+      <button class="btn-secondary" id="closeAlertModalBtn" type="button">Close</button>
+      <button class="btn-primary" id="toggleAlertStatusBtn" type="button">Acknowledge Alert</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- CONFIRM USER STATUS MODAL -->
+<div class="modal-overlay" id="confirmStatusModal">
+  <div class="modal-box" style="max-width: 420px; text-align: center;">
+    <h2 id="statusModalTitle">Confirm Action</h2>
+    <p id="statusModalDesc">Are you sure you want to change this user's status?</p>
+    <div class="modal-actions" style="display: flex; justify-content: center; gap: 12px; margin-top: 20px;">
+      <button class="btn-secondary" id="cancelStatusBtn" type="button">Cancel</button>
+      <button class="btn-primary" id="finalStatusBtn" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- CONFIRM LOGOUT MODAL -->
+<div class="modal-overlay" id="confirmLogoutModal">
+  <div class="modal-box">
+    <h2>Confirm Sign Out</h2>
+    <p>Are you sure you want to sign out of your account?</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="cancelLogoutBtn" type="button">Cancel</button>
+      <button class="btn-primary btn-danger" id="finalLogoutBtn" type="button">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+
 <script src="../assets/js/dashboard-common.js"></script>
 <script src="../assets/js/system-admin.js"></script>
 
 
-
-
 </body>
 </html>
-
-
-
-
 
