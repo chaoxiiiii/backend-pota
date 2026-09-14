@@ -718,6 +718,19 @@ document.getElementById("toStep2").addEventListener("click", function() {
     return;
   }
 
+    // ✅ PHONE NUMBER VALIDATION — 11 digits only
+  if (!/^09\d{9}$/.test(phoneNumber)) {
+    step1Error.textContent = "Please enter a valid Philippine phone number with 11 digits (e.g., 09171234567).";
+    step1Error.classList.add("show");
+    return;
+  }
+
+  // ✅ EMAIL VALIDATION — must end with @gmail.com
+  if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(buyerEmail)) {
+    step1Error.textContent = "Email must be a valid @gmail.com address (e.g., buyer@gmail.com).";
+    step1Error.classList.add("show");
+    return;
+  }
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailPattern.test(buyerEmail)) {

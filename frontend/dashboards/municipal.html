@@ -6,154 +6,122 @@
 <title>Municipal Coordinator — eSaka</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 
 <!-- Leaflet -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
 
 
-
-
 <link rel="stylesheet" href="../assets/css/base.css">
 <style>
+  :root {
+    --cream: #F2EDE1;
+    --white: #FBF8F1;
+    --ink: #2E2A22;
+    --muted: #625E52;
+    --border: #DFD8C6;
+    --border-light: #ECE5D4;
+    --green: #5B6B4F;
+    --green-dark: #445439;
+    --green-light: #E7EDDF;
+    --brown: #C08A4E;
+    --gold: #C9A15A;
+    --topbar-height: 72px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+  }
+
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+
+  html, body {
+    width: 100%;
+    min-height: 100vh;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+
+  a { color: inherit; }
+  button, input, select, textarea { font-family: inherit; }
+
+
   .topbar{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:14px 24px;
+    padding:0 32px;
     background:var(--cream);
-    border-bottom:1px solid var(--border);
+    border-bottom:1.5px solid var(--border);
     position:sticky;
     top:0;
     z-index:2100;
+    height:var(--topbar-height);
   }
-
-
 
 
   .topbar-left{ display:flex; align-items:center; gap:16px; }
 
 
-
-
   .hamburger{
-    background:none;
-    border:none;
+    background:#FFF;
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
     cursor:pointer;
-    padding:6px;
+    padding:8px 10px;
     display:flex;
     flex-direction:column;
-    gap:5px;
+    gap:4px;
+    transition: all 0.2s ease;
   }
 
 
+  .hamburger:hover {
+    background: var(--green-light);
+    border-color: var(--green);
+  }
 
 
   .hamburger span{
     display:block;
-    width:26px;
-    height:3px;
+    width:20px;
+    height:2.5px;
     background:var(--ink);
     border-radius:2px;
   }
 
 
+  .logos{ display:flex; align-items:center; gap:12px; }
 
 
-  .logos{ display:flex; align-items:center; gap:10px; }
-  .seal{ width:44px; height:44px; }
-
-
-
-
-  .brand-word{
-    font-family:'Dancing Script', cursive;
-    font-weight:700;
-    font-size:28px;
-    color:var(--green);
-    margin-left:-6px;
-  }
-
-
-
-
-  .brand-logo svg{ width:60px; height:50px; }
-
-
-
-
-  .topbar-right{ display:flex; align-items:center; gap:18px; }
-
-
-
-
-  .bell-wrap{
-    position:relative;
-    width:38px;
-    height:38px;
-    border-radius:50%;
-    background:var(--green);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    flex-shrink:0;
-  }
-
-
-
-
-  .bell-wrap svg{ width:18px; height:18px; fill:#fff; }
-
-
-
-
-  .bell-dot{
-    position:absolute;
-    top:2px;
-    right:2px;
-    width:9px;
-    height:9px;
-    background:#C0392B;
-    border-radius:50%;
-    border:2px solid var(--cream);
-  }
-
-
-
-
-  .user-info{ display:flex; align-items:center; gap:10px; }
-  .user-text{ text-align:right; line-height:1.25; }
-  .user-name{ font-size:14px; font-weight:700; color:var(--ink); }
-  .user-role{ font-size:12px; font-weight:600; color:var(--gold); }
-
-
+  .user-info{ display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.7); padding:6px 14px 6px 8px; border-radius:999px; border:1px solid var(--border); }
+  .user-text{ text-align:left; line-height:1.2; }
+  .user-name{ font-size:13.5px; font-weight:700; color:var(--ink); }
+  .user-role{ font-size:11px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:0.04em; }
 
 
   .avatar{
-    width:38px;
-    height:38px;
+    width:32px;
+    height:32px;
     border-radius:50%;
-    background:#4a4a4a;
+    background:var(--green);
+    color:#FFF;
     display:flex;
     align-items:center;
     justify-content:center;
+    font-weight:700;
+    font-size:13px;
   }
 
 
+  .avatar svg{ width:18px; height:18px; fill:#fff; }
 
 
-  .avatar svg{ width:20px; height:20px; fill:#fff; }
-
-
-
-
-  .layout{ display:flex; min-height:calc(100vh - 73px); }
-
-
+  .layout{ display:flex; min-height:calc(100vh - var(--topbar-height)); }
 
 
   /* SIDEBAR STYLES */
@@ -164,88 +132,78 @@
     display:flex;
     flex-direction:column;
     justify-content:space-between;
-    padding:22px 0;
+    padding:24px 12px;
     flex-shrink:0;
     position:fixed;
-    top:73px;
+    top:var(--topbar-height);
     left:-230px;
     bottom:0;
     z-index:2000;
-    transition:left .28s ease;
+    transition:left .28s cubic-bezier(0.4, 0, 0.2, 1);
   }
-
-
 
 
   .sidebar.open{ left:0; }
 
 
-
-
-  .nav-list{ display:flex; flex-direction:column; gap:2px; }
-
-
+  .nav-list{ display:flex; flex-direction:column; gap:4px; }
 
 
   .nav-item{
     display:flex;
     align-items:center;
     gap:12px;
-    padding:14px 24px;
-    color:#fff;
+    padding:12px 18px;
+    color:#E8E5DD;
     text-decoration:none;
-    font-size:14.5px;
-    font-weight:500;
+    font-size:14px;
+    font-weight:600;
+    border-radius:var(--radius-sm);
     cursor:pointer;
     background:transparent;
     border:none;
     width:100%;
     text-align:left;
+    transition: all 0.2s ease;
   }
 
 
-
-
-  .nav-item svg{ width:19px; height:19px; fill:#fff; flex-shrink:0; }
-  .nav-item:hover{ background:rgba(255,255,255,0.08); }
-  .nav-item.active{ background:var(--green-dark); font-weight:700; }
-
-
+  .nav-item svg{ width:19px; height:19px; fill:currentColor; flex-shrink:0; }
+  .nav-item:hover{ background:rgba(255,255,255,0.12); color:#FFFFFF; }
+  .nav-item.active{ background:var(--green-dark); color:#FFFFFF; font-weight:700; }
 
 
   .signout{
     display:flex;
     align-items:center;
     gap:10px;
-    padding:14px 24px;
-    color:#fff;
+    padding:12px 18px;
+    color:#FFC0C0;
     text-decoration:none;
-    font-size:14.5px;
-    font-weight:500;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    border:none;
+    background:rgba(0, 0, 0, 0.08);
+    border-radius:var(--radius-sm);
+    width:100%;
+    transition: all 0.2s ease;
   }
 
 
-
-
-  .signout svg{ width:18px; height:18px; fill:#fff; }
-  .signout:hover{ opacity:0.8; }
-
-
+  .signout svg{ width:18px; height:18px; fill:currentColor; }
+  .signout:hover{ background: rgba(192, 57, 43, 0.25); color: #FFF; }
 
 
   .main{
     flex:1;
-    padding:36px 40px;
+    padding:32px 40px;
     min-width:0;
   }
 
 
-
-
   .view{ display:none; }
   .view.active-view{ display:block; }
-
-
 
 
   .main-header{
@@ -254,246 +212,128 @@
     justify-content:space-between;
     flex-wrap:wrap;
     gap:16px;
-    margin-bottom:22px;
+    margin-bottom:20px;
   }
-
-
 
 
   .main-header h1{
-    font-family:'Oswald', sans-serif;
-    font-weight:700;
-    font-size:36px;
-    color:var(--green);
-    letter-spacing:0.02em;
-    margin:0;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--green-dark);
+    letter-spacing: -0.01em;
+    margin: 0;
   }
-
-
 
 
   .card{
     background:var(--white);
-    border:1px solid var(--border);
-    border-radius:12px;
+    border:1.5px solid var(--border);
+    border-radius:var(--radius-md);
     padding:24px 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 15px rgba(46, 42, 34, 0.02);
   }
-
-
 
 
   /* MAP DESIGN */
   #map{
     width:100%;
-    height:360px;
-    border-radius:8px;
-    border:1px solid var(--border);
+    height:420px;
+    border-radius:var(--radius-sm);
+    border:1.5px solid var(--border);
   }
-
-
 
 
   /* SEARCH & FILTER BAR */
-  .search-row{ display:flex; gap:10px; align-items:center; }
+  .search-row{ display:flex; gap:12px; align-items:center; }
   .search-box{
     display:flex;
     align-items:center;
-    gap:8px;
-    background:#fff;
-    border:1.5px solid var(--ink);
-    border-radius:8px;
+    gap:10px;
+    background:#FFFFFF;
+    border:1.5px solid var(--border);
+    border-radius:var(--radius-sm);
     padding:8px 14px;
     min-width:260px;
+    transition: all 0.2s ease;
   }
-  .search-box svg{ width:16px; height:16px; fill:none; stroke:var(--ink); stroke-width:2; }
-  .search-box input{ border:none; outline:none; font-size:14px; width:100%; background:transparent; }
-
-
-
-
-  /* TAB BUTTONS (SUMMARY / VIEW INDIVIDUAL / APPROVED / PENDING) */
-  .tab-buttons-row{
-    display:flex;
-    gap:16px;
-    margin-bottom:24px;
-    align-items:center;
+  .search-box:focus-within {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
   }
+  .search-box svg{ width:15px; height:15px; fill:none; stroke:var(--muted); stroke-width:2.4; flex-shrink:0; }
+  .search-box input{ border:none; outline:none; font-size:13.5px; width:100%; background:transparent; color: var(--ink); }
 
 
-
-
-  .tab-btn{
-    padding:12px 24px;
-    border:1.5px solid var(--ink);
-    border-radius:8px;
-    background:#EFEAE0;
-    font-family:'Inter', sans-serif;
-    font-size:13.5px;
-    font-weight:700;
-    color:var(--ink);
-    cursor:pointer;
-    transition:all 0.2s ease;
+  /* TABLE DESIGN */
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
   }
 
 
-
-
-  .tab-btn:hover{ background:#DEDDDC; }
-  .tab-btn.active{
-    background:#C4C3C2;
-    border-color:var(--ink);
-  }
-
-
-
-
-  /* SUMMARY TAB CONTENT DESIGN */
-  .summary-grid{
-    display:grid;
-    grid-template-columns:1.5fr 1fr;
-    gap:24px;
-  }
-
-
-
-
-  .summary-left-box, .summary-right-card{
-    background:#fff;
-    border:1px solid #D0D0D0;
-    border-radius:8px;
-    padding:20px;
-  }
-
-
-
-
-  .summary-stat-chips{
-    display:flex;
-    gap:10px;
-    margin:14px 0 20px;
-    flex-wrap:wrap;
-  }
-
-
-
-
-  .stat-chip{
-    padding:10px 14px;
-    border-radius:8px;
+  table{ width:100%; border-collapse:separate; border-spacing:0; }
+  thead th{
     text-align:center;
     font-size:12px;
     font-weight:700;
-    min-width:70px;
+    color:var(--muted);
+    padding:14px 20px;
+    letter-spacing:0.05em;
+    text-transform:uppercase;
+    border-bottom:1.5px solid var(--border);
+    background:#EAE3D2;
   }
-
-
-
-
-  .stat-chip.gray{ background:#F2EFE9; border:1px solid #CCC; color:#333; }
-  .stat-chip.black{ background:#000; color:#fff; }
-  .stat-chip.green{ background:#0B823A; color:#fff; }
-  .stat-chip.gold{ background:#D69E3D; color:#fff; }
-  .stat-chip.red{ background:#B82218; color:#fff; }
-
-
-
-
-  .stat-chip span{ display:block; font-size:14px; margin-top:2px; }
-
-
-
-
-  .placeholder-line{
-    height:24px;
-    background:#F2EFE9;
-    border-radius:4px;
-    margin-bottom:10px;
-  }
-
-
-
-
-  .top-commodity-body{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:16px;
-    margin-top:12px;
-  }
-
-
-
-
-  .top-commodity-img{
-    width:120px;
-    height:80px;
-    background:#D6E5B3;
-    border-radius:6px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-
-
-
-
-  /* TABLE COMMON DESIGN */
-  table{ width:100%; border-collapse:separate; border-spacing:0; }
-  thead tr{ background:#DEDDDC; }
-  thead th{
-    text-align:center;
-    font-size:13px;
-    font-weight:700;
-    color:#222;
-    padding:14px 10px;
-  }
-  thead th:first-child{ border-top-left-radius:8px; border-bottom-left-radius:8px; }
-  thead th:last-child{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
-
-
 
 
   tbody td{
-    padding:14px 8px;
-    font-size:13.5px;
-    text-align:center;
+    padding:16px 20px;
+    font-size:14px;
     vertical-align:middle;
+    border-bottom:1px solid var(--border-light);
+    color:var(--ink);
+    text-align:center;
+    font-weight: 500;
+    background: var(--white);
   }
 
 
+  tbody tr { transition: background 0.15s ease; background: var(--white); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #EDE7D9; }
 
 
-  .pill{
+  /* Pill background look para sa bawat text sa table cells */
+  .pill, tbody td span {
     display:inline-block;
     padding:6px 16px;
     border-radius:999px;
-    background:#EEEEEE;
+    background:#E5E2DA;
     font-size:12.5px;
-    color:#222;
+    font-weight:600;
+    color:var(--ink);
     white-space:nowrap;
   }
 
 
-
-
   .status-pill{
     display:inline-block;
-    padding:6px 20px;
+    padding:6px 16px;
     border-radius:999px;
-    font-size:12.5px;
+    font-size:12px;
     font-weight:700;
     color:#fff;
+    text-transform: uppercase;
+    letter-spacing:0.03em;
   }
 
 
-
-
-  .status-pill.confirmed, .status-pill.approved, .status-pill.harvested{ background:#118308; }
-  .status-pill.submitted, .status-pill.mediating{ background:#E5A510; }
+  .status-pill.confirmed, .status-pill.approved, .status-pill.harvested{ background:#2E7D32; }
+  .status-pill.submitted, .status-pill.mediating{ background:#D97706; }
   .status-pill.planted{ background:#E06030; }
-  .status-pill.pending{ background:#C48D53; }
-
-
+  .status-pill.pending{ background:#D97706; }
 
 
   /* REMARKS / NOTES SECTION */
@@ -503,54 +343,41 @@
     align-items:flex-end;
     margin-top:24px;
     padding-top:16px;
-    border-top:1px solid #E0E0E0;
+    border-top:1.5px solid var(--border);
   }
 
 
-
-
   .notes-field{ flex:1; }
-  .notes-field label{ display:block; font-size:14px; font-weight:700; margin-bottom:8px; color:var(--ink); }
-
-
+  .notes-field label{ display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--muted); text-transform:uppercase; letter-spacing:0.03em; }
 
 
   .btn-outline-report{
     appearance:none;
-    border:1.5px solid #5A6B52;
-    background:#EFEAE0;
-    color:#333;
-    font-family:'Inter', sans-serif;
+    border:1.5px solid var(--border);
+    background:#FFFFFF;
+    color:var(--ink);
     font-size:13.5px;
     font-weight:600;
-    padding:10px 24px;
-    border-radius:8px;
+    padding:10px 22px;
+    border-radius:var(--radius-sm);
     cursor:pointer;
     transition:all .2s ease;
   }
 
 
-
-
-  .btn-outline-report:hover:not(:disabled){ background:#DEDDDC; }
-
-
+  .btn-outline-report:hover:not(:disabled){ background:var(--cream); border-color:var(--green); }
 
 
   .detail-actions-row{
     display:flex;
     justify-content:flex-end;
-    gap:16px;
-    margin-top:24px;
+    gap:12px;
+    margin-top:28px;
   }
 
 
-
-
-  .flag-btn.active{ background:#C83232; border-color:#C83232; color:#fff; }
-  .approve-btn.active{ background:#5A7365; border-color:#5A7365; color:#fff; }
-
-
+  .flag-btn.active{ background:#C0392B; border-color:#C0392B; color:#fff; }
+  .approve-btn.active{ background:#2E7D32; border-color:#2E7D32; color:#fff; }
 
 
   /* MODAL OVERLAY */
@@ -558,107 +385,65 @@
     display:none;
     position:fixed;
     inset:0;
-    background:rgba(30,35,28,0.55);
+    background:rgba(30,35,28,0.6);
     align-items:center;
     justify-content:center;
     z-index:3000;
   }
 
 
-
-
   .modal-overlay.show{ display:flex; }
 
 
-
-
   .modal-box{
-    background:#DEDDDC;
-    border-radius:8px;
-    padding:36px 48px;
+    background:var(--cream);
+    border:1.5px solid var(--border);
+    border-radius:var(--radius-md);
+    padding:32px 38px;
     text-align:center;
-    box-shadow:0 14px 40px rgba(0,0,0,0.3);
-    max-width:480px;
+    box-shadow:0 14px 35px rgba(0,0,0,0.2);
+    max-width:440px;
     width:90%;
   }
 
 
-
-
   .modal-box p{
-    font-family:'Oswald', sans-serif;
-    font-size:28px;
+    font-size:16px;
     font-weight:700;
-    color:#536B5C;
-    margin-bottom:24px;
-    line-height:1.25;
+    color:var(--green-dark);
+    margin-bottom:22px;
+    line-height:1.4;
   }
-
-
 
 
   .modal-confirm-btn{
     border:none;
-    background:#5A7365;
+    background:var(--green);
     color:#fff;
-    font-family:'Inter', sans-serif;
-    font-size:14px;
-    font-weight:600;
-    padding:10px 36px;
-    border-radius:10px;
+    font-size:13.5px;
+    font-weight:700;
+    padding:9px 24px;
+    border-radius:var(--radius-sm);
     cursor:pointer;
+    transition:all 0.2s ease;
   }
 
 
+  .modal-confirm-btn:hover{ background:var(--green-dark); }
 
 
   .clickable-row{ cursor:pointer; }
-  .clickable-row:hover td{ background:#F6F3EB; }
+  .clickable-row:hover td{ background:#EDE7D9; }
 
 
-
-
-  /* HELPER CLASSES PARANG WALA NANG INLINE STYLE WARNINGS */
-  .text-loc { font-size: 12px; color: #666; }
-  .text-section-title { font-size: 13px; font-weight: 700; margin-top: 6px; }
-  .text-alert-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
-  .text-narrative-title { font-size: 13px; font-weight: 700; margin: 16px 0 8px; }
-  .textarea-narrative { width: 100%; height: 80px; border: 1.5px solid #666; border-radius: 6px; padding: 8px; font-size: 13px; outline: none; resize: vertical; }
-
-
-
-
-  .text-top-commodity { font-size: 13px; font-weight: 700; }
-  .text-green-highlight { color: #0B823A; }
-  .top-commodity-text { font-size: 12.5px; line-height: 1.6; }
-  .text-as-of { font-size: 11px; color: #888; text-align: right; margin-top: 20px; }
-
-
-
-
-  .upload-section { margin-top: 28px; border-top: 1px solid #EEE; padding-top: 16px; }
-  .upload-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
-  .upload-flex { display: flex; gap: 8px; }
-  .input-required { flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid #CCC; border-radius: 4px; }
-  .btn-select-file { padding: 6px 12px; font-size: 12px; }
-
-
-
-
-  .actions-right-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
-  .btn-submit-bg { background: #E5E4E3; }
-
-
-
-
-  .hidden-element { display: none; }
-  .notes-row-clean { border-top: none; padding-top: 0; }
-  .textarea-notes { width:100%; height:90px; padding:12px; font-size:14px; font-family:'Inter', sans-serif; border:1.5px solid #666; border-radius:4px; background:#fff; color:var(--ink); outline:none; resize:vertical; }
+  .text-section-title { font-size: 14.5px; font-weight: 800; color: var(--green-dark); text-transform: uppercase; letter-spacing: 0.04em; }
+  .hidden-element{ display:none; }
+  .notes-row-clean{ border-top:none; padding-top:0; }
+  .textarea-notes { width:100%; height:90px; padding:10px 14px; font-size:13.5px; font-family:inherit; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:#FFFFFF; color:var(--ink); outline:none; resize:vertical; transition: all 0.2s ease; }
+  .textarea-notes:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15); }
 </style>
 </head>
 <body>
-
-
 
 
   <div class="topbar">
@@ -668,59 +453,29 @@
       </button>
 
 
-
-
       <div class="logos">
-        <svg class="seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="46" fill="none" stroke="#5B6B4F" stroke-width="3"/>
-          <path d="M50 20 C 35 30, 30 45, 50 65 C 70 45, 65 30, 50 20 Z" fill="#5B6B4F"/>
-          <path d="M50 30 L50 62" stroke="#F2EDE1" stroke-width="2"/>
-        </svg>
-        <div class="brand-logo">
-          <svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <g fill="none" stroke="#8C6A4A" stroke-width="3" stroke-linecap="round">
-              <path d="M8 90 C 40 40, 90 20, 150 15"/>
-              <path d="M8 90 C 45 55, 95 40, 155 45"/>
-              <path d="M8 90 C 50 78, 100 72, 158 82"/>
-              <path d="M8 90 C 45 105, 95 118, 150 130"/>
-              <path d="M8 90 C 40 130, 85 150, 130 158"/>
-            </g>
-          </svg>
-        </div>
-        <span class="brand-word">eSaka</span>
+        <a href="../home.html" style="display: flex; align-items: center; text-decoration: none;">
+          <img src="../images/esakalogo.png" alt="eSaka Logo" style="height: 40px; width: auto; display: block;">
+        </a>
       </div>
     </div>
 
 
-
-
     <div class="topbar-right">
-      <div class="bell-wrap" aria-label="Notifications">
-        <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
-        <span class="bell-dot"></span>
-      </div>
-
-
-
-
       <div class="user-info">
+        <div class="avatar">
+          <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
+        </div>
         <div class="user-text">
           <div class="user-name">Juan Dela Cruz</div>
           <div class="user-role">Municipal Coordinator</div>
-        </div>
-        <div class="avatar">
-          <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
         </div>
       </div>
     </div>
   </div>
 
 
-
-
   <div class="layout">
-
-
 
 
     <nav class="sidebar" id="sidebar">
@@ -736,8 +491,6 @@
       </div>
 
 
-
-
       <a class="signout" href="../index.html">
         <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
         Sign Out
@@ -745,24 +498,16 @@
     </nav>
 
 
-
-
     <main class="main">
-
-
 
 
       <!-- ===================== VIEW 1: View Reports ===================== -->
       <section class="view active-view" id="view-reports">
 
 
-
-
         <!-- REPORTS HEADER -->
         <div class="main-header">
           <h1>Reports</h1>
-
-
 
 
           <div class="search-row">
@@ -771,8 +516,6 @@
                 <circle cx="11" cy="11" r="7"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
-
-
 
 
               <input
@@ -786,61 +529,39 @@
         </div>
 
 
-
-
         <!-- ===================== PENDING REPORTS ===================== -->
         <div id="pendingReportsView">
-
-
-
-
           <div class="card">
-
-
-
-
-            <div class="text-section-title" style="font-size:16px; margin-bottom:16px;">
+            <div class="text-section-title" style="margin-bottom:16px;">
               Pending Reports
             </div>
 
 
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Report ID</th>
+                    <th>Title</th>
+                    <th>Commodity</th>
+                    <th>Planting Date</th>
+                    <th>Estimated Yield (kg)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
 
 
-            <table>
-              <thead>
-                <tr>
-                  <th>Report ID</th>
-                  <th>Title</th>
-                  <th>Commodity</th>
-                  <th>Planting Date</th>
-                  <th>Estimated Yield (kg)</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-
-
-
-
-              <tbody id="pendingReportsBody">
-                <tr>
-                  <td colspan="6">
-                    Loading reports...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-
-
-
+                <tbody id="pendingReportsBody">
+                  <tr>
+                    <td colspan="6">
+                      Loading reports...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-
-
-
-
         </div>
-
-
 
 
         <!-- ===================== REPORT DETAIL ===================== -->
@@ -848,35 +569,25 @@
           id="individualDetailView"
           class="hidden-element"
         >
-
-
-
-
           <div class="card">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Commodity</th>
+                    <th>Planting Date</th>
+                    <th>Harvest Date</th>
+                    <th>Estimated Yield (kg)</th>
+                    <th>Encoded By</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
 
 
-
-
-            <table>
-              <thead>
-                <tr>
-                  <th>Commodity</th>
-                  <th>Planting Date</th>
-                  <th>Harvest Date</th>
-                  <th>Estimated Yield (kg)</th>
-                  <th>Encoded By</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-
-
-
-
-              <tbody id="reportDetailBody">
-              </tbody>
-            </table>
-
-
+                <tbody id="reportDetailBody">
+                </tbody>
+              </table>
+            </div>
 
 
             <!-- NOTES -->
@@ -891,8 +602,6 @@
               </div>
 
 
-
-
               <div>
                 <button
                   class="btn-outline-report"
@@ -903,8 +612,6 @@
                 </button>
               </div>
             </div>
-
-
 
 
             <!-- REMARKS -->
@@ -920,11 +627,7 @@
             </div>
 
 
-
-
           </div>
-
-
 
 
           <!-- ACTION BUTTONS -->
@@ -938,8 +641,6 @@
             </button>
 
 
-
-
             <button
               class="btn-outline-report flag-btn"
               id="flagBtn"
@@ -947,8 +648,6 @@
             >
               Flag for Revision
             </button>
-
-
 
 
             <button
@@ -961,16 +660,10 @@
           </div>
 
 
-
-
         </div>
 
 
-
-
       </section>
-
-
 
 
      <!-- ===================== VIEW 2: Map ===================== -->
@@ -979,13 +672,14 @@
     <h1>Map</h1>
   </div>
 
+
   <div class="card">
-    
+   
     <div class="map-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
       <span style="font-size: 14.5px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 0.02em;">
         Field Monitoring & Geographic Clusters
       </span>
-      
+     
       <!-- Map Legend -->
       <div style="display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; align-items: center;">
         <span style="display: flex; align-items: center; gap: 4px;">
@@ -1003,30 +697,26 @@
       </div>
     </div>
 
+
     <!-- MAP FILTERS -->
     <div class="map-filters-container" style="display: flex; gap: 12px; margin-bottom: 14px; padding: 0;">
-      <select id="filterCommodity" style="padding: 6px 12px; border: 1.5px solid #DFD8C6; border-radius: 6px; font-size: 13px; background: #fff; cursor: pointer;">
+      <select id="filterCommodity" style="padding: 8px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; background: #fff; cursor: pointer;">
         <option value="all">All Commodities</option>
         <option value="Tomato">Tomato</option>
         <option value="Squash">Squash</option>
         <option value="Red Onion">Red Onion</option>
         <option value="White Onion">White Onion</option>
       </select>
-
-      
     </div>
+
 
     <div id="map"></div>
   </div>
 </section>
 
 
-
-
     </main>
   </div>
-
-
 
 
   <!-- CONFIRMATION MODAL -->
@@ -1038,102 +728,82 @@
   </div>
 
 
-
-
 <!-- Leaflet-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
 
-
-
 <script>
-
   // ============================================================
   // SIDEBAR
   // ============================================================
 
+
   const hamburgerBtn = document.getElementById("hamburgerBtn");
   const sidebar = document.getElementById("sidebar");
 
-  if (hamburgerBtn && sidebar) {
 
+  if (hamburgerBtn && sidebar) {
     let hoverTimer = null;
 
-    hamburgerBtn.addEventListener("mouseenter", function () {
 
+    hamburgerBtn.addEventListener("mouseenter", function () {
       if (hoverTimer) {
         clearTimeout(hoverTimer);
         hoverTimer = null;
       }
-
       sidebar.classList.add("open");
-
       setTimeout(function () {
         if (window.leafletMap) {
           window.leafletMap.invalidateSize();
         }
       }, 300);
-
     });
 
-    sidebar.addEventListener("mouseenter", function () {
 
+    sidebar.addEventListener("mouseenter", function () {
       if (hoverTimer) {
         clearTimeout(hoverTimer);
         hoverTimer = null;
       }
-
     });
 
-    sidebar.addEventListener("mouseleave", function () {
 
+    sidebar.addEventListener("mouseleave", function () {
       hoverTimer = setTimeout(function () {
         sidebar.classList.remove("open");
       }, 200);
-
     });
 
+
     document.addEventListener("click", function (event) {
-
-      const isInsideSidebar =
-        sidebar.contains(event.target);
-
-      const isHamburger =
-        hamburgerBtn.contains(event.target);
-
+      const isInsideSidebar = sidebar.contains(event.target);
+      const isHamburger = hamburgerBtn.contains(event.target);
       if (!isInsideSidebar && !isHamburger) {
         sidebar.classList.remove("open");
       }
-
     });
 
-    sidebar.querySelectorAll(".nav-item").forEach(function (item) {
 
+    sidebar.querySelectorAll(".nav-item").forEach(function (item) {
       item.addEventListener("click", function () {
         sidebar.classList.remove("open");
       });
-
     });
 
-    document.addEventListener("keydown", function (event) {
 
+    document.addEventListener("keydown", function (event) {
       if (event.key === "Escape") {
         sidebar.classList.remove("open");
       }
-
     });
 
-    const signoutBtn =
-      sidebar.querySelector(".signout");
 
+    const signoutBtn = sidebar.querySelector(".signout");
     if (signoutBtn) {
-
       signoutBtn.addEventListener("click", function () {
         sidebar.classList.remove("open");
       });
-
     }
-
   }
 
 
@@ -1141,25 +811,22 @@
   // VIEW SWITCHING
   // ============================================================
 
-  const navButtons =
-    document.querySelectorAll(".nav-item[data-view]");
 
-  const views =
-    document.querySelectorAll(".view");
+  const navButtons = document.querySelectorAll(".nav-item[data-view]");
+  const views = document.querySelectorAll(".view");
 
 
   function switchView(viewKey) {
-
     views.forEach(function (view) {
       view.classList.remove("active-view");
     });
 
-    const targetView =
-      document.getElementById("view-" + viewKey);
 
+    const targetView = document.getElementById("view-" + viewKey);
     if (targetView) {
       targetView.classList.add("active-view");
     }
+
 
     navButtons.forEach(function (btn) {
       btn.classList.toggle(
@@ -1168,1630 +835,583 @@
       );
     });
 
-    if (
-      viewKey === "map" &&
-      window.leafletMap
-    ) {
 
+    if (viewKey === "map" && window.leafletMap) {
       setTimeout(function () {
         window.leafletMap.invalidateSize();
       }, 50);
-
     }
-
   }
 
 
   navButtons.forEach(function (btn) {
-
     btn.addEventListener("click", function () {
       switchView(btn.dataset.view);
     });
-
   });
 
 
-  // MAP INITIALIZATION
- // ============================================================
-// API CONFIG
-// ============================================================
-const API_BASE_URL = "http://127.0.0.1:8000";
+  // ============================================================
+  // API CONFIG & MAP INITIALIZATION
+  // ============================================================
+  const API_BASE_URL = "http://127.0.0.1:8000";
 
-// ============================================================
-// MAP INITIALIZATION
-// ============================================================
-const pampangaBounds = L.latLngBounds([14.85, 120.35], [15.35, 120.95]);
 
-const map = L.map('map', {
-  maxBounds: pampangaBounds,
-  maxBoundsViscosity: 1.0,
-  minZoom: 10
-}).setView([15.0794, 120.6200], 10);
+  const pampangaBounds = L.latLngBounds([14.85, 120.35], [15.35, 120.95]);
 
-window.leafletMap = map;
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors',
-  maxZoom: 18
-}).addTo(map);
+  const map = L.map('map', {
+    maxBounds: pampangaBounds,
+    maxBoundsViscosity: 1.0,
+    minZoom: 10
+  }).setView([15.0794, 120.6200], 10);
 
-// ============================================================
-// PAMPANGA MUNICIPALITY COORDINATES
-// ============================================================
-const municipalityCoordinates = {
-  "Angeles": [15.1450, 120.5887],
-  "Apalit": [14.9470, 120.7700],
-  "Arayat": [15.1500, 120.7690],
-  "Bacolor": [15.0000, 120.6520],
-  "Candaba": [15.0950, 120.8260],
-  "Floridablanca": [14.9770, 120.5280],
-  "Guagua": [14.9650, 120.6350],
-  "Lubao": [14.9400, 120.6000],
-  "Mabalacat": [15.2230, 120.5740],
-  "Macabebe": [14.9080, 120.7150],
-  "Magalang": [15.2160, 120.6630],
-  "Masantol": [14.8960, 120.7100],
-  "Mexico": [15.0640, 120.7190],
-  "Minalin": [14.9670, 120.6840],
-  "Porac": [15.0710, 120.5420],
-  "San Fernando": [15.0343, 120.6840],
-  "San Luis": [15.0400, 120.7870],
-  "San Simon": [14.9990, 120.7800],
-  "Santa Ana": [15.0950, 120.7720],
-  "Santa Rita": [15.0190, 120.6110],
-  "Santo Tomas": [14.9950, 120.7090]
-};
 
-// ============================================================
-// MAP STATE
-// ============================================================
-let MUNICIPALITY_MAP_RAW_DATA = [];
-let mapMarkersLayer = null;
+  window.leafletMap = map;
 
-// ============================================================
-// LOAD MUNICIPALITY MAP DATA
-// ============================================================
-async function loadMunicipalityMapData() {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/planting-intents/municipality-map`,
-      {
-        method: "GET",
-        headers: { "Accept": "application/json" }
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 18
+  }).addTo(map);
+
+
+  const municipalityCoordinates = {
+    "Angeles": [15.1450, 120.5887],
+    "Apalit": [14.9470, 120.7700],
+    "Arayat": [15.1500, 120.7690],
+    "Bacolor": [15.0000, 120.6520],
+    "Candaba": [15.0950, 120.8260],
+    "Floridablanca": [14.9770, 120.5280],
+    "Guagua": [14.9650, 120.6350],
+    "Lubao": [14.9400, 120.6000],
+    "Mabalacat": [15.2230, 120.5740],
+    "Macabebe": [14.9080, 120.7150],
+    "Magalang": [15.2160, 120.6630],
+    "Masantol": [14.8960, 120.7100],
+    "Mexico": [15.0640, 120.7190],
+    "Minalin": [14.9670, 120.6840],
+    "Porac": [15.0710, 120.5420],
+    "San Fernando": [15.0343, 120.6840],
+    "San Luis": [15.0400, 120.7870],
+    "San Simon": [14.9990, 120.7800],
+    "Santa Ana": [15.0950, 120.7720],
+    "Santa Rita": [15.0190, 120.6110],
+    "Santo Tomas": [14.9950, 120.7090]
+  };
+
+
+  let MUNICIPALITY_MAP_RAW_DATA = [];
+  let mapMarkersLayer = null;
+
+
+  async function loadMunicipalityMapData() {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/planting-intents/municipality-map`,
+        {
+          method: "GET",
+          headers: { "Accept": "application/json" }
+        }
+      );
+
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
-    );
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+
+      const result = await response.json();
+      if (!result.data || !Array.isArray(result.data)) return;
+
+
+      MUNICIPALITY_MAP_RAW_DATA = result.data;
+      renderFilteredMapMarkers();
+
+
+      document.getElementById('filterCommodity')?.addEventListener('change', renderFilteredMapMarkers);
+      document.getElementById('filterStatus')?.addEventListener('change', renderFilteredMapMarkers);
+
+
+    } catch (error) {
+      console.error("Failed to load municipality map data:", error);
+    }
+  }
+
+
+  function renderFilteredMapMarkers() {
+    if (!map) return;
+
+
+    if (mapMarkersLayer) {
+      map.removeLayer(mapMarkersLayer);
     }
 
-    const result = await response.json();
-    console.log("Municipal Municipality Map Data:", result);
 
-    if (!result.data || !Array.isArray(result.data)) {
-      console.warn("No municipality map data found.");
+    mapMarkersLayer = L.layerGroup().addTo(map);
+
+
+    const selectedCommodity = document.getElementById('filterCommodity')?.value || 'all';
+    const selectedStatus = document.getElementById('filterStatus')?.value || 'all';
+
+
+    MUNICIPALITY_MAP_RAW_DATA.forEach(municipalityData => {
+      const municipality = municipalityData.municipality;
+      const baseCoordinates = municipalityCoordinates[municipality];
+
+
+      if (!baseCoordinates || !municipalityData.commodities) return;
+
+
+      const filteredCommodities = municipalityData.commodities.filter(item => {
+        const commodityMatch = selectedCommodity === 'all' || item.commodity.toLowerCase() === selectedCommodity.toLowerCase();
+        const statusVal = (item.status || "").toUpperCase();
+        let statusMatch = true;
+        if (selectedStatus !== 'all') {
+          statusMatch = statusVal.includes(selectedStatus);
+        }
+        return commodityMatch && statusMatch;
+      });
+
+
+      const totalFiltered = filteredCommodities.length;
+
+
+      filteredCommodities.forEach((item, index) => {
+        const commodity = item.commodity;
+        const status = (item.status || "").toUpperCase();
+
+
+        const offsetLat = baseCoordinates[0] + (index - (totalFiltered / 2)) * 0.0025;
+        const offsetLng = baseCoordinates[1] + (index - (totalFiltered / 2)) * 0.0025;
+        const markerCoordinates = [offsetLat, offsetLng];
+
+
+        let markerColor = "#6c757d";
+        if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
+          markerColor = "#C0392B";
+        } else if (status.includes("BALANCED")) {
+          markerColor = "#2E7D32";
+        } else if (status.includes("DEFICIT")) {
+          markerColor = "#D97706";
+        }
+
+
+        const customIcon = L.divIcon({
+          className: 'custom-map-marker',
+          html: `<div style="
+            background-color: ${markerColor};
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+          "></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+
+
+        const popupContent = `
+          <div style="min-width:180px;">
+            <strong>Municipality:</strong> ${municipality}
+            <br><br>
+            <strong>Commodity:</strong> ${commodity}
+            <br>
+            <strong>Status:</strong>
+            <span style="font-weight:700; color:${markerColor};">
+              ${status || 'NO DATA'}
+            </span>
+          </div>
+        `;
+
+
+        L.marker(markerCoordinates, { icon: customIcon })
+          .addTo(mapMarkersLayer)
+          .bindPopup(popupContent);
+      });
+    });
+  }
+
+
+  loadMunicipalityMapData();
+
+
+  // ============================================================
+  // MUNICIPAL REPORTS
+  // ============================================================
+  const MUNICIPAL_REPORTS_ENDPOINT = `${API_BASE_URL}/api/report-submissions/for-municipal-validation`;
+
+
+  const pendingReportsBody = document.getElementById("pendingReportsBody");
+  const pendingReportsView = document.getElementById("pendingReportsView");
+  const individualDetailView = document.getElementById("individualDetailView");
+  const reportSearchInput = document.getElementById("reportSearchInput");
+  const reportDetailBody = document.getElementById("reportDetailBody");
+  const reportNotesTextarea = document.getElementById("reportNotesTextarea");
+  const remarksTextarea = document.getElementById("remarksTextarea");
+  const backToPendingBtn = document.getElementById("backToPendingBtn");
+  const flagBtn = document.getElementById("flagBtn");
+  const approveBtn = document.getElementById("approveBtn");
+
+
+  let municipalReports = [];
+  let selectedReport = null;
+
+
+  async function loadMunicipalReports() {
+    if (!pendingReportsBody) return;
+
+
+    pendingReportsBody.innerHTML = `
+      <tr>
+        <td colspan="6">
+          Loading reports...
+        </td>
+      </tr>
+    `;
+
+
+    try {
+      const response = await fetch(MUNICIPAL_REPORTS_ENDPOINT, {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+      });
+
+
+      if (!response.ok) {
+        throw new Error(`Failed to load reports. Status: ${response.status}`);
+      }
+
+
+      municipalReports = await response.json();
+      renderMunicipalReports(municipalReports);
+    } catch (error) {
+      console.error("Error loading municipal reports:", error);
+      pendingReportsBody.innerHTML = `
+        <tr>
+          <td colspan="6">
+            Failed to load reports.
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+
+  function renderMunicipalReports(reports = municipalReports) {
+    if (!pendingReportsBody) return;
+
+
+    pendingReportsBody.innerHTML = "";
+
+
+    if (!reports || reports.length === 0) {
+      pendingReportsBody.innerHTML = `
+        <tr>
+          <td colspan="6">
+            No reports waiting for municipal validation.
+          </td>
+        </tr>
+      `;
       return;
     }
 
-    MUNICIPALITY_MAP_RAW_DATA = result.data;
-    renderFilteredMapMarkers();
 
-    // I-attach ang filter listeners
-    document.getElementById('filterCommodity')
-      ?.addEventListener('change', renderFilteredMapMarkers);
-    document.getElementById('filterStatus')
-      ?.addEventListener('change', renderFilteredMapMarkers);
+    reports.forEach(report => {
+      const row = document.createElement("tr");
+      row.classList.add("clickable-row");
+      row.dataset.id = report.report_id;
 
-  } catch (error) {
-    console.error("Failed to load municipality map data:", error);
-  }
-}
 
-// ============================================================
-// RENDER FILTERED MAP MARKERS
-// ============================================================
-function renderFilteredMapMarkers() {
-  if (!map) return;
-
-  // Remove existing markers layer
-  if (mapMarkersLayer) {
-    map.removeLayer(mapMarkersLayer);
-  }
-
-  mapMarkersLayer = L.layerGroup().addTo(map);
-
-  const selectedCommodity =
-    document.getElementById('filterCommodity')?.value || 'all';
-  const selectedStatus =
-    document.getElementById('filterStatus')?.value || 'all';
-
-  MUNICIPALITY_MAP_RAW_DATA.forEach(municipalityData => {
-    const municipality = municipalityData.municipality;
-    const baseCoordinates = municipalityCoordinates[municipality];
-
-    if (!baseCoordinates || !municipalityData.commodities) return;
-
-    // Filter commodities base sa dropdown selections
-    const filteredCommodities = municipalityData.commodities.filter(item => {
-      const commodityMatch =
-        selectedCommodity === 'all' ||
-        item.commodity.toLowerCase() === selectedCommodity.toLowerCase();
-
-      const statusVal = (item.status || "").toUpperCase();
-
-      let statusMatch = true;
-      if (selectedStatus !== 'all') {
-        statusMatch = statusVal.includes(selectedStatus);
-      }
-
-      return commodityMatch && statusMatch;
-    });
-
-    const totalFiltered = filteredCommodities.length;
-
-    filteredCommodities.forEach((item, index) => {
-      const commodity = item.commodity;
-      const status = (item.status || "").toUpperCase();
-
-      // Offset para hindi magpatong ang markers sa iisang munisipyo
-      const offsetLat =
-        baseCoordinates[0] + (index - (totalFiltered / 2)) * 0.0025;
-      const offsetLng =
-        baseCoordinates[1] + (index - (totalFiltered / 2)) * 0.0025;
-      const markerCoordinates = [offsetLat, offsetLng];
-
-      // Color-coding:
-      // Red = Surplus/Oversupply
-      // Green = Balanced
-      // Yellow = Deficit
-      // Gray = No Data
-      let markerColor = "#6c757d"; // Gray default
-
-      if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
-        markerColor = "#C0392B"; // Red
-      } else if (status.includes("BALANCED")) {
-        markerColor = "#2E7D32"; // Green
-      } else if (status.includes("DEFICIT")) {
-        markerColor = "#D97706"; // Yellow / Amber
-      }
-
-      const customIcon = L.divIcon({
-        className: 'custom-map-marker',
-        html: `<div style="
-          background-color: ${markerColor};
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          border: 2px solid white;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        "></div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
-      });
-
-      const popupContent = `
-        <div style="min-width:180px;">
-          <strong>Municipality:</strong> ${municipality}
-          <br><br>
-          <strong>Commodity:</strong> ${commodity}
-          <br>
-          <strong>Status:</strong>
-          <span style="font-weight:700; color:${markerColor};">
-            ${status || 'NO DATA'}
-          </span>
-        </div>
+      row.innerHTML = `
+        <td><span class="pill">${report.report_id ?? "—"}</span></td>
+        <td><span class="pill">${report.title || "Crop Harvest Report"}</span></td>
+        <td><span class="pill">${report.commodity || "—"}</span></td>
+        <td><span class="pill">${formatDate(report.planting_date)}</span></td>
+        <td><span class="pill">${report.estimated_yield ?? "—"}</span></td>
+        <td><span class="status-pill pending">For Municipal Validation</span></td>
       `;
 
-      L.marker(markerCoordinates, { icon: customIcon })
-        .addTo(mapMarkersLayer)
-        .bindPopup(popupContent);
+
+      row.addEventListener("click", () => openReportDetail(report));
+      pendingReportsBody.appendChild(row);
     });
-  });
-}
-
-// ============================================================
-// INITIAL LOAD
-// ============================================================
-loadMunicipalityMapData();
-
-
-// ============================================================
-// MUNICIPAL REPORTS
-// PENDING REPORTS + SEARCH + DETAIL VIEW
-// ============================================================
-
-
-
-
-
-const MUNICIPAL_REPORTS_ENDPOINT =
-  `${API_BASE_URL}/api/report-submissions/for-municipal-validation`;
-
-
-
-
-
-
-
-
-// ============================================================
-// ELEMENTS
-// ============================================================
-
-
-
-
-const pendingReportsBody =
-  document.getElementById("pendingReportsBody");
-
-
-
-
-const pendingReportsView =
-  document.getElementById("pendingReportsView");
-
-
-
-
-const individualDetailView =
-  document.getElementById("individualDetailView");
-
-
-
-
-const reportSearchInput =
-  document.getElementById("reportSearchInput");
-
-
-
-
-const reportDetailBody =
-  document.getElementById("reportDetailBody");
-
-
-
-
-const reportNotesTextarea =
-  document.getElementById("reportNotesTextarea");
-
-
-
-
-const remarksTextarea =
-  document.getElementById("remarksTextarea");
-
-
-
-
-const backToPendingBtn =
-  document.getElementById("backToPendingBtn");
-
-
-
-
-const flagBtn =
-  document.getElementById("flagBtn");
-
-
-
-
-const approveBtn =
-  document.getElementById("approveBtn");
-
-
-
-
-
-
-
-
-// ============================================================
-// DATA
-// ============================================================
-
-
-
-
-let municipalReports = [];
-
-
-
-
-let selectedReport = null;
-
-
-
-
-
-
-
-
-// ============================================================
-// LOAD REPORTS
-// ============================================================
-
-
-
-
-async function loadMunicipalReports() {
-
-
-
-
-  if (!pendingReportsBody) {
-    return;
   }
 
 
-
-
-  pendingReportsBody.innerHTML = `
-    <tr>
-      <td colspan="6">
-        Loading reports...
-      </td>
-    </tr>
-  `;
-
-
-
-
-  try {
-
-
-
-
-    const response = await fetch(
-      MUNICIPAL_REPORTS_ENDPOINT,
-      {
-        method: "GET",
-        headers: {
-          "Accept": "application/json"
-        }
-      }
-    );
-
-
-
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to load reports. Status: ${response.status}`
-      );
-    }
-
-
-
-
-    municipalReports = await response.json();
-
-
-
-
-    console.log(
-      "Municipal reports:",
-      municipalReports
-    );
-
-
-
-
-    renderMunicipalReports(
-      municipalReports
-    );
-
-
-
-
-  } catch (error) {
-
-
-
-
-    console.error(
-      "Error loading municipal reports:",
-      error
-    );
-
-
-
-
-    pendingReportsBody.innerHTML = `
-      <tr>
-        <td colspan="6">
-          Failed to load reports.
-        </td>
-      </tr>
-    `;
-
-
-
-
-  }
-
-
-
-
-}
-
-
-
-
-
-
-
-
-// ============================================================
-// RENDER PENDING REPORTS
-// ============================================================
-
-
-
-
-function renderMunicipalReports(
-  reports = municipalReports
-) {
-
-
-
-
-  if (!pendingReportsBody) {
-    return;
-  }
-
-
-
-
-  pendingReportsBody.innerHTML = "";
-
-
-
-
-  if (!reports || reports.length === 0) {
-
-
-
-
-    pendingReportsBody.innerHTML = `
-      <tr>
-        <td colspan="6">
-          No reports waiting for municipal validation.
-        </td>
-      </tr>
-    `;
-
-
-
-
-    return;
-  }
-
-
-
-
-  reports.forEach(report => {
-
-
-
-
-    const row =
-      document.createElement("tr");
-
-
-
-
-    row.classList.add(
-      "clickable-row"
-    );
-
-
-
-
-    row.dataset.id =
-      report.report_id;
-
-
-
-
-    row.innerHTML = `
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.report_id ?? "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.title || "Crop Harvest Report"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.commodity || "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${formatDate(report.planting_date)}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.estimated_yield ?? "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="status-pill pending">
-          For Municipal Validation
-        </span>
-      </td>
-
-
-
-
-    `;
-
-
-
-
-    row.addEventListener(
-      "click",
-      () => openReportDetail(report)
-    );
-
-
-
-
-    pendingReportsBody.appendChild(row);
-
-
-
-
-  });
-
-
-
-
-}
-
-
-
-
-
-
-
-
-// ============================================================
-// SEARCH REPORTS
-// ============================================================
-
-
-
-
-if (reportSearchInput) {
-
-
-
-
-  reportSearchInput.addEventListener(
-    "input",
-    () => {
-
-
-
-
-      const searchTerm =
-        reportSearchInput.value
-          .trim()
-          .toLowerCase();
-
-
+  if (reportSearchInput) {
+    reportSearchInput.addEventListener("input", () => {
+      const searchTerm = reportSearchInput.value.trim().toLowerCase();
 
 
       if (!searchTerm) {
-
-
-
-
-        renderMunicipalReports(
-          municipalReports
-        );
-
-
-
-
+        renderMunicipalReports(municipalReports);
         return;
       }
 
 
+      const filteredReports = municipalReports.filter(report => {
+        const reportId = String(report.report_id ?? "").toLowerCase();
+        const title = String(report.title ?? "").toLowerCase();
+        const commodity = String(report.commodity ?? "").toLowerCase();
+        const plantingDate = String(report.planting_date ?? "").toLowerCase();
+        const yieldValue = String(report.estimated_yield ?? "").toLowerCase();
 
 
-      const filteredReports =
-        municipalReports.filter(report => {
+        return (
+          reportId.includes(searchTerm) ||
+          title.includes(searchTerm) ||
+          commodity.includes(searchTerm) ||
+          plantingDate.includes(searchTerm) ||
+          yieldValue.includes(searchTerm)
+        );
+      });
 
 
-
-
-          const reportId =
-            String(
-              report.report_id ?? ""
-            ).toLowerCase();
-
-
-
-
-          const title =
-            String(
-              report.title ?? ""
-            ).toLowerCase();
-
-
-
-
-          const commodity =
-            String(
-              report.commodity ?? ""
-            ).toLowerCase();
-
-
-
-
-          const plantingDate =
-            String(
-              report.planting_date ?? ""
-            ).toLowerCase();
-
-
-
-
-          const yieldValue =
-            String(
-              report.estimated_yield ?? ""
-            ).toLowerCase();
-
-
-
-
-          return (
-            reportId.includes(searchTerm) ||
-            title.includes(searchTerm) ||
-            commodity.includes(searchTerm) ||
-            plantingDate.includes(searchTerm) ||
-            yieldValue.includes(searchTerm)
-          );
-
-
-
-
-        });
-
-
-
-
-      renderMunicipalReports(
-        filteredReports
-      );
-
-
-
-
-    }
-  );
-
-
-
-
-}
-
-
-
-
-
-
-
-
-// ============================================================
-// DATE FORMAT
-// ============================================================
-
-
-
-
-function formatDate(dateString) {
-
-
-
-
-  if (!dateString) {
-    return "—";
+      renderMunicipalReports(filteredReports);
+    });
   }
 
 
-
-
-  const date =
-    new Date(dateString);
-
-
-
-
-  if (isNaN(date.getTime())) {
-    return dateString;
-  }
-
-
-
-
-  return date.toLocaleDateString(
-    "en-US",
-    {
+  function formatDate(dateString) {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric"
-    }
-  );
+    });
+  }
 
 
+  function openReportDetail(report) {
+    selectedReport = report;
 
 
-}
-
-
-
-
-
-
-
-
-// ============================================================
-// OPEN REPORT DETAIL
-// ============================================================
-
-
-
-
-function openReportDetail(report) {
-
-
-
-
-  selectedReport = report;
-
-
-
-
-  // Hide pending list
-  pendingReportsView.style.display =
-    "none";
-
-
-
-
-  // Show detail
-  individualDetailView.style.display =
-    "block";
-
-
-
-
-  // Reset buttons
-  flagBtn.classList.remove("active");
-  flagBtn.textContent =
-    "Flag for Revision";
-
-
-
-
-  approveBtn.classList.remove("active");
-  approveBtn.textContent =
-    "Approve";
-
-
-
-
-  // Fill report details
-  reportDetailBody.innerHTML = `
-
-
-
-
-    <tr>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.commodity || "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${formatDate(
-            report.planting_date
-          )}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${formatDate(
-            report.harvest_date
-          )}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.estimated_yield ?? "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.encoded_by_name || "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="status-pill pending">
-          For Municipal Validation
-        </span>
-      </td>
-
-
-
-
-    </tr>
-
-
-
-
-  `;
-
-
-
-
-  // Notes
-  reportNotesTextarea.value =
-    report.notes ||
-    report.narrative ||
-    "";
-
-
-
-
-  // Remarks
-  remarksTextarea.value =
-    report.revision_remarks ||
-    "";
-
-
-
-
-  // Scroll to top of reports
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
-
-
-
-
-}
-
-
-
-
-
-
-
-
-// ============================================================
-// RETURN TO PENDING LIST
-// ============================================================
-
-
-
-
-backToPendingBtn.addEventListener(
-  "click",
-  () => {
-
-
-
-
-    selectedReport = null;
-
-
-
-
-    individualDetailView.style.display =
-      "none";
-
-
-
-
-    pendingReportsView.style.display =
-      "block";
-
-
+    pendingReportsView.style.display = "none";
+    individualDetailView.style.display = "block";
 
 
     flagBtn.classList.remove("active");
-    flagBtn.textContent =
-      "Flag for Revision";
-
-
-
-
-    approveBtn.classList.remove("active");
-    approveBtn.textContent =
-      "Approve";
-
-
-
-
-  }
-);
-
-
-
-
-
-
-// ============================================================
-// FLAG FOR REVISION - WITH ACTUAL API CALL
-// ============================================================
-// ============================================================
-// FLAG FOR REVISION - WITH ACTUAL API CALL
-// ============================================================
-
-
-flagBtn.addEventListener("click", async () => {
-
-
-  if (!selectedReport) {
-    return;
-  }
-
-
-  flagBtn.disabled = true;
-  flagBtn.textContent = "Processing...";
-
-
-  try {
-
-
-    // ============================================================
-    // GET LOGGED-IN USER
-    // ============================================================
-
-
-    const validatorId = localStorage.getItem("user_id");
-    const accessToken = localStorage.getItem("access_token");
-    const tokenType =
-      localStorage.getItem("token_type") || "bearer";
-
-
-    const userRole = localStorage.getItem("role");
-
-
-    console.log("Validator ID:", validatorId);
-    console.log("User Role:", userRole);
-    console.log("Has Access Token:", !!accessToken);
-
-
-    if (!validatorId) {
-      throw new Error(
-        "No logged-in user found. Please log in again."
-      );
-    }
-
-
-    if (!accessToken) {
-      throw new Error(
-        "No access token found. Please log in again."
-      );
-    }
-
-
-    // ============================================================
-    // CHECK ROLE
-    // ============================================================
-
-
-    if (
-      userRole !== "Municipal Coordinator" &&
-      userRole !== "Municipal"
-    ) {
-      throw new Error(
-        "Only a Municipal Coordinator can request revision."
-      );
-    }
-
-
-    // ============================================================
-    // REPORT DATA
-    // ============================================================
-
-
-    const reportId = selectedReport.report_id;
-
-
-    const remarks =
-      remarksTextarea.value.trim();
-
-
-    if (!remarks) {
-      throw new Error(
-        "Revision remarks are required."
-      );
-    }
-
-
-    // ============================================================
-    // REQUEST REVISION API
-    // ============================================================
-
-
-    const revisionUrl =
-      `${API_BASE_URL}/api/report-submissions/${reportId}/revision` +
-      `?validator_id=${encodeURIComponent(validatorId)}` +
-      `&validator_role=municipal_coordinator` +
-      `&remarks=${encodeURIComponent(remarks)}`;
-
-
-    console.log(
-      "Revision URL:",
-      revisionUrl
-    );
-
-
-    const response = await fetch(
-      revisionUrl,
-      {
-        method: "POST",
-
-
-        headers: {
-          "Accept": "application/json",
-          "Authorization":
-            `${tokenType} ${accessToken}`
-        }
-      }
-    );
-
-
-    // ============================================================
-    // HANDLE ERROR
-    // ============================================================
-
-
-    if (!response.ok) {
-
-
-      const errorData =
-        await response.json().catch(() => ({}));
-
-
-      throw new Error(
-        errorData.detail ||
-        `Failed to request revision. Status: ${response.status}`
-      );
-    }
-
-
-    // ============================================================
-    // SUCCESS RESPONSE
-    // ============================================================
-
-
-    const result =
-      await response.json();
-
-
-    console.log(
-      "Revision result:",
-      result
-    );
-
-
-    // ============================================================
-    // UPDATE LOCAL DATA
-    // ============================================================
-
-
-    selectedReport.status =
-      "REVISION_REQUIRED";
-
-
-    selectedReport.revision_remarks =
-      remarks;
-
-
-    // ============================================================
-    // UPDATE BUTTON
-    // ============================================================
-
-
-    flagBtn.classList.add("active");
-    flagBtn.textContent =
-      "Flagged ✓";
-
-
-    // ============================================================
-    // UPDATE STATUS IN DETAIL VIEW
-    // ============================================================
-
-
-    const statusCell =
-      document.querySelector(
-        "#reportDetailBody td:last-child .status-pill"
-      );
-
-
-    if (statusCell) {
-
-
-      statusCell.className =
-        "status-pill pending";
-
-
-      statusCell.textContent =
-        "Revision Required";
-    }
-
-
-    // ============================================================
-    // SUCCESS MODAL
-    // ============================================================
-
-
-    openModal(
-      "Report Flagged for Revision"
-    );
-
-
-    // ============================================================
-    // RELOAD REPORT LIST
-    // ============================================================
-
-
-    await loadMunicipalReports();
-
-
-  } catch (error) {
-
-
-    console.error(
-      "Error requesting revision:",
-      error
-    );
-
-
-    openModal(
-      `Error: ${error.message}`
-    );
-
-
-    flagBtn.classList.remove("active");
-    flagBtn.textContent =
-      "Flag for Revision";
-
-
-  } finally {
-
-
-    flagBtn.disabled = false;
-
-
-  }
-
-
-});
-
-
-// ============================================================
-// APPROVE REPORT - WITH ACTUAL API CALL
-// ============================================================
-
-
-approveBtn.addEventListener("click", async () => {
-
-
-  if (!selectedReport) {
-    return;
-  }
-
-
-  approveBtn.disabled = true;
-  approveBtn.textContent = "Processing...";
-
-
-  try {
-
-
-    // ============================================================
-    // GET LOGGED-IN USER
-    // ============================================================
-
-
-    // ✅ BAGONG CODE
-const validatorId = localStorage.getItem("user_id");
-const accessToken = localStorage.getItem("access_token");
-const tokenType = localStorage.getItem("token_type") || "bearer";
-
-
-console.log("Validator ID:", validatorId);
-console.log("Has Access Token:", !!accessToken);
-
-
-if (!validatorId) {
-  throw new Error(
-    "No logged-in user found. Please log in again."
-  );
-}
-
-
-if (!accessToken) {
-  throw new Error(
-    "No access token found. Please log in again."
-  );
-}
-    // ============================================================
-    // REPORT DATA
-    // ============================================================
-
-
-    const reportId = selectedReport.report_id;
-
-
-    const remarks =
-      remarksTextarea.value.trim() ||
-      "Approved by Municipal Coordinator";
-
-
-    // ============================================================
-    // APPROVE API
-    // ============================================================
-
-
-    const approveUrl =
-      `${API_BASE_URL}/api/report-submissions/${reportId}/approve` +
-      `?validator_id=${validatorId}` +
-      `&validator_role=municipal_coordinator` +
-      `&remarks=${encodeURIComponent(remarks)}`;
-
-
-    console.log("Approve URL:", approveUrl);
-
-
-    // ✅ BAGONG CODE
-const response = await fetch(
-  approveUrl,
-  {
-    method: "POST",
-    headers: {
-      "Accept": "application/json",
-      "Authorization": `${tokenType} ${accessToken}` // ← ITO ANG KULANG!
-    }
-  }
-);
-
-
-    // ============================================================
-    // HANDLE ERROR
-    // ============================================================
-
-
-    if (!response.ok) {
-
-
-      const errorData =
-        await response.json().catch(() => ({}));
-
-
-      throw new Error(
-        errorData.detail ||
-        `Failed to approve report. Status: ${response.status}`
-      );
-    }
-
-
-    // ============================================================
-    // SUCCESS RESPONSE
-    // ============================================================
-
-
-    const result = await response.json();
-
-
-    console.log("Approve result:", result);
-
-
-    // ============================================================
-    // UPDATE LOCAL DATA
-    // ============================================================
-
-
-    selectedReport.status =
-      "FOR_PROVINCIAL_VALIDATION";
-
-
-    selectedReport.revision_remarks =
-      remarks;
-
-
-    // ============================================================
-    // UPDATE BUTTON
-    // ============================================================
-
-
-    approveBtn.classList.add("active");
-    approveBtn.textContent = "Approved ✓";
-
-
-    // ============================================================
-    // UPDATE STATUS IN DETAIL VIEW
-    // ============================================================
-
-
-    const statusCell =
-      document.querySelector(
-        "#reportDetailBody td:last-child .status-pill"
-      );
-
-
-    if (statusCell) {
-
-
-      statusCell.className =
-        "status-pill approved";
-
-
-      statusCell.textContent =
-        "For Provincial Validation";
-    }
-
-
-    // ============================================================
-    // SUCCESS MODAL
-    // ============================================================
-
-
-    openModal(
-      "Report Approved Successfully"
-    );
-
-
-    // ============================================================
-    // RELOAD REPORT LIST
-    // ============================================================
-
-
-    await loadMunicipalReports();
-
-
-  } catch (error) {
-
-
-    console.error(
-      "Error approving report:",
-      error
-    );
-
-
-    openModal(
-      `Error: ${error.message}`
-    );
+    flagBtn.textContent = "Flag for Revision";
 
 
     approveBtn.classList.remove("active");
     approveBtn.textContent = "Approve";
 
 
-  } finally {
+    reportDetailBody.innerHTML = `
+      <tr>
+        <td><span class="pill">${report.commodity || "—"}</span></td>
+        <td><span class="pill">${formatDate(report.planting_date)}</span></td>
+        <td><span class="pill">${formatDate(report.harvest_date)}</span></td>
+        <td><span class="pill">${report.estimated_yield ?? "—"}</span></td>
+        <td><span class="pill">${report.encoded_by_name || "—"}</span></td>
+        <td><span class="status-pill pending">For Municipal Validation</span></td>
+      </tr>
+    `;
 
 
-    approveBtn.disabled = false;
+    reportNotesTextarea.value = report.notes || report.narrative || "";
+    remarksTextarea.value = report.revision_remarks || "";
 
 
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
   }
 
 
-});
+  backToPendingBtn.addEventListener("click", () => {
+    selectedReport = null;
+    individualDetailView.style.display = "none";
+    pendingReportsView.style.display = "block";
 
 
-// ============================================================
-// SUBMIT REPORT TO PROVINCIAL LEVEL
-// ============================================================
+    flagBtn.classList.remove("active");
+    flagBtn.textContent = "Flag for Revision";
 
 
+    approveBtn.classList.remove("active");
+    approveBtn.textContent = "Approve";
+  });
 
 
-const submitReportToProvBtn =
-  document.getElementById(
-    "submitReportToProvBtn"
-  );
+  flagBtn.addEventListener("click", async () => {
+    if (!selectedReport) return;
 
 
+    flagBtn.disabled = true;
+    flagBtn.textContent = "Processing...";
 
 
-if (submitReportToProvBtn) {
+    try {
+      const validatorId = localStorage.getItem("user_id");
+      const accessToken = localStorage.getItem("access_token");
+      const tokenType = localStorage.getItem("token_type") || "bearer";
+      const userRole = localStorage.getItem("role");
 
 
+      if (!validatorId) throw new Error("No logged-in user found. Please log in again.");
+      if (!accessToken) throw new Error("No access token found. Please log in again.");
 
 
-  submitReportToProvBtn.addEventListener(
-    "click",
-    () => {
+      if (userRole !== "Municipal Coordinator" && userRole !== "Municipal") {
+        throw new Error("Only a Municipal Coordinator can request revision.");
+      }
 
 
+      const reportId = selectedReport.report_id;
+      const remarks = remarksTextarea.value.trim();
 
 
-      openModal(
-        "Report Submitted to Provincial Level"
-      );
+      if (!remarks) throw new Error("Revision remarks are required.");
 
 
+      const revisionUrl = `${API_BASE_URL}/api/report-submissions/${reportId}/revision` +
+        `?validator_id=${encodeURIComponent(validatorId)}` +
+        `&validator_role=municipal_coordinator` +
+        `&remarks=${encodeURIComponent(remarks)}`;
 
 
+      const response = await fetch(revisionUrl, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `${tokenType} ${accessToken}`
+        }
+      });
+
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to request revision. Status: ${response.status}`);
+      }
+
+
+      selectedReport.status = "REVISION_REQUIRED";
+      selectedReport.revision_remarks = remarks;
+
+
+      flagBtn.classList.add("active");
+      flagBtn.textContent = "Flagged ✓";
+
+
+      const statusCell = document.querySelector("#reportDetailBody td:last-child .status-pill");
+      if (statusCell) {
+        statusCell.className = "status-pill pending";
+        statusCell.textContent = "Revision Required";
+      }
+
+
+      openModal("Report Flagged for Revision");
+      await loadMunicipalReports();
+    } catch (error) {
+      console.error("Error requesting revision:", error);
+      openModal(`Error: ${error.message}`);
+      flagBtn.classList.remove("active");
+      flagBtn.textContent = "Flag for Revision";
+    } finally {
+      flagBtn.disabled = false;
     }
-  );
+  });
 
 
+  approveBtn.addEventListener("click", async () => {
+    if (!selectedReport) return;
 
 
-}
+    approveBtn.disabled = true;
+    approveBtn.textContent = "Processing...";
 
 
+    try {
+      const validatorId = localStorage.getItem("user_id");
+      const accessToken = localStorage.getItem("access_token");
+      const tokenType = localStorage.getItem("token_type") || "bearer";
 
 
+      if (!validatorId) throw new Error("No logged-in user found. Please log in again.");
+      if (!accessToken) throw new Error("No access token found. Please log in again.");
 
 
+      const reportId = selectedReport.report_id;
+      const remarks = remarksTextarea.value.trim() || "Approved by Municipal Coordinator";
 
 
-// ============================================================
-// MODAL
-// ============================================================
+      const approveUrl = `${API_BASE_URL}/api/report-submissions/${reportId}/approve` +
+        `?validator_id=${encodeURIComponent(validatorId)}` +
+        `&validator_role=municipal_coordinator` +
+        `&remarks=${encodeURIComponent(remarks)}`;
 
 
+      const response = await fetch(approveUrl, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `${tokenType} ${accessToken}`
+        }
+      });
 
 
-const reportModal =
-  document.getElementById(
-    "reportModal"
-  );
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to approve report. Status: ${response.status}`);
+      }
 
 
+      selectedReport.status = "FOR_PROVINCIAL_VALIDATION";
+      selectedReport.revision_remarks = remarks;
 
 
-const reportModalText =
-  document.getElementById(
-    "reportModalText"
-  );
+      approveBtn.classList.add("active");
+      approveBtn.textContent = "Approved ✓";
 
 
+      const statusCell = document.querySelector("#reportDetailBody td:last-child .status-pill");
+      if (statusCell) {
+        statusCell.className = "status-pill approved";
+        statusCell.textContent = "For Provincial Validation";
+      }
 
 
-const reportModalConfirmBtn =
-  document.getElementById(
-    "reportModalConfirmBtn"
-  );
+      openModal("Report Approved Successfully");
+      await loadMunicipalReports();
+    } catch (error) {
+      console.error("Error approving report:", error);
+      openModal(`Error: ${error.message}`);
+      approveBtn.classList.remove("active");
+      approveBtn.textContent = "Approve";
+    } finally {
+      approveBtn.disabled = false;
+    }
+  });
 
 
+  const reportModal = document.getElementById("reportModal");
+  const reportModalText = document.getElementById("reportModalText");
+  const reportModalConfirmBtn = document.getElementById("reportModalConfirmBtn");
 
 
-
-
-
-
-function openModal(message) {
-
-
-
-
-  reportModalText.textContent =
-    message;
-
-
-
-
-  reportModal.classList.add(
-    "show"
-  );
-
-
-
-
-}
-
-
-
-
-
-
-
-
-reportModalConfirmBtn.addEventListener(
-  "click",
-  () => {
-
-
-
-
-    reportModal.classList.remove(
-      "show"
-    );
-
-
-
-
+  function openModal(message) {
+    reportModalText.textContent = message;
+    reportModal.classList.add("show");
   }
-);
 
 
+  reportModalConfirmBtn.addEventListener("click", () => {
+    reportModal.classList.remove("show");
+  });
 
 
-
-
-
-
-// ============================================================
-// LOAD REPORTS WHEN PAGE OPENS
-// ============================================================
-
-
-
-
-loadMunicipalReports();
-
-
-
-
+  loadMunicipalReports();
 </script>
 
 
   <script src="../assets/js/logout.js"></script>
 </body>
 </html>
+

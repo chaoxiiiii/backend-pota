@@ -749,6 +749,19 @@ function initFarmerSubviews() {
                 return;
             }
 
+            // Contact number validation
+if (!/^09\d{9}$/.test(phone)) {
+    alert("Please enter a valid Philippine contact number with exactly 11 digits (e.g., 09171234567).");
+    return;
+}
+
+            // ✅ EMAIL VALIDATION — must end with @gmail.com
+            if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
+                alert("Email must be a valid @gmail.com address (e.g., juan@gmail.com).");
+                return;
+            }
+
+
             // ========================================================
             // CREATE FARMER DATA
             // ========================================================
@@ -1007,6 +1020,12 @@ function initFarmerSubviews() {
             const email = getValue("manEmail");
             if (!email) {
                 alert("Please enter an email address.");
+                return;
+            }
+
+            // ✅ EMAIL VALIDATION — must end with @gmail.com
+            if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
+                alert("Email must be a valid @gmail.com address (e.g., juan@gmail.com).");
                 return;
             }
 
@@ -5783,37 +5802,42 @@ function renderForecastResults(forecasts) {
     
     console.log("Forecast rendering complete!");
 }
+
+/* ============================================================
+   PRICE TREND CHART
+============================================================ */
+
 /* ============================================================
    PRICE TREND CHART
 ============================================================ */
 
 
 function initPriceChart() {
-    console.log("🔍 initPriceChart called...");
-    
+    console.log("initPriceChart called...");
+   
     const canvas = document.getElementById('priceTrendChart');
     if (!canvas) {
-        console.warn('❌ Price trend chart canvas not found');
+        console.warn('Price trend chart canvas not found');
         return;
     }
-    console.log('✅ Canvas found');
-    
+    console.log('Canvas found');
+   
     if (typeof Chart === 'undefined') {
-        console.warn('⚠️ Chart.js not loaded yet, waiting...');
+        console.warn('Chart.js not loaded yet, waiting...');
         setTimeout(initPriceChart, 500);
         return;
     }
-    console.log('✅ Chart.js loaded');
-    
+    console.log('Chart.js loaded');
+   
     const forecasts = FORECASTS_DATA || [];
-    console.log('📊 Forecasts data:', forecasts.length, 'records');
-    
+    console.log('Forecasts data:', forecasts.length, 'records');
+   
     if (forecasts.length === 0) {
-        console.warn('❌ No forecast data available for chart');
+        console.warn('No forecast data available for chart');
         if (canvas.parentElement) {
             canvas.parentElement.innerHTML = `
                 <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+                    <div style="font-size: 40px; margin-bottom: 10px;"></div>
                     No price data available for chart.
                     <br><small style="color: #999;">Please load forecast data first.</small>
                 </div>
@@ -5821,65 +5845,70 @@ function initPriceChart() {
         }
         return;
     }
-    
+   
     renderChart(forecasts, 'all');
 }
 
+
 function renderChart(forecasts, commodityFilter) {
-    console.log("🔍 renderChart called with filter:", commodityFilter);
-    
+    console.log("renderChart called with filter:", commodityFilter);
+   
     const canvas = document.getElementById('priceTrendChart');
     if (!canvas) {
-        console.warn('❌ Canvas not found');
+        console.warn('Canvas not found');
         return;
     }
-    
+   
     // Destroy existing chart
     if (priceChartInstance) {
-        console.log('🔄 Destroying existing chart...');
+        console.log('Destroying existing chart...');
         priceChartInstance.destroy();
         priceChartInstance = null;
     }
-    
+   
     let filteredData = forecasts;
     if (commodityFilter !== 'all') {
         filteredData = forecasts.filter(function(f) {
-            return f.commodity === commodityFilter;
+            const rawComm = f.commodity || '';
+            const cleanComm = rawComm === 'Squash fruit' ? 'Squash' : rawComm;
+            return cleanComm === commodityFilter || rawComm === commodityFilter;
         });
-        console.log('📊 Filtered to', filteredData.length, 'records for', commodityFilter);
+        console.log('Filtered to', filteredData.length, 'records for', commodityFilter);
     }
-    
+   
     if (filteredData.length === 0) {
-        console.warn('❌ No data for filter:', commodityFilter);
+        console.warn('No data for filter:', commodityFilter);
         if (canvas.parentElement) {
             canvas.parentElement.innerHTML = `
                 <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+                    <div style="font-size: 40px; margin-bottom: 10px;"></div>
                     No data available for ${commodityFilter}.
                 </div>
             `;
         }
         return;
     }
-    
-    // Group by commodity
+   
+    // Group by commodity (cleaned)
     const commodities = {};
     filteredData.forEach(function(f) {
-        const commodity = f.commodity || 'Unknown';
+        const rawCommodity = f.commodity || 'Unknown';
+        const commodity = rawCommodity === 'Squash fruit' ? 'Squash' : rawCommodity;
+       
         if (!commodities[commodity]) {
             commodities[commodity] = [];
         }
         commodities[commodity].push(f);
     });
-    console.log('📦 Commodities found:', Object.keys(commodities));
-    
+    console.log('Commodities found:', Object.keys(commodities));
+   
     // Sort by date
     Object.keys(commodities).forEach(function(commodity) {
         commodities[commodity].sort(function(a, b) {
             return new Date(a.forecast_date) - new Date(b.forecast_date);
         });
     });
-    
+   
     // Prepare datasets with professional colors
     const datasets = [];
     const colorPalette = {
@@ -5888,7 +5917,7 @@ function renderChart(forecasts, commodityFilter) {
             light: 'rgba(231, 76, 60, 0.15)',
             gradient: ['rgba(231, 76, 60, 0.3)', 'rgba(231, 76, 60, 0.05)']
         },
-        'Squash fruit': {
+        'Squash': {
             main: '#F39C12',
             light: 'rgba(243, 156, 18, 0.15)',
             gradient: ['rgba(243, 156, 18, 0.3)', 'rgba(243, 156, 18, 0.05)']
@@ -5899,15 +5928,15 @@ function renderChart(forecasts, commodityFilter) {
             gradient: ['rgba(142, 68, 173, 0.3)', 'rgba(142, 68, 173, 0.05)']
         },
         'White Onion': {
-        main: '#1ABC9C',  // Teal/Cyan color
-        light: 'rgba(26, 188, 156, 0.15)',
-        gradient: ['rgba(26, 188, 156, 0.3)', 'rgba(26, 188, 156, 0.05)']
-    },
+            main: '#1ABC9C',  
+            light: 'rgba(26, 188, 156, 0.15)',
+            gradient: ['rgba(26, 188, 156, 0.3)', 'rgba(26, 188, 156, 0.05)']
+        }
     };
-    
+   
     const defaultColors = ['#E74C3C', '#F39C12', '#2ECC71', '#3498DB', '#9B59B6', '#1ABC9C', '#E67E22', '#2C3E50'];
     let colorIndex = 0;
-    
+   
     // Get all unique dates
     const allDates = [];
     Object.keys(commodities).forEach(function(commodity) {
@@ -5924,11 +5953,10 @@ function renderChart(forecasts, commodityFilter) {
         const dateB = new Date(b);
         return dateA - dateB;
     });
-    console.log('📅 Dates:', allDates);
-    
-    Object.keys(commodities).forEach(function(commodity, idx) {
+   
+    Object.keys(commodities).forEach(function(commodity) {
         const data = commodities[commodity];
-        
+       
         let colorObj = colorPalette[commodity];
         if (!colorObj) {
             const mainColor = defaultColors[colorIndex % defaultColors.length];
@@ -5939,16 +5967,16 @@ function renderChart(forecasts, commodityFilter) {
             };
             colorIndex++;
         }
-        
+       
         const lowerPrices = [];
         const upperPrices = [];
-        
+       
         allDates.forEach(function(dateStr) {
             const found = data.find(function(f) {
                 const d = new Date(f.forecast_date);
                 return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) === dateStr;
             });
-            
+           
             if (found) {
                 lowerPrices.push(parseFloat(found.forecast_price_low || 0));
                 upperPrices.push(parseFloat(found.forecast_price_high || 0));
@@ -5957,11 +5985,11 @@ function renderChart(forecasts, commodityFilter) {
                 upperPrices.push(null);
             }
         });
-        
-        // Lower price - solid line with fill
+       
+        // High price dataset -> Dashed line (- -)
         datasets.push({
-            label: commodity + ' (Low)',
-            data: lowerPrices,
+            label: commodity + ' (High)',
+            data: upperPrices,
             borderColor: colorObj.main,
             backgroundColor: function(context) {
                 const chart = context.chart;
@@ -5975,6 +6003,7 @@ function renderChart(forecasts, commodityFilter) {
                 return gradient;
             },
             borderWidth: 3,
+            borderDash: [7, 9],
             pointRadius: 5,
             pointBackgroundColor: colorObj.main,
             pointBorderColor: '#FFFFFF',
@@ -5984,15 +6013,15 @@ function renderChart(forecasts, commodityFilter) {
             fill: true,
             spanGaps: false
         });
-        
-        // Upper price - dashed line
+       
+        // Low price dataset -> Straight line (Solid)
         datasets.push({
-            label: commodity + ' (High)',
-            data: upperPrices,
+            label: commodity + ' (Low)',
+            data: lowerPrices,
             borderColor: colorObj.main,
             backgroundColor: 'transparent',
-            borderWidth: 2,
-            borderDash: [6, 4],
+            borderWidth: 3,
+            borderDash: [],
             pointRadius: 4,
             pointBackgroundColor: colorObj.main,
             pointBorderColor: '#FFFFFF',
@@ -6003,22 +6032,12 @@ function renderChart(forecasts, commodityFilter) {
             spanGaps: false
         });
     });
-    
+   
     if (datasets.length === 0) {
-        console.warn('❌ No datasets created');
-        if (canvas.parentElement) {
-            canvas.parentElement.innerHTML = `
-                <div style="padding: 40px; text-align: center; color: #777; font-size: 15px;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
-                    No price data available for chart.
-                </div>
-            `;
-        }
+        console.warn('No datasets created');
         return;
     }
-    
-    console.log('📊 Creating chart with', datasets.length, 'datasets');
-    
+   
     try {
         const ctx = canvas.getContext('2d');
         priceChartInstance = new Chart(ctx, {
@@ -6038,16 +6057,27 @@ function renderChart(forecasts, commodityFilter) {
                     legend: {
                         position: 'top',
                         labels: {
+                            // Ginagamit ito para maging dashed din ang icon sa legend para sa High
+                            generateLabels: function(chart) {
+                                const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                                const labels = original.call(this, chart);
+                                labels.forEach(label => {
+                                    const dataset = chart.data.datasets[label.datasetIndex];
+                                    if (dataset && dataset.borderDash) {
+                                        label.lineDash = dataset.borderDash;
+                                    }
+                                });
+                                return labels;
+                            },
                             font: {
                                 size: 12,
                                 weight: '600',
                                 family: 'Plus Jakarta Sans'
                             },
-                            boxWidth: 20,
-                            boxHeight: 12,
+                            boxWidth: 25,
+                            boxHeight: 0,
                             padding: 16,
-                            usePointStyle: true,
-                            pointStyle: 'circle',
+                            usePointStyle: false,
                             color: '#2E2A22'
                         }
                     },
@@ -6149,30 +6179,22 @@ function renderChart(forecasts, commodityFilter) {
                 }
             }
         });
-        console.log('✅ Chart rendered successfully!');
+        console.log('Chart rendered successfully!');
     } catch (error) {
-        console.error('❌ Error creating chart:', error);
-        if (canvas.parentElement) {
-            canvas.parentElement.innerHTML = `
-                <div style="padding: 40px; text-align: center; color: #C0392B; font-size: 15px;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">⚠️</div>
-                    Error creating chart: ${error.message}
-                </div>
-            `;
-        }
+        console.error('Error creating chart:', error);
     }
 }
 
+
 function updateChart(commodity) {
     console.log("🔍 updateChart called with:", commodity);
-    
+   
     const forecasts = FORECASTS_DATA || [];
     if (forecasts.length === 0) {
-        console.warn('❌ No forecast data available for chart');
+        console.warn('No forecast data available for chart');
         return;
     }
-    
-    // Update button styles
+   
     document.querySelectorAll('.fair-price-dashboard-container .btn-outline-report').forEach(function(btn) {
         const btnText = btn.textContent.trim();
         if (btnText === commodity || (commodity === 'all' && btnText === 'All')) {
@@ -6185,11 +6207,14 @@ function updateChart(commodity) {
             btn.style.borderColor = 'var(--border)';
         }
     });
-    
+   
     renderChart(forecasts, commodity);
 }
 
+
 console.log("Price Trend Chart functions loaded!");
+
+
 
 /* ============================================================
    AEW NOTIFICATION BELL

@@ -740,6 +740,25 @@ async function createAccount(event) {
         return;
     }
 
+     // ✅ PHONE NUMBER VALIDATION — 11 digits only
+    if (!/^\d{11}$/.test(phone)) {
+
+        alert(
+            "Phone number must be exactly 11 digits (numbers only)."
+        );
+
+        return;
+    }
+
+     // ✅ EMAIL VALIDATION — must end with @gmail.com
+    if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
+
+        alert(
+            "Email must be a valid @gmail.com address."
+        );
+
+        return;
+    }
     if (password !== confirmPassword) {
 
         alert(
