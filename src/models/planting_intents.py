@@ -8,6 +8,7 @@ from sqlalchemy import (
     TIMESTAMP,
     ForeignKey,
     text,
+    Boolean,
 )
 from sqlalchemy.orm import relationship
 
@@ -35,6 +36,8 @@ class PlantingIntent(Base):
     attachment_path = Column(String(500), nullable=True)  # NEW FIELD
 
     status = Column(String(20), nullable=True, default="DRAFT")
+    finalized_status = Column(String, default="NOT PLANTED", nullable=False)
+    is_in_report = Column(Boolean, default=False, nullable=False, index=True)
 
     created_at = Column(
         TIMESTAMP,

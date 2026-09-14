@@ -1337,6 +1337,17 @@
               </div>
           </div>
       </div>
+          <div class="modal-overlay" id="confirmReportModal">
+              <div class="modal-box">
+                  <h2 id="confirmReportTitle">Confirm Submission</h2>
+                  <p id="confirmReportText">Are you sure?</p>
+                  <div class="modal-actions">
+                      <button class="btn-outline-report" id="cancelConfirmReportBtn" type="button">Review</button>
+                      <button class="modal-btn-confirm" id="proceedConfirmReportBtn" type="button">Confirm</button>
+                  </div>
+              </div>
+          </div>
+
 
       <!-- ============================================================
     OFFTAKE REQUEST CONFIRMATION MODAL
@@ -1878,20 +1889,20 @@
                           <table style="width:100%; border-collapse:collapse;">
                               <thead>
                                   <tr>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:90px;">REPORT ID</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:120px;">FARMER NAME</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:100px;">COMMODITY</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:90px;">EST. VOLUME</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:100px;">PLANTING DATE</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:100px;">HARVEST DATE</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:110px;">STATUS</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:90px;">INTENT ID</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:140px;">FARMER NAME</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:110px;">COMMODITY</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:100px;">EST. VOLUME</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:110px;">PLANTING DATE</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:110px;">HARVEST DATE</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:130px;">STATUS</th>
                                   </tr>
                               </thead>
-                              <tbody id="individualReportsTableBody">
-                                  <tr>
-                                      <td colspan="7" style="padding:30px; text-align:center; color:#999;">No finalized planting intents found.</td>
-                                  </tr>
-                              </tbody>
+                            <tbody id="individualReportsTableBody">
+                                <tr>
+                                    <td colspan="7" style="padding:30px; text-align:center; color:#999;">No finalized planting intents found.</td>
+                                </tr>
+                            </tbody>
                           </table>
                       </div>
                   </div>
@@ -1912,6 +1923,7 @@
                                   <tr>
                                       <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Report ID</th>
                                       <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Title</th>
+                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Municipality</th>
                                       <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Submitted Date</th>
                                       <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Status</th>
                                   </tr>
@@ -1966,25 +1978,27 @@
                           </div>
                           
                           <!-- Selected Intents Table -->
-                          <div style="overflow-x:auto; border:1.5px solid var(--border); border-radius:var(--radius-sm);">
-                              <table style="margin:0;">
-                                  <thead>
-                                      <tr>
-                                          <th>Barangay</th>
-                                          <th>Farmer</th>
-                                          <th>Commodity</th>
-                                          <th>Volume</th>
-                                          <th class="center-col">Action</th>
-                                      </tr>
-                                  </thead>
-                                  <tbody id="selectedIntentsTableBody">
-                                      <tr>
-                                          <td colspan="5" style="padding:20px; text-align:center; color:#999;">No planting intents selected. Click "Add Row" to add.</td>
-                                      </tr>
-                                  </tbody>
-                              </table>
-                          </div>
-                      </div>
+                            <table style="margin:0; width:100%; table-layout:fixed;">
+                              <thead>
+                                  <tr>
+                                      <th style="width:8%; text-align:center;">INTENT ID</th>
+                                      <th style="width:15%; text-align:center;">LOCATION</th>
+                                      <th style="width:12%; text-align:center;">FARMER</th>
+                                      <th style="width:10%; text-align:center;">COMMODITY</th>
+                                      <th style="width:8%; text-align:center;">QTY</th>
+                                      <th style="width:11%; text-align:center;">PLANTING DATE</th>
+                                      <th style="width:11%; text-align:center;">HARVEST DATE</th>
+                                      <th style="width:10%; text-align:center;">STATUS</th>
+                                      <th style="width:15%; text-align:center;">ACTION</th>
+                                  </tr>
+                              </thead>
+                              <tbody id="selectedIntentsTableBody">
+                                  <tr>
+                                      <td colspan="9" style="padding:20px; text-align:center; color:#999;">No planting intents selected. Click "Add Row" to add.</td>
+                                  </tr>
+                              </tbody>
+                          </table>
+                        </div>
 
                       <!-- ============================================================
                           NOTES / REMARKS
@@ -2016,7 +2030,6 @@
                       ============================================================ -->
                       <div class="actions-right-row">
                           <button class="btn-outline-report" id="cancelReportBtn" type="button">Cancel</button>
-                          <button class="btn-primary" id="saveReportDraftBtn" type="button">Save as Draft</button>
                           <button class="btn-primary" id="submitReportFinalBtn" type="button">Submit to Municipal</button>
                       </div>
                   </form>
@@ -2035,11 +2048,17 @@
               </div>
 
               <div class="card">
+                  <!-- ✅ Report info grid -->
                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 30px; margin-bottom:20px;">
                       <div>
                           <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Report ID</label>
                           <p id="detailReportId" style="font-size:14px; font-weight:600;">—</p>
                       </div>
+                      <div>
+                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Municipality</label>
+                          <p id="detailReportMunicipality" style="font-size:14px; font-weight:600;">—</p>
+                      </div>
+
                       <div>
                           <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Status</label>
                           <p id="detailReportStatus" style="font-size:14px; font-weight:600;">—</p>
@@ -2049,44 +2068,51 @@
                           <p id="detailReportDate" style="font-size:14px; font-weight:600;">—</p>
                       </div>
                       <div>
-                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Notes</label>
+                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Notes / Remarks</label>
                           <p id="detailReportNotes" style="font-size:14px;">—</p>
                       </div>
                   </div>
 
+                  <!-- ✅ Revision flag (kung flagged) -->
+                  <div id="detailRevisionFlag" style="display:none;"></div>
+
+                  <!-- ✅ Attachments (isang field lang) -->
                   <div style="margin-bottom:20px;">
                       <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Attachments</label>
                       <div id="detailReportAttachments" style="font-size:14px; color:var(--ink);">No attachments</div>
                   </div>
 
+                  <!-- ✅ Included Planting Intents -->
                   <div>
                       <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Included Planting Intents</label>
                       <div style="overflow-x:auto; margin-top:8px;">
                           <table>
                               <thead>
                                   <tr>
-                                      <th>Intent ID</th>
+                                      <th style="text-align:center;">Intent ID</th>
                                       <th>Farmer</th>
                                       <th>Commodity</th>
-                                      <th>Volume</th>
+                                      <th style="text-align:center;">Volume</th>
+                                      <th style="text-align:center;">Planting Date</th>
+                                      <th style="text-align:center;">Harvest Date</th>
+                                      <th style="text-align:center;">Harvest Status</th>
                                   </tr>
                               </thead>
                               <tbody id="detailReportIntentsBody">
-                                  <tr><td colspan="4" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>
+                                  <tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>
                               </tbody>
                           </table>
                       </div>
                   </div>
 
+                  <!-- ✅ Action buttons -->
                   <div class="actions-right-row" style="margin-top:20px; padding-top:16px; border-top:1.5px solid var(--border);">
-                      <button class="btn-outline-report" id="backFromReportDetailsBtn" type="button">Back to Reports</button>
+                      <button class="btn-outline-report" id="backFromReportDetailsBtn" type="button">Back</button>
                       <button class="btn-primary" id="editReportBtn" type="button" style="background:#D97706; display:none;">Edit</button>
                       <button class="btn-primary" id="resubmitReportBtn" type="button" style="background:#2E7D32; display:none;">Resubmit</button>
                   </div>
               </div>
           </div>
-
-      </section>
 
   <!-- SCRIPTS -->
   <script>
