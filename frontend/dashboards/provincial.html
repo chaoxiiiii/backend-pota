@@ -1126,39 +1126,58 @@
 
 
 
+<!-- ===================== VIEW MAP ===================== -->
+<section
+  class="view"
+  id="view-map"
+>
+  <div class="main-header">
+    <h1>
+      Map
+    </h1>
+  </div>
 
-    <!-- ===================== VIEW MAP ===================== -->
+  <div class="card">
 
+    <div class="map-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+      <span style="font-size: 14.5px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 0.02em;">
+        Field Monitoring & Geographic Clusters
+      </span>
 
-    <section
-      class="view"
-      id="view-map"
-    >
-
-
-      <div class="main-header">
-
-
-        <h1>
-          Map
-        </h1>
-
-
+      <!-- Map Legend -->
+      <div style="display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; align-items: center;">
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #C0392B; display: inline-block;"></span> Surplus
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #2E7D32; display: inline-block;"></span> Balanced
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Deficit
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #6c757d; display: inline-block;"></span> No Data
+        </span>
       </div>
+    </div>
 
+    <!-- MAP FILTERS -->
+    <div class="map-filters-container" style="display: flex; gap: 12px; margin-bottom: 14px; padding: 0;">
+      <select id="filterCommodity" style="padding: 6px 12px; border: 1.5px solid #DFD8C6; border-radius: 6px; font-size: 13px; background: #fff; cursor: pointer;">
+        <option value="all">All Commodities</option>
+        <option value="Tomato">Tomato</option>
+        <option value="Squash">Squash</option>
+        <option value="Red Onion">Red Onion</option>
+        <option value="White Onion">White Onion</option>
+      </select>
 
+      
+    </div>
 
+    <div id="map"></div>
 
-      <div class="card">
-
-
-        <div id="map"></div>
-
-
-      </div>
-
-
-    </section>
+  </div>
+</section>
 
 
   </main>
@@ -1504,13 +1523,11 @@ if (hamburgerBtn && sidebar) {
 const API_BASE_URL =
     "http://127.0.0.1:8000";
 
-
 // ============================================================
 // MUNICIPALITY COORDINATES
 // ============================================================
 
 const municipalityCoordinates = {
-
     "Angeles": [15.1450, 120.5887],
     "Apalit": [14.9470, 120.7700],
     "Arayat": [15.1500, 120.7690],
@@ -1532,9 +1549,14 @@ const municipalityCoordinates = {
     "Santa Ana": [15.0950, 120.7720],
     "Santa Rita": [15.0190, 120.6110],
     "Santo Tomas": [14.9950, 120.7090]
-
 };
 
+// ============================================================
+// MAP STATE
+// ============================================================
+
+let MUNICIPALITY_MAP_RAW_DATA = [];
+let mapMarkersLayer = null;
 
 // ============================================================
 // LOAD MUNICIPALITY MAP DATA
@@ -1555,101 +1577,39 @@ async function loadMunicipalityMapData() {
         );
 
         if (!response.ok) {
-            throw new Error(
-                `HTTP ${response.status}`
-            );
+            throw new Error(`HTTP ${response.status}`);
         }
 
-        const result =
-            await response.json();
+        const result = await response.json();
 
         console.log(
             "Provincial Municipality Map Data:",
             result
         );
 
-        if (
-            !result.data ||
-            !Array.isArray(result.data)
-        ) {
-            console.warn(
-                "No municipality map data found."
-            );
+        if (!result.data || !Array.isArray(result.data)) {
+            console.warn("No municipality map data found.");
             return;
         }
 
-        result.data.forEach(
-            municipalityData => {
+        MUNICIPALITY_MAP_RAW_DATA = result.data;
+        renderFilteredMapMarkers();
 
-                const municipality =
-                    municipalityData.municipality;
+        // I-attach ang filter listeners (isang beses lang)
+        const commodityFilter =
+            document.getElementById('filterCommodity');
+        const statusFilter =
+            document.getElementById('filterStatus');
 
-                const coordinates =
-                    municipalityCoordinates[
-                        municipality
-                    ];
+        if (commodityFilter && !commodityFilter.dataset.listenerAttached) {
+            commodityFilter.addEventListener('change', renderFilteredMapMarkers);
+            commodityFilter.dataset.listenerAttached = "true";
+        }
 
-                if (!coordinates) {
-                    console.warn(
-                        `No coordinates found for municipality: ${municipality}`
-                    );
-                    return;
-                }
-
-                let popupContent = `
-                    <div style="min-width:200px;">
-
-                        <strong>
-                            Municipality:
-                        </strong>
-                        ${municipality}
-
-                        <br><br>
-                `;
-
-                if (
-                    municipalityData.commodities &&
-                    Array.isArray(
-                        municipalityData.commodities
-                    )
-                ) {
-
-                    municipalityData.commodities.forEach(
-                        item => {
-
-                            popupContent += `
-                                <strong>
-                                    Commodity:
-                                </strong>
-                                ${item.commodity}
-
-                                <br>
-
-                                <strong>
-                                    Status:
-                                </strong>
-                                ${item.status}
-
-                                <br><br>
-                            `;
-
-                        }
-                    );
-
-                }
-
-                popupContent += `
-                    </div>
-                `;
-
-                L.marker(coordinates)
-                    .addTo(map)
-                    .bindPopup(
-                        popupContent
-                    );
-
-            }
-        );
+        if (statusFilter && !statusFilter.dataset.listenerAttached) {
+            statusFilter.addEventListener('change', renderFilteredMapMarkers);
+            statusFilter.dataset.listenerAttached = "true";
+        }
 
     } catch (error) {
 
@@ -1662,12 +1622,122 @@ async function loadMunicipalityMapData() {
 
 }
 
+// ============================================================
+// RENDER FILTERED MAP MARKERS (Color-coded + Filtered)
+// ============================================================
+
+function renderFilteredMapMarkers() {
+
+    if (!map) return;
+
+    // Remove existing markers layer
+    if (mapMarkersLayer) {
+        map.removeLayer(mapMarkersLayer);
+    }
+
+    mapMarkersLayer = L.layerGroup().addTo(map);
+
+    const selectedCommodity =
+        document.getElementById('filterCommodity')?.value || 'all';
+    const selectedStatus =
+        document.getElementById('filterStatus')?.value || 'all';
+
+    MUNICIPALITY_MAP_RAW_DATA.forEach(municipalityData => {
+
+        const municipality = municipalityData.municipality;
+        const baseCoordinates = municipalityCoordinates[municipality];
+
+        if (!baseCoordinates || !municipalityData.commodities) return;
+
+        // Filter commodities base sa dropdown selections
+        const filteredCommodities = municipalityData.commodities.filter(item => {
+
+            const commodityMatch =
+                selectedCommodity === 'all' ||
+                item.commodity.toLowerCase() === selectedCommodity.toLowerCase();
+
+            const statusVal = (item.status || "").toUpperCase();
+
+            let statusMatch = true;
+            if (selectedStatus !== 'all') {
+                statusMatch = statusVal.includes(selectedStatus);
+            }
+
+            return commodityMatch && statusMatch;
+        });
+
+        const totalFiltered = filteredCommodities.length;
+
+        filteredCommodities.forEach((item, index) => {
+
+            const commodity = item.commodity;
+            const status = (item.status || "").toUpperCase();
+
+            // Offset para hindi magpatong ang markers sa iisang munisipyo
+            const offsetLat =
+                baseCoordinates[0] + (index - (totalFiltered / 2)) * 0.0025;
+            const offsetLng =
+                baseCoordinates[1] + (index - (totalFiltered / 2)) * 0.0025;
+            const markerCoordinates = [offsetLat, offsetLng];
+
+            // Color-coding:
+            // Red = Surplus/Oversupply
+            // Green = Balanced
+            // Yellow = Deficit
+            // Gray = No Data
+            let markerColor = "#6c757d"; // Gray default
+
+            if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
+                markerColor = "#C0392B"; // Red
+            } else if (status.includes("BALANCED")) {
+                markerColor = "#2E7D32"; // Green
+            } else if (status.includes("DEFICIT")) {
+                markerColor = "#D97706"; // Yellow / Amber
+            }
+
+            const customIcon = L.divIcon({
+                className: 'custom-map-marker',
+                html: `<div style="
+                    background-color: ${markerColor};
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                "></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const popupContent = `
+                <div style="min-width:180px;">
+                    <strong>Municipality:</strong> ${municipality}
+                    <br><br>
+                    <strong>Commodity:</strong> ${commodity}
+                    <br>
+                    <strong>Status:</strong>
+                    <span style="font-weight:700; color:${markerColor};">
+                        ${status || 'NO DATA'}
+                    </span>
+                </div>
+            `;
+
+            L.marker(markerCoordinates, { icon: customIcon })
+                .addTo(mapMarkersLayer)
+                .bindPopup(popupContent);
+
+        });
+
+    });
+
+}
 
 // CALL MAP DATA
-
 loadMunicipalityMapData();
 
-  // ============================================================
+  
+
+// ============================================================
   // PROVINCIAL REPORTS
   // ============================================================
 

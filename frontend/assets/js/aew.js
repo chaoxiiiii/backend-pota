@@ -1,6 +1,6 @@
 /* ============================================================
    E SAKA — AEW DASHBOARD
-   Complete Frontend JavaScript
+   Complete Frontend JavaScript (Map Filter & Color Coding Fixed)
 ============================================================ */
 
 /* ============================================================
@@ -57,6 +57,10 @@ let currentSubmittedIntentsPage = 1;
 let currentActiveFarmer = null;
 let isEditMode = false;
 let mapInstance = null;
+
+// Map & Filter State
+let MUNICIPALITY_MAP_RAW_DATA = [];
+let mapMarkersLayer = null;
 
 // Offtake state
 let currentOfftakeRequest = null;
@@ -305,7 +309,7 @@ function initMap() {
 }
 
 /* ============================================================
-   MUNICIPALITY COORDINATES & MAP DATA
+   MUNICIPALITY COORDINATES & MAP DATA (With Filtering & Color Coding)
 ============================================================ */
 
 const municipalityCoordinates = {
@@ -337,9 +341,7 @@ async function loadMunicipalityMapData() {
             `${API_BASE_URL}/api/planting-intents/municipality-map`,
             {
                 method: "GET",
-                headers: {
-                    "Accept": "application/json"
-                }
+                headers: { "Accept": "application/json" }
             }
         );
 
@@ -355,45 +357,99 @@ async function loadMunicipalityMapData() {
             return;
         }
 
-        result.data.forEach(municipalityData => {
-            const municipality = municipalityData.municipality;
-            const coordinates = municipalityCoordinates[municipality];
+        MUNICIPALITY_MAP_RAW_DATA = result.data;
+        renderFilteredMapMarkers();
 
-            if (!coordinates) {
-                console.warn(`No coordinates for ${municipality}`);
-                return;
-            }
-
-            let popupContent = `
-                <div style="min-width:200px;">
-                    <strong>Municipality:</strong>
-                    ${municipality}
-                    <br><br>
-            `;
-
-            if (municipalityData.commodities && Array.isArray(municipalityData.commodities)) {
-                municipalityData.commodities.forEach(item => {
-                    popupContent += `
-                        <strong>Commodity:</strong>
-                        ${item.commodity}
-                        <br>
-                        <strong>Status:</strong>
-                        ${item.status}
-                        <br><br>
-                    `;
-                });
-            }
-
-            popupContent += `</div>`;
-
-            L.marker(coordinates)
-                .addTo(mapInstance)
-                .bindPopup(popupContent);
-        });
+        // I-attach ang event listeners sa filter dropdowns
+        document.getElementById('filterCommodity')?.addEventListener('change', renderFilteredMapMarkers);
+        document.getElementById('filterStatus')?.addEventListener('change', renderFilteredMapMarkers);
 
     } catch (error) {
         console.error("Failed to load AEW municipality map data:", error);
     }
+}
+
+function renderFilteredMapMarkers() {
+    if (!mapInstance) return;
+
+    if (mapMarkersLayer) {
+        mapInstance.removeLayer(mapMarkersLayer);
+    }
+
+    mapMarkersLayer = L.layerGroup().addTo(mapInstance);
+
+    const selectedCommodity = document.getElementById('filterCommodity')?.value || 'all';
+    const selectedStatus = document.getElementById('filterStatus')?.value || 'all';
+
+    MUNICIPALITY_MAP_RAW_DATA.forEach(municipalityData => {
+        const municipality = municipalityData.municipality;
+        const baseCoordinates = municipalityCoordinates[municipality];
+
+        if (!baseCoordinates || !municipalityData.commodities) return;
+
+        const filteredCommodities = municipalityData.commodities.filter(item => {
+            const commodityMatch = selectedCommodity === 'all' || item.commodity.toLowerCase() === selectedCommodity.toLowerCase();
+            const statusVal = (item.status || "").toUpperCase();
+            
+            let statusMatch = true;
+            if (selectedStatus !== 'all') {
+                statusMatch = statusVal.includes(selectedStatus);
+            }
+
+            return commodityMatch && statusMatch;
+        });
+
+        const totalFiltered = filteredCommodities.length;
+
+        filteredCommodities.forEach((item, index) => {
+            const commodity = item.commodity;
+            const status = (item.status || "").toUpperCase();
+
+            // Offset para hindi magpatong ang markers sa iisang munisipyo
+            const offsetLat = baseCoordinates[0] + (index - (totalFiltered / 2)) * 0.0025;
+            const offsetLng = baseCoordinates[1] + (index - (totalFiltered / 2)) * 0.0025;
+            const markerCoordinates = [offsetLat, offsetLng];
+
+            // Color-coding: Red = Surplus/Oversupply, Green = Deficit, Yellow = Balanced, Gray = No Data
+            let markerColor = "#6c757d"; // Gray
+
+            if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
+                markerColor = "#C0392B"; // Red
+            } else if (status.includes("BALANCED")) {
+                markerColor = "#2E7D32"; // Green
+            } else if (status.includes("DEFICIT")) {
+                markerColor = "#D97706"; // Yellow / Amber
+            }
+
+            const customIcon = L.divIcon({
+                className: 'custom-map-marker',
+                html: `<div style="
+                    background-color: ${markerColor};
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                "></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const popupContent = `
+                <div style="min-width:180px;">
+                    <strong>Municipality:</strong> ${municipality}
+                    <br><br>
+                    <strong>Commodity:</strong> ${commodity}
+                    <br>
+                    <strong>Status:</strong> <span style="font-weight:700; color:${markerColor};">${status || 'NO DATA'}</span>
+                </div>
+            `;
+
+            L.marker(markerCoordinates, { icon: customIcon })
+                .addTo(mapMarkersLayer)
+                .bindPopup(popupContent);
+        });
+    });
 }
 
 /* ============================================================
@@ -1274,20 +1330,16 @@ async function submitPlantingIntentStatus(intent) {
     }
 
     const intentId = intent.planting_intent_id;
-
     if (!intentId) {
         alert("Planting Intent ID not found.");
         return;
     }
 
-    if (!confirm(
-        "Are you sure you want to submit this planting intent?"
-    )) {
-        return;
-    }
+    // Gamitin ang custom modal sa halip na browser confirm()
+    const confirmed = await showPlantIntentConfirmModal();
+    if (!confirmed) return;
 
-    const submitBtn =
-        document.getElementById("submitPlantingIntentBtn");
+    const submitBtn = document.getElementById("submitPlantingIntentBtn");
 
     try {
         if (submitBtn) {
@@ -1295,11 +1347,7 @@ async function submitPlantingIntentStatus(intent) {
             submitBtn.textContent = "Submitting...";
         }
 
-        const url =
-            PLANTING_INTENTS_ENDPOINT +
-            intentId +
-            "/submit";
-
+        const url = PLANTING_INTENTS_ENDPOINT + intentId + "/submit";
         console.log("Submitting planting intent:", url);
 
         const result = await apiRequest(url, {
@@ -1308,11 +1356,9 @@ async function submitPlantingIntentStatus(intent) {
 
         console.log("Submit response:", result);
 
-        // Update current intent
         intent.status = "SUBMITTED";
         intent.updated_at = new Date().toISOString();
 
-        // Update main data array
         const index = PLANTING_INTENTS_DATA.findIndex(function(item) {
             return String(item.planting_intent_id) === String(intentId);
         });
@@ -1322,33 +1368,66 @@ async function submitPlantingIntentStatus(intent) {
             PLANTING_INTENTS_DATA[index].updated_at = intent.updated_at;
         }
 
-        // Reset filtered data
         filteredPlantingIntents = null;
-
-        // Refresh planting intent tables
         renderPlantingIntentsTable();
-
-        // Keep updated intent selected
         window.currentSelectedPlantingIntent = intent;
-
-        // Refresh details view
         openPlantingIntentDetails(intent);
 
-        alert("Planting intent submitted successfully.");
+        // Success custom modal
+        const modal = document.getElementById("plantIntentSubmittedModal");
+        if (modal) {
+            const pEl = modal.querySelector("p");
+            if (pEl) pEl.textContent = "Planting intent submitted successfully.";
+            modal.classList.add("show");
+        } else {
+            alert("Planting intent submitted successfully.");
+        }
 
     } catch (error) {
         console.error("Submit planting intent error:", error);
-
-        alert(
-            "Failed to submit planting intent.\n\n" +
-            (error.message || "Please try again.")
-        );
-
+        alert("Failed to submit planting intent.\n\n" + (error.message || "Please try again."));
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
+            submitBtn.textContent = "Submit Intent";
         }
     }
+}
+
+// Helper function para sa custom confirmation modal
+function showPlantIntentConfirmModal() {
+    return new Promise((resolve) => {
+        const modal = document.getElementById("confirmPlantIntentModal");
+        const confirmBtn = document.getElementById("confirmSubmitPlantIntentBtn");
+        const cancelBtn = document.getElementById("cancelPlantIntentConfirmBtn");
+
+        if (!modal || !confirmBtn || !cancelBtn) {
+            // Fallback kung sakaling hindi makita ang modal elements sa HTML
+            resolve(confirm("Are you sure you want to submit this planting intent?"));
+            return;
+        }
+
+        modal.classList.add("show");
+
+        const cleanup = () => {
+            confirmBtn.removeEventListener("click", onConfirm);
+            cancelBtn.removeEventListener("click", onCancel);
+            modal.classList.remove("show");
+        };
+
+        const onConfirm = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        const onCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        confirmBtn.addEventListener("click", onConfirm);
+        cancelBtn.addEventListener("click", onCancel);
+    });
 }
 
 // ============================================================
@@ -2869,108 +2948,6 @@ function initReporting() {
 }
 
 // ============================================================
-// RENDER FINALIZED PLANTING INTENTS
-// ============================================================
-
-function renderFinalizedIntents(intents) {
-    const tbody = document.getElementById('individualReportsTableBody');
-    if (!tbody) return;
-
-    // Apply filter
-    let filteredIntents = intents;
-    if (individualFilterStatus !== 'all') {
-        filteredIntents = intents.filter(function(intent) {
-            const status = (intent.status || 'NOT PLANTED').toUpperCase();
-            return status === individualFilterStatus;
-        });
-    }
-
-    if (!filteredIntents || filteredIntents.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="padding:30px; text-align:center; color:#999;">No finalized planting intents found.</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = filteredIntents.map(function(intent) {
-        const status = intent.status || "NOT PLANTED";
-        const statusUpper = status.toUpperCase();
-        const statusClass = 'status-pill-' + statusUpper.toLowerCase().replace(/ /g, '-');
-        
-        return `
-            <tr class="clickable-row" data-intent-id="${intent.planting_intent_id}">
-                <td>#${intent.report_id}</td>
-                <td>${escapeHtml(intent.title)}</td>
-                <td>${intent.submitted_at ? formatPlantingDate(intent.submitted_at) : '-'}</td>
-                <td>
-                    <div style="display:flex; align-items:center; gap:8px; justify-content:center; flex-wrap:wrap;">
-                        <span class="status-pill ${statusClass}">${escapeHtml(statusUpper)}</span>
-                        <select class="finalized-status-select" data-intent-id="${intent.planting_intent_id}" style="padding:4px 8px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:11px; background:#fff; cursor:pointer;">
-                            <option value="NOT PLANTED" ${statusUpper === 'NOT PLANTED' ? 'selected' : ''}>Not Planted</option>
-                            <option value="PLANTED" ${statusUpper === 'PLANTED' ? 'selected' : ''}>Planted</option>
-                            <option value="HARVESTED" ${statusUpper === 'HARVESTED' ? 'selected' : ''}>Harvested</option>
-                            <option value="MEDIATING" ${statusUpper === 'MEDIATING' ? 'selected' : ''}>Mediating</option>
-                        </select>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
-
-    // Attach change event to status selects
-    tbody.querySelectorAll('.finalized-status-select').forEach(function(select) {
-        select.addEventListener('change', function(e) {
-            e.stopPropagation();
-            const intentId = this.dataset.intentId;
-            const newStatus = this.value;
-            updateFinalizedIntentStatus(intentId, newStatus);
-        });
-    });
-
-    // Attach click event to rows
-    tbody.querySelectorAll('.clickable-row').forEach(function(row) {
-        row.addEventListener('click', function(e) {
-            if (e.target.tagName === 'SELECT') return;
-            const intentId = this.dataset.intentId;
-            openFinalizedIntentDetails(intentId);
-        });
-    });
-}
-
-// ============================================================
-// UPDATE FINALIZED INTENT STATUS
-// ============================================================
-
-async function updateFinalizedIntentStatus(intentId, newStatus) {
-    try {
-        // Update the intent's finalized_status (you may need to add this field to your model)
-        // For now, we'll update it in the local data and re-render
-        const intent = PLANTING_INTENTS_DATA.find(function(i) {
-            return i.planting_intent_id === intentId;
-        });
-        
-        if (intent) {
-            intent.finalized_status = newStatus;
-            
-            // Also update in the allIndividualReports array
-            const reportIntent = allIndividualReports.find(function(r) {
-                return r.planting_intent_id === intentId;
-            });
-            if (reportIntent) {
-                reportIntent.status = newStatus;
-            }
-        }
-        
-        // Re-render
-        renderFinalizedIntents(allIndividualReports);
-        
-        console.log(`Status updated to ${newStatus} for intent ${intentId}`);
-        
-    } catch (error) {
-        console.error("Failed to update status:", error);
-        alert("Failed to update status. Please try again.");
-    }
-}
-
-// ============================================================
 // CREATE REPORT FROM PLANTING INTENTS
 // ============================================================
 
@@ -3244,7 +3221,6 @@ function initReports() {
 
 // Make sure to call initReports in DOMContentLoaded
 document.addEventListener("DOMContentLoaded", async () => {
-    // ... existing initialization ...
     initReports();
 });
 
@@ -5266,7 +5242,11 @@ submitPlantingIntent = async function() {
         await fetchPlantingIntents();
 
         var modal = document.getElementById("plantIntentSubmittedModal");
-        if (modal) modal.classList.add("show");
+        if (modal) {
+            modal.classList.add("show");
+        } else {
+            alert("Planting intent successfully saved and submitted!");
+        }
 
     } catch (error) {
         console.error("Create planting intent error:", error);
@@ -6383,7 +6363,7 @@ function renderAEWNotifications(alerts) {
             </div>
         `;
 
-        notificationList.appendChild(item);
+        notificationList.api?.appendChild(item) || notificationList.appendChild(item);
     });
 }
 
