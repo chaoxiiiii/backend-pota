@@ -76,6 +76,11 @@ def get_raw_plant_reports(
     
     result = []
     for report in reports:
+        # ✅ GET SUBMISSION STATUS (source of truth)
+        submission = db.query(ReportSubmission).filter(
+            ReportSubmission.report_id == report.report_id
+        ).first()
+        
         links = db.query(ReportPlantingIntent).filter(
             ReportPlantingIntent.report_id == report.report_id
         ).all()
@@ -99,8 +104,9 @@ def get_raw_plant_reports(
             "planting_date": report.planting_date,
             "estimated_yield": report.estimated_yield,
             "encoded_by": report.encoded_by,
-            "municipality": report.municipality, 
-            "status": report.status or "NOT PLANTED",
+            "status": submission.status if submission else (report.status or "DRAFT"),   # ✅
+            "revision_remarks": submission.revision_remarks if submission else None,     # ✅
+            "revision_count": submission.revision_count if submission else 0,            # ✅
             "notes": getattr(report, 'notes', ""),
             "created_at": report.created_at,
             "submitted_at": report.created_at,
@@ -113,13 +119,12 @@ def get_raw_plant_reports(
                     "finalized_status_at_submission": link.finalized_status_snapshot,
                     "plant_status_at_submission": link.plant_status_snapshot,
                 }
-                for link in db.query(ReportPlantingIntent).filter(
-                    ReportPlantingIntent.report_id == report.report_id
-                ).all()
+                for link in links
             ],
         })
     
     return result
+
 
 
 @router.post("/from-intents")
@@ -196,7 +201,7 @@ def create_report_from_intents(
     db.add(db_report)
     db.flush()
 
-    # ✅ Link intents to report with SNAPSHOT
+    # Link intents to report with SNAPSHOT
     for intent in intents:
         link = ReportPlantingIntent(
             report_id=db_report.report_id,
@@ -207,8 +212,19 @@ def create_report_from_intents(
         db.add(link)
         intent.is_in_report = True
 
+    # Create ReportSubmission
+    submission = ReportSubmission(
+        report_id=db_report.report_id,
+        status=status,  # DRAFT or SUBMITTED_MUNICIPAL_PENDING
+        current_validator_id=None,
+        current_validator_role="municipal_coordinator" if status == "SUBMITTED_MUNICIPAL_PENDING" else None,
+        revision_count=0,
+    )
+    db.add(submission)
+
     db.commit()
     db.refresh(db_report)
+
 
     return {
         "report_id": db_report.report_id,
@@ -372,6 +388,19 @@ def get_raw_plant_report(
     elif current_user.role == "Municipal Coordinator":
         if report.municipality != current_user.municipality:
             raise HTTPException(403, "Access denied.")
+
+    elif current_user.role in (
+        "Provincial Coordinator",
+        "DA-RFO Officer",
+        "Regional Coordinator",
+    ):
+        pass  # Full access
+
+    
+    # ✅ GET SUBMISSION STATUS (source of truth)
+    submission = db.query(ReportSubmission).filter(
+        ReportSubmission.report_id == report_id
+    ).first()
     
     links = db.query(ReportPlantingIntent).filter(
         ReportPlantingIntent.report_id == report_id
@@ -394,8 +423,8 @@ def get_raw_plant_report(
             "farmer_name": farmer_name,
             "commodity": intent.commodity if intent else "-",
             "volume": intent.volume if intent else 0,
-            "planting_date": intent.planting_date if intent else None,    
-            "harvest_date": intent.harvest_date if intent else None,      
+            "planting_date": intent.planting_date if intent else None,
+            "harvest_date": intent.harvest_date if intent else None,
             "finalized_status_at_submission": link.finalized_status_snapshot,
         })
     
@@ -407,12 +436,13 @@ def get_raw_plant_report(
         "planting_date": report.planting_date,
         "estimated_yield": report.estimated_yield,
         "encoded_by": report.encoded_by,
-        "status": report.status,
+        "status": submission.status if submission else report.status,           
+        "revision_remarks": submission.revision_remarks if submission else None, 
+        "revision_count": submission.revision_count if submission else 0,        
         "notes": getattr(report, 'notes', ""),
         "attachments": report.attachments or [],
         "created_at": report.created_at,
         "submitted_at": report.created_at,
-        "revision_remarks": getattr(report, 'revision_remarks', None),
         "planting_intents": intent_data,
     }
 
@@ -495,76 +525,81 @@ def update_report_status(
     db: Session = Depends(get_db),
 ):
     """
-    Update the status of a report.
-    
-    Validates:
-    - Transition is allowed (state machine)
-    - User's role matches the required role for the target status
-    - Report is editable (DRAFT or FLAGGED) kung AEW ang gagawa
+    Update the status of a report's submission.
+    Uses ReportSubmission.status (source of truth) instead of RawPlantReport.status.
     """
     new_status = payload.get("status")
     if not new_status:
         raise HTTPException(400, "Missing 'status' in payload.")
-    
+
     # Validate status value
     try:
         new_status_enum = ReportStatus(new_status)
     except ValueError:
         raise HTTPException(400, f"Invalid status: {new_status}")
-    
+
     report = db.query(RawPlantReport).filter(
         RawPlantReport.report_id == report_id
     ).first()
-    
+
     if not report:
         raise HTTPException(404, "Report not found.")
-    
-    old_status = report.status or ReportStatus.DRAFT.value
-    
-    # ✅ Validate transition
-    if not can_transition(old_status, new_status):
-        raise HTTPException(
-            400,
-            f"Cannot transition from '{old_status}' to '{new_status}'."
-        )
-    
-    # ✅ Role check
-    required_role = STATUS_REQUIRED_ROLE.get(new_status_enum)
-    if required_role:
-        if isinstance(required_role, tuple):
-            if current_user.role not in required_role:
-                raise HTTPException(
-                    403,
-                    f"Only {', '.join(required_role)} can set status to '{new_status}'."
-                )
-        elif current_user.role != required_role:
-            raise HTTPException(
-                403,
-                f"Only '{required_role}' can set status to '{new_status}'."
-            )
 
-    
-    # ✅ Kung AEW mag-se-submit, dapat DRAFT or FLAGGED ang report
-    if new_status_enum == ReportStatus.SUBMITTED_MUNICIPAL_PENDING:
-        if old_status not in (ReportStatus.DRAFT.value, 
-                              ReportStatus.SUBMITTED_MUNICIPAL_FLAGGED.value,
-                              ReportStatus.SUBMITTED_PROVINCIAL_FLAGGED.value,
-                              ReportStatus.SUBMITTED_REGIONAL_FLAGGED.value):
+    submission = db.query(ReportSubmission).filter(
+        ReportSubmission.report_id == report_id
+    ).first()
+
+    if not submission:
+        raise HTTPException(404, "Report submission not found.")
+
+    old_status = submission.status or ReportStatus.DRAFT.value
+
+    if old_status != new_status:
+        # Validate transition
+        if not can_transition(old_status, new_status):
             raise HTTPException(
                 400,
-                "Report can only be submitted from DRAFT or FLAGGED status."
+                f"Cannot transition from '{old_status}' to '{new_status}'."
             )
-    
-    # ✅ Update report status
+
+        submission.status = new_status
+        report.status = new_status
+
+        if new_status_enum == ReportStatus.SUBMITTED_MUNICIPAL_PENDING:
+            submittable = (
+                ReportStatus.DRAFT.value,
+                ReportStatus.SUBMITTED_MUNICIPAL_FLAGGED.value,
+                ReportStatus.SUBMITTED_PROVINCIAL_FLAGGED.value,
+                ReportStatus.SUBMITTED_REGIONAL_FLAGGED.value,
+            )
+            if old_status not in submittable:
+                raise HTTPException(
+                    400,
+                    f"Report can only be submitted from DRAFT or FLAGGED status. "
+                    f"Current status: {old_status}"
+                )
+
+    submission.status = new_status
     report.status = new_status
-    
+
+    if new_status_enum == ReportStatus.SUBMITTED_MUNICIPAL_PENDING:
+        submission.current_validator_id = report.municipal_coordinator_id
+        submission.current_validator_role = "municipal_coordinator"
+        submission.revision_remarks = None
+        submission.submitted_at = datetime.utcnow()
+
+    elif new_status_enum == ReportStatus.SUBMITTED_MUNICIPAL_FLAGGED:
+        submission.current_validator_id = None
+        submission.current_validator_role = "aew"
+
     db.commit()
-    db.refresh(report)
-    
+    db.refresh(submission)
+
     return {
-        "report_id": report.report_id,
-        "status": report.status,
-        "message": f"Report status updated from '{old_status}' to '{new_status}'."
+        "report_id": report_id,
+        "submission_id": submission.submission_id,
+        "status": submission.status,
+        "message": f"Report status updated from '{old_status}' to '{new_status}'.",
     }
 
 
@@ -698,14 +733,15 @@ async def upload_report_attachment(
 
 
 # ============================================================
-# DOWNLOAD / VIEW ATTACHMENT
+# DOWNLOAD / VIEW ATTACHMENT (public — no auth required)
 # ============================================================
+
+import mimetypes
 
 @router.get("/{report_id}/attachments/{stored_name}")
 def get_report_attachment(
     report_id: int,
     stored_name: str,
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     report = db.query(RawPlantReport).filter(
@@ -715,15 +751,6 @@ def get_report_attachment(
     if not report:
         raise HTTPException(404, "Report not found.")
     
-    # ✅ Access check
-    if current_user.role == "Agricultural Extension Worker":
-        if report.encoded_by != current_user.user_id:
-            raise HTTPException(403, "Access denied.")
-    elif current_user.role == "Municipal Coordinator":
-        if report.municipality != current_user.municipality:
-            raise HTTPException(403, "Access denied.")
-    
-    # ✅ Verify na nasa report attachments
     attachments = report.attachments or []
     attachment = next(
         (a for a in attachments if a.get("stored_name") == stored_name),
@@ -737,8 +764,36 @@ def get_report_attachment(
     if not os.path.exists(filepath):
         raise HTTPException(404, "File not found on disk.")
     
-    return FileResponse(
-        filepath,
-        filename=attachment.get("filename", stored_name),
-        media_type="application/octet-stream",
+    # ✅ Determine MIME type
+    filename = attachment.get("filename", stored_name)
+    media_type, _ = mimetypes.guess_type(filename)
+    
+    # ✅ List of viewable types (browser can display)
+    VIEWABLE_TYPES = (
+        "image/",
+        "application/pdf",
+        "text/",
+        "video/",
+        "audio/",
     )
+    
+    is_viewable = media_type and any(
+        media_type.startswith(t) for t in VIEWABLE_TYPES
+    )
+    
+    if is_viewable:
+        # ✅ View sa browser
+        return FileResponse(
+            filepath,
+            media_type=media_type,
+            filename=filename,
+            content_disposition_type="inline",
+        )
+    else:
+        # ⬇️ Download (docx, xlsx, etc.)
+        return FileResponse(
+            filepath,
+            media_type=media_type or "application/octet-stream",
+            filename=filename,
+            content_disposition_type="attachment",
+        )

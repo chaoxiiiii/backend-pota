@@ -964,6 +964,112 @@
     font-weight: 600;
 }
 
+.status-pill.draft {
+    background-color: #6c757d !important;
+}
+
+.status-pill.pending {
+    background-color: #D97706 !important;
+}
+
+.status-pill.flagged {
+    background-color: #C0392B !important;
+}
+
+.status-pill.submitted {
+    background-color: #2E7D32 !important;  
+}
+
+.status-pill.approved {
+    background-color: #2E7D32 !important;
+}
+
+.status-pill.rfo {
+    background-color: #2980B9 !important;
+}
+
+
+/* ============================================================
+   SECTION TITLE + COUNT BADGE
+============================================================ */
+.text-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 8px;
+    background: var(--green);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+
+/* ============================================================
+   FILTER PILLS
+============================================================ */
+.filter-pill {
+    appearance: none;
+    padding: 6px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    background: #FFFFFF;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.02em;
+}
+
+.filter-pill:hover {
+    background: var(--cream);
+    border-color: var(--green);
+    color: var(--ink);
+}
+
+.filter-pill.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: #FFFFFF;
+}
+
+.filter-pill[data-filter="NOT PLANTED"].active {
+    background: #6c757d;
+    border-color: #6c757d;
+}
+
+.filter-pill[data-filter="PLANTED"].active {
+    background: #D97706;
+    border-color: #D97706;
+}
+
+.filter-pill[data-filter="HARVESTED"].active {
+    background: #2E7D32;
+    border-color: #2E7D32;
+}
+
+.filter-pill[data-filter="MEDIATING"].active {
+    background: #2980B9;
+    border-color: #2980B9;
+}
+
+
+
   </style>
 </head>
 <body>
@@ -1003,10 +1109,10 @@
       </div>
 
       <div class="user-info">
-        <div class="avatar">JD</div>
+        <div class="avatar" id="userDisplayInitials">--</div>
         <div class="user-text">
-          <div class="user-name" id="userDisplayName">Juan Dela Cruz</div>
-          <div class="user-role" id="userDisplayRole">AEW Field Worker</div>
+          <div class="user-name" id="userDisplayName">Loading...</div>
+          <div class="user-role" id="userDisplayRole">Loading...</div>
         </div>
       </div>
     </div>
@@ -1450,13 +1556,24 @@
              SUBMITTED INTENTS TABLE
         ============================================================ -->
         <div id="submittedIntentsContainer" class="sub-tab-content" style="display:none;">
-            <div class="card">
-                <div class="card-title" style="font-size:14px; font-weight:700; color:var(--ink); margin-bottom:12px;">
-                    Finalized Planting Intents
-                    <span style="font-weight:400; color:var(--muted); font-size:12px; margin-left:8px;">
-                        (Click a row to view details)
-                    </span>
-                </div>
+          <div class="card">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                  <div class="card-title" style="font-size:14px; font-weight:700; color:var(--ink); margin-bottom:0;">
+                      Finalized Planting Intents
+                      <span style="font-weight:400; color:var(--muted); font-size:12px; margin-left:8px;">
+                          (Click a row to view details)
+                      </span>
+                  </div>
+
+                  <!-- ✅ FILTER PILLS -->
+                  <div id="finalizedIntentsFilterPills" style="display:flex; gap:8px; flex-wrap:wrap;">
+                      <button class="filter-pill active" data-filter="all" type="button">All</button>
+                      <button class="filter-pill" data-filter="NOT PLANTED" type="button">Not Planted</button>
+                      <button class="filter-pill" data-filter="PLANTED" type="button">Planted</button>
+                      <button class="filter-pill" data-filter="HARVESTED" type="button">Harvested</button>
+                      <button class="filter-pill" data-filter="MEDIATING" type="button">Mediating</button>
+                  </div>
+              </div>
                 <div id="submittedIntentsWrapper">
                     <table>
                         <thead>
@@ -1846,98 +1963,96 @@
 
       <!-- VIEW 6: REPORTS -->
       <section class="view" id="view-reports">
-          
-          <!-- ============================================================
-              REPORTS MAIN VIEW (List of Reports)
-          ============================================================ -->
-          <div id="reportsMainSubview">
-              <div class="main-header">
-                  <div class="header-left">
-                      <h1>Submit Report</h1>
-                      <p>Submit weekly planting and harvest reports to Municipal Coordinator.</p>
-                  </div>
-                  <div class="header-actions">
-                      <button class="btn-primary" id="createReportBtn" type="button">+ Submit New Report</button>
-                  </div>
-              </div>
 
-              <div class="card">
-                  <!-- ============================================================
-                      FINALIZED PLANTING INTENTS (AEW's own reports - Drafts)
-                  ============================================================ -->
-                  <div style="margin-bottom: 24px;">
-                      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
-                          <h3 style="font-size:18px; font-weight:700; color:var(--ink); margin:0;">
-                              Finalized Planting Intents
-                              <span style="font-weight:400; color:var(--muted); font-size:12px; margin-left:8px;">
-                                  (Click a row to view details)
-                              </span>
-                          </h3>
-                          <!-- FILTER BY STATUS -->
-                          <div style="display:flex; align-items:center; gap:8px;">
-                              <label style="font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em;">Filter:</label>
-                              <select id="individualReportFilter" style="padding:6px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:12px; background:#fff; cursor:pointer;">
-                                  <option value="all">All Statuses</option>
-                                  <option value="NOT PLANTED">Not Planted</option>
-                                  <option value="PLANTED">Planted</option>
-                                  <option value="HARVESTED">Harvested</option>
-                                  <option value="MEDIATING">Mediating</option>
-                              </select>
-                          </div>
-                      </div>
-                      <div style="overflow-x:auto;">
-                          <table style="width:100%; border-collapse:collapse;">
-                              <thead>
-                                  <tr>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:90px;">INTENT ID</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:140px;">FARMER NAME</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:110px;">COMMODITY</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:100px;">EST. VOLUME</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:110px;">PLANTING DATE</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:110px;">HARVEST DATE</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center; min-width:130px;">STATUS</th>
-                                  </tr>
-                              </thead>
-                            <tbody id="individualReportsTableBody">
-                                <tr>
-                                    <td colspan="7" style="padding:30px; text-align:center; color:#999;">No finalized planting intents found.</td>
-                                </tr>
-                            </tbody>
-                          </table>
-                      </div>
-                  </div>
-
-                  <!-- ============================================================
-                      SUBMITTED REPORTS (Reports sent to Municipal)
-                  ============================================================ -->
-                  <div>
-                      <h3 style="font-size:18px; font-weight:700; color:var(--ink); margin-bottom:12px;">
-                          Submitted Reports
-                          <span style="font-weight:400; color:var(--muted); font-size:12px; margin-left:8px;">
-                              (Reports submitted to Municipal Coordinator)
-                          </span>
-                      </h3>
-                      <div style="overflow-x:auto;">
-                          <table style="width:100%; border-collapse:collapse; text-align:center;">
-                              <thead>
-                                  <tr>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Report ID</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Title</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Municipality</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Submitted Date</th>
-                                      <th style="padding:12px 14px; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; border-bottom:1.5px solid var(--border); text-align:center;">Status</th>
-                                  </tr>
-                              </thead>
-                              <tbody id="submittedReportsTableBody">
-                                  <tr>
-                                      <td colspan="4" style="padding:30px; text-align:center; color:#999;">No submitted reports found.</td>
-                                  </tr>
-                              </tbody>
-                          </table>
-                      </div>
-                  </div>
-              </div>
+        <!-- ============================================================
+            REPORTS MAIN VIEW
+        ============================================================ -->
+        <div id="reportsMainSubview">
+          <div class="main-header">
+            <div class="header-left">
+              <h1>Submit Report</h1>
+              <p>Submit weekly planting and harvest reports to Municipal Coordinator.</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn-primary" id="createReportBtn" type="button">+ Submit New Report</button>
+            </div>
           </div>
+
+          <!-- ==================== PENDING (MUNICIPAL) ==================== -->
+          <div class="card" style="margin-bottom:24px;">
+            <div class="text-section-title" style="margin-bottom:12px;">
+              Pending at Municipal
+              <span class="count-badge" id="pendingReportsCountBadge">0</span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="center-col">Report ID</th>
+                    <th>Title</th>
+                    <th>Commodity</th>
+                    <th>Municipality</th>
+                    <th class="center-col">Submitted</th>
+                    <th class="center-col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingReportsTableBody">
+                  <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">No pending reports.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ==================== FLAGGED / AWAITING REVISION ==================== -->
+          <div class="card" style="margin-bottom:24px;">
+            <div class="text-section-title" style="margin-bottom:12px;">
+              Awaiting My Revision
+              <span class="count-badge" id="flaggedReportsCountBadge" style="background: #C0392B;">0</span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="center-col">Report ID</th>
+                    <th>Title</th>
+                    <th>Commodity</th>
+                    <th>Municipality</th>
+                    <th class="center-col">Flagged At</th>
+                    <th class="center-col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="flaggedReportsTableBody">
+                  <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">No flagged reports.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ==================== SUBMITTED (higher levels) ==================== -->
+          <div class="card">
+            <div class="text-section-title" style="margin-bottom:12px;">
+              Submitted Reports
+              <span class="count-badge" id="submittedReportsCountBadge" style="background: #2E7D32;">0</span>
+            </div>
+            <div style="overflow-x:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="center-col">Report ID</th>
+                    <th>Title</th>
+                    <th>Commodity</th>
+                    <th>Municipality</th>
+                    <th class="center-col">Submitted</th>
+                    <th class="center-col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="submittedReportsTableBody">
+                  <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">No submitted reports.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
           <!-- ============================================================
               CREATE NEW REPORT (Select Planting Intents)
@@ -2042,74 +2157,104 @@
           <div id="reportDetailsSubview" class="hidden-element">
               <div class="main-header">
                   <div class="header-left">
-                      <h1>Report Details</h1>
-                      <p id="reportDetailsTitle">Viewing report details</p>
+                      <h1 id="reportDetailsTitle">Report Details</h1>
+                      <p id="detailReportTitle">—</p>
                   </div>
               </div>
 
               <div class="card">
-                  <!-- ✅ Report info grid -->
-                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px 30px; margin-bottom:20px;">
+                  <!-- ==================== REPORT INFO — COMPACT ==================== -->
+                  <div style="
+                      display: grid;
+                      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                      gap: 20px 28px;
+                      padding: 18px 20px;
+                      background: #F6F3EB;
+                      border-radius: 10px;
+                      margin-bottom: 24px;
+                  ">
                       <div>
-                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Report ID</label>
-                          <p id="detailReportId" style="font-size:14px; font-weight:600;">—</p>
+                          <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Report ID</div>
+                          <div id="detailReportId" style="font-size: 14px; font-weight: 700; color: var(--ink);">—</div>
                       </div>
                       <div>
-                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Municipality</label>
-                          <p id="detailReportMunicipality" style="font-size:14px; font-weight:600;">—</p>
-                      </div>
-
-                      <div>
-                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Status</label>
-                          <p id="detailReportStatus" style="font-size:14px; font-weight:600;">—</p>
+                          <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Municipality</div>
+                          <div id="detailReportMunicipality" style="font-size: 14px; font-weight: 600; color: var(--ink);">—</div>
                       </div>
                       <div>
-                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Submitted Date</label>
-                          <p id="detailReportDate" style="font-size:14px; font-weight:600;">—</p>
+                          <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Status</div>
+                          <div id="detailReportStatus" style="font-size: 14px; color: var(--ink);">—</div>
                       </div>
                       <div>
-                          <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Notes / Remarks</label>
-                          <p id="detailReportNotes" style="font-size:14px;">—</p>
+                          <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Submitted Date</div>
+                          <div id="detailReportDate" style="font-size: 14px; font-weight: 600; color: var(--ink);">—</div>
+                      </div>
+                      <div style="grid-column: 1 / -1;">
+                          <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Notes / Remarks</div>
+                          <div id="detailReportNotes" style="font-size: 14px; color: var(--ink); line-height: 1.5;">—</div>
                       </div>
                   </div>
 
-                  <!-- ✅ Revision flag (kung flagged) -->
-                  <div id="detailRevisionFlag" style="display:none;"></div>
-
-                  <!-- ✅ Attachments (isang field lang) -->
-                  <div style="margin-bottom:20px;">
-                      <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Attachments</label>
-                      <div id="detailReportAttachments" style="font-size:14px; color:var(--ink);">No attachments</div>
+                  <!-- ==================== ATTACHMENTS ==================== -->
+                  <div style="margin-bottom: 24px;">
+                      <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Attachments</div>
+                      <div id="detailReportAttachments" style="font-size: 14px; color: var(--muted);">No attachments</div>
                   </div>
 
-                  <!-- ✅ Included Planting Intents -->
-                  <div>
-                      <label style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.02em;">Included Planting Intents</label>
-                      <div style="overflow-x:auto; margin-top:8px;">
+                  <!-- ==================== INCLUDED PLANTING INTENTS ==================== -->
+                  <div style="margin-top: 8px;">
+                      <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;">Included Planting Intents</div>
+                      <div style="overflow-x: auto;">
                           <table>
                               <thead>
                                   <tr>
-                                      <th style="text-align:center;">Intent ID</th>
+                                      <th class="center-col">Intent ID</th>
                                       <th>Farmer</th>
                                       <th>Commodity</th>
-                                      <th style="text-align:center;">Volume</th>
-                                      <th style="text-align:center;">Planting Date</th>
-                                      <th style="text-align:center;">Harvest Date</th>
-                                      <th style="text-align:center;">Harvest Status</th>
+                                      <th class="center-col">Volume</th>
+                                      <th class="center-col">Planting Date</th>
+                                      <th class="center-col">Harvest Date</th>
+                                      <th class="center-col">Harvest Status</th>
                                   </tr>
                               </thead>
                               <tbody id="detailReportIntentsBody">
-                                  <tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>
+                                  <tr>
+                                      <td colspan="7" style="padding: 20px; text-align: center; color: #999;">
+                                          No intents included.
+                                      </td>
+                                  </tr>
                               </tbody>
                           </table>
                       </div>
                   </div>
 
-                  <!-- ✅ Action buttons -->
-                  <div class="actions-right-row" style="margin-top:20px; padding-top:16px; border-top:1.5px solid var(--border);">
+                  <!-- ==================== REVISION REMARKS (kung flagged) ==================== -->
+                  <div id="detailRevisionRemarksWrapper" style="
+                      display: none;
+                      margin-top: 24px;
+                      padding: 16px 20px;
+                      background: #FEE2E2;
+                      border-left: 4px solid #C0392B;
+                      border-radius: 0 8px 8px 0;
+                  ">
+                      <div style="
+                          font-size: 11px;
+                          font-weight: 700;
+                          color: #C0392B;
+                          text-transform: uppercase;
+                          letter-spacing: 0.06em;
+                          margin-bottom: 12px;
+                      ">
+                          Revision Remarks (Flagged by Municipal)
+                      </div>
+                      <div id="detailRevisionRemarks" style="font-size: 14px; color: #333; line-height: 1.6;">—</div>
+                  </div>
+
+                  <!-- ==================== ACTION BUTTONS ==================== -->
+                  <div class="actions-right-row" style="margin-top: 20px; padding-top: 16px; border-top: 1.5px solid var(--border);">
                       <button class="btn-outline-report" id="backFromReportDetailsBtn" type="button">Back</button>
-                      <button class="btn-primary" id="editReportBtn" type="button" style="background:#D97706; display:none;">Edit</button>
-                      <button class="btn-primary" id="resubmitReportBtn" type="button" style="background:#2E7D32; display:none;">Resubmit</button>
+                      <button class="btn-primary" id="editReportBtn" type="button" style="background: #D97706; display: none;">Edit</button>
+                      <button class="btn-primary" id="resubmitReportBtn" type="button" style="background: #2E7D32; display: none;">Resubmit</button>
                   </div>
               </div>
           </div>
@@ -2155,94 +2300,6 @@
           });
         });
         document.addEventListener("click", () => monthDropdown.classList.remove("open"));
-      }
-
-      // Reports Navigation & Logic
-      const reportsMain = document.getElementById("reportsMainSubview");
-      const reportsDetails = document.getElementById("reportsDetailsSubview");
-      const nextBtn = document.getElementById("reportsNextBtn");
-      const notesBackBtn = document.getElementById("reportsNotesBackBtn");
-      const addRowBtn = document.getElementById("addReportRowBtn");
-      const tableBody = document.getElementById("reportsTableBody");
-      const selectFileBtn = document.getElementById("selectReportFileBtn");
-      const fileInput = document.getElementById("reportFileInput");
-      const docFilename = document.getElementById("reportDocFilename");
-      const notesSubmitBtn = document.getElementById("reportsNotesSubmitBtn");
-      const successModal = document.getElementById("reportSuccessModal");
-      const closeSuccessBtn = document.getElementById("closeReportSuccessBtn");
-
-      if (nextBtn) {
-        nextBtn.addEventListener("click", () => {
-          if (!tableBody || tableBody.rows.length === 0) {
-            alert("Please ensure there is at least one report entry before proceeding.");
-            return;
-          }
-          reportsMain.classList.add("hidden-element");
-          reportsDetails.classList.remove("hidden-element");
-        });
-      }
-
-      if (notesBackBtn) {
-        notesBackBtn.addEventListener("click", () => {
-          reportsDetails.classList.add("hidden-element");
-          reportsMain.classList.remove("hidden-element");
-        });
-      }
-
-      if (selectFileBtn && fileInput) {
-        selectFileBtn.addEventListener("click", () => fileInput.click());
-        if (docFilename) docFilename.addEventListener("click", () => fileInput.click());
-        fileInput.addEventListener("change", () => {
-          if (fileInput.files.length > 0) docFilename.value = fileInput.files[0].name;
-        });
-      }
-
-      if (addRowBtn && tableBody) {
-        addRowBtn.addEventListener("click", () => {
-          const newRow = document.createElement("tr");
-          newRow.innerHTML = `
-            <td><input type="text" placeholder="Commodity" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff; width:100%;"></td>
-            <td><input type="date" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
-            <td><input type="date" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff;"></td>
-            <td><input type="number" placeholder="0" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff; width:80px;"></td>
-            <td><input type="text" placeholder="Location" style="padding:6px 10px; border:1.5px solid var(--border); border-radius:6px; background:#fff; width:100%;"></td>
-            <td class="center-col"><span class="status-pill mediating">Mediating</span></td>
-          `;
-          tableBody.appendChild(newRow);
-        });
-      }
-
-      
-      if (notesSubmitBtn) {
-        notesSubmitBtn.addEventListener("click", () => {
-          const notesInput = document.getElementById("reportNotesInput");
-          const notesVal = notesInput ? notesInput.value.trim() : "";
-          const fileVal = fileInput && fileInput.files ? fileInput.files.length : 0;
-
-          if (!notesVal) {
-            alert("Validation Error: Please provide remarks or notes before submitting.");
-            if (notesInput) notesInput.focus();
-            return;
-          }
-
-          if (fileVal === 0) {
-            alert("Validation Error: Please select/upload a required supporting document.");
-            return;
-          }
-
-          if (successModal) successModal.classList.add("show");
-        });
-      }
-
-      if (closeSuccessBtn) {
-        closeSuccessBtn.addEventListener("click", () => {
-          if (successModal) successModal.classList.remove("show");
-          const reportForm = document.getElementById("reportNotesForm");
-          if (reportForm) reportForm.reset();
-          if (docFilename) docFilename.value = "";
-          if (reportsDetails) reportsDetails.classList.add("hidden-element");
-          if (reportsMain) reportsMain.classList.remove("hidden-element");
-        });
       }
     });
   </script>

@@ -46,7 +46,7 @@ pwd_context = CryptContext(
     "/login",
     response_model=LoginResponse
 )
-def login(
+async def login(
     login_data: LoginRequest,
     db: Session = Depends(get_db)
 ):
