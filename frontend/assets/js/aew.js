@@ -6055,7 +6055,7 @@ function renderForecastResults(forecasts) {
                     transition: background 0.2s;
                 " onclick="toggleForecastYear(this)">
                     <span>📅 ${year} Projections</span>
-                    <span style="font-size: 20px; transition: transform 0.3s; transform: ▶</span>
+                    <span style="font-size: 20px; transition: transform 0.3s;">&#9660;</span>
                 </div>
                 <div class="forecast-year-content" style="
                     background: #fff;
