@@ -3845,54 +3845,6 @@ function openReportDetails(report) {
 }
 
 
-// ============================================================
-// REVISION REMARKS BOX
-// ============================================================
-const remarksWrapper = document.getElementById("detailRevisionRemarksWrapper");
-const remarksContent = document.getElementById("detailRevisionRemarks");
-
-if (remarksWrapper && remarksContent) {
-    const rawRemarks = report.revision_remarks || report.remarks || "";
-
-    if (rawRemarks && rawRemarks.trim()) {
-        // Parse format: "[Role: Name] Message"
-        const match = rawRemarks.match(/^\[([^\]]+)\]\s*(.*)$/s);
-
-        if (match) {
-            const header = match[1];
-            const message = match[2];
-
-            remarksContent.innerHTML = `
-                <div style="
-                    display: inline-block;
-                    font-size: 11px;
-                    font-weight: 700;
-                    color: #C0392B;
-                    background: #FFFFFF;
-                    padding: 3px 10px;
-                    border-radius: 4px;
-                    letter-spacing: 0.02em;
-                    margin-bottom: 10px;
-                ">
-                    ${escapeHtml(header)}
-                </div>
-                <div style="color: #333; line-height: 1.6;">
-                    ${escapeHtml(message)}
-                </div>
-            `;
-        } else {
-            remarksContent.textContent = rawRemarks;
-        }
-
-        remarksWrapper.style.display = "block";
-    } else {
-        remarksWrapper.style.display = "none";
-    }
-}
-
-
-
-
 /* ============================================================
    REPORT ATTACHMENTS
 ============================================================ */
