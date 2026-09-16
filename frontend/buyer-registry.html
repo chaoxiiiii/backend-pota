@@ -4,18 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
 <title>Buyer Registry Form — eSaka</title>
-
 
 <!-- Modern Typography -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-
 <link rel="stylesheet" href="assets/css/base.css">
-
 
 <style>
   :root {
@@ -34,13 +30,11 @@
     --radius-lg: 24px;
   }
 
-
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
   }
-
 
   html,
   body {
@@ -59,7 +53,6 @@
     -webkit-font-smoothing: antialiased;
   }
 
-
   .frame {
     width: 95%;
     max-width: 1280px;
@@ -67,7 +60,6 @@
     align-items: center;
     justify-content: center;
   }
-
 
   .page-inner {
     width: 100%;
@@ -79,12 +71,10 @@
     animation: fadeIn 0.3s ease-in-out;
   }
 
-
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
   }
-
 
   /* --- BRAND LOGOS --- */
   .brand {
@@ -95,14 +85,12 @@
     margin-bottom: 34px;
   }
 
-
   .brand-logo-img {
     height: 90px;
     width: auto;
     object-fit: contain;
     display: block;
   }
-
 
   .brand-name-img {
     height: 93px;
@@ -111,7 +99,6 @@
     display: block;
   }
 
-
   /* --- CARD INNER --- */
   .card {
     background: var(--white);
@@ -119,7 +106,6 @@
     border-radius: var(--radius-md);
     padding: 44px 56px 40px;
   }
-
 
   .card h1 {
     font-size: 26px;
@@ -131,23 +117,19 @@
     margin-bottom: 36px;
   }
 
-
   .step {
     display: none;
   }
 
-
   .step.active-step {
     display: block;
   }
-
 
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 26px 44px;
   }
-
 
   .field label {
     display: block;
@@ -159,11 +141,9 @@
     margin-bottom: 8px;
   }
 
-
   .field label .req {
     color: #C0392B;
   }
-
 
   .field input,
   .field textarea {
@@ -180,32 +160,32 @@
     box-sizing: border-box;
   }
 
-
   .field input:focus,
   .field textarea:focus {
     border-color: var(--green);
     box-shadow: 0 0 0 3.5px rgba(91, 107, 79, 0.16);
   }
 
-
   .field textarea {
     resize: vertical;
     min-height: 160px;
   }
 
-
+  /* ================================
+     FILE UPLOAD & PREVIEW  (MAIN CSS)
+  ================================ */
   .upload-box {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    width: 100%;
   }
 
-
   .upload-box input[type="text"] {
+    width: 100%;
     cursor: default;
     background: #FAF8F5;
   }
-
 
   .select-file-btn {
     align-self: flex-start;
@@ -221,20 +201,88 @@
     transition: all 0.2s ease;
   }
 
-
   .select-file-btn:hover {
     background: var(--green);
     border-color: var(--green);
     color: #fff;
   }
 
+  /* Preview container */
+  .file-preview {
+    display: none;
+    width: 100%;
+    height: 360px;
+    margin-top: 4px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #F7F4EC;
+    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+  }
 
+  .file-preview.show {
+    display: flex;
+  }
+
+  /* Image preview */
+  .image-preview {
+    display: none;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 12px;
+    background: #fff;
+  }
+
+  .image-preview.show {
+    display: block;
+  }
+
+  /* PDF preview */
+  .pdf-preview {
+    display: none;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #fff;
+  }
+
+  .pdf-preview.show {
+    display: block;
+  }
+
+  /* Remove button */
+  .remove-file-btn {
+    display: none;
+    align-self: flex-start;
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    border: 1.5px solid #C0392B;
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: #C0392B;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .remove-file-btn.show {
+    display: inline-flex;
+  }
+
+  .remove-file-btn:hover {
+    background: #C0392B;
+    color: #fff;
+  }
+
+  /* File hint */
   .file-hint {
     font-size: 12.5px;
     color: var(--muted);
     margin-top: -2px;
   }
-
 
   .form-error {
     display: none;
@@ -248,11 +296,9 @@
     margin-bottom: 24px;
   }
 
-
   .form-error.show {
     display: block;
   }
-
 
   .card-footer {
     display: flex;
@@ -260,7 +306,6 @@
     gap: 14px;
     margin-top: 36px;
   }
-
 
   .btn-outline,
   .btn-filled {
@@ -273,19 +318,16 @@
     transition: all 0.2s ease;
   }
 
-
   .btn-outline {
     border: 1.5px solid var(--border);
     background: #FFFFFF;
     color: var(--ink);
   }
 
-
   .btn-outline:hover {
     background: var(--cream);
     border-color: var(--green);
   }
-
 
   .btn-filled {
     border: none;
@@ -293,24 +335,20 @@
     color: #fff;
   }
 
-
   .btn-filled:hover {
     background: var(--green-dark);
     transform: translateY(-1px);
   }
-
 
   .btn-filled:active,
   .btn-outline:active {
     transform: translateY(0);
   }
 
-
   .btn-filled:disabled {
     opacity: 0.65;
     cursor: not-allowed;
   }
-
 
   /* --- MODALS --- */
   .modal-overlay {
@@ -324,11 +362,9 @@
     z-index: 99999;
   }
 
-
   .modal-overlay.show {
     display: flex;
   }
-
 
   .modal-box {
     background: var(--cream);
@@ -341,14 +377,12 @@
     width: calc(100% - 40px);
   }
 
-
   .modal-box h2 {
     font-size: 22px;
     font-weight: 800;
     color: var(--green);
     margin-bottom: 12px;
   }
-
 
   .modal-box p {
     font-size: 14.5px;
@@ -357,13 +391,11 @@
     line-height: 1.5;
   }
 
-
   .modal-actions {
     display: flex;
     justify-content: center;
     gap: 14px;
   }
-
 
   .modal-ok {
     border: none;
@@ -378,12 +410,13 @@
     transition: background 0.2s ease;
   }
 
-
   .modal-ok:hover {
     background: var(--green-dark);
   }
 
-
+  /* ================================
+     RESPONSIVE (MOBILE)
+  ================================ */
   @media (max-width: 900px) {
     .page-inner {
       padding: 32px 24px 36px;
@@ -401,17 +434,17 @@
     .brand-name-img {
       height: 72px;
     }
+    .file-preview {
+      height: 280px;
+    }
   }
 </style>
 </head>
 
-
 <body>
-
 
 <div class="frame">
   <div class="page-inner">
-
 
     <!-- BRAND LOGOS -->
     <div class="brand">
@@ -419,21 +452,17 @@
       <img src="images/esakaname.png" alt="eSaka" class="brand-name-img">
     </div>
 
-
     <!-- CARD -->
     <div class="card">
       <h1>Buyer Registry Form</h1>
 
-
       <form id="registryForm" onsubmit="return false;">
-
 
         <!-- STEP 1 -->
         <div class="step active-step" id="step-1">
           <p class="form-error" id="step1Error">
             Please fill in all required fields.
           </p>
-
 
           <div class="form-grid">
             <div class="field">
@@ -449,7 +478,6 @@
               >
             </div>
 
-
             <div class="field">
               <label for="phoneNumber">
                 Phone Number
@@ -462,7 +490,6 @@
                 required
               >
             </div>
-
 
             <div class="field">
               <label for="contactPerson">
@@ -477,7 +504,6 @@
               >
             </div>
 
-
             <div class="field">
               <label for="buyerEmail">
                 Email
@@ -490,7 +516,6 @@
                 required
               >
             </div>
-
 
             <div class="field" style="grid-column: 1 / -1;">
               <label for="address">
@@ -506,7 +531,6 @@
             </div>
           </div>
 
-
           <div class="card-footer">
             <button
               type="button"
@@ -515,7 +539,6 @@
             >
               Cancel
             </button>
-
 
             <button
               type="button"
@@ -527,13 +550,11 @@
           </div>
         </div>
 
-
         <!-- STEP 2 -->
         <div class="step" id="step-2">
           <p class="form-error" id="step2Error">
             Please upload a valid document.
           </p>
-
 
           <div class="form-grid">
             <div class="field">
@@ -547,15 +568,14 @@
               ></textarea>
             </div>
 
-
             <div class="field">
               <label for="uploadName">
                 Upload Documents
                 <span class="req">*</span>
               </label>
 
-
               <div class="upload-box">
+
                 <input
                   type="text"
                   id="uploadName"
@@ -563,14 +583,12 @@
                   placeholder="Select a document..."
                 >
 
-
                 <input
                   type="file"
                   id="fileInput"
                   hidden
                   accept=".jpg,.jpeg,.pdf,image/jpeg,application/pdf"
                 >
-
 
                 <button
                   type="button"
@@ -580,14 +598,39 @@
                   Select File
                 </button>
 
+                <!-- FILE PREVIEW -->
+                <div id="filePreview" class="file-preview">
+
+                  <img
+                    id="imagePreview"
+                    class="image-preview"
+                    alt="Document Preview"
+                  >
+
+                  <iframe
+                    id="pdfPreview"
+                    class="pdf-preview"
+                    title="PDF Preview"
+                  ></iframe>
+
+                </div>
+
+                <!-- REMOVE FILE -->
+                <button
+                  type="button"
+                  id="removeFileBtn"
+                  class="remove-file-btn"
+                >
+                  Remove File
+                </button>
 
                 <div class="file-hint">
-                  Accepted file types: JPEG / JPG and PDF only.
+                  Accepted file types: JPEG / JPG and PDF only. One attachment only.
                 </div>
+
               </div>
             </div>
           </div>
-
 
           <div class="card-footer">
             <button
@@ -597,7 +640,6 @@
             >
               Back
             </button>
-
 
             <button
               type="button"
@@ -609,14 +651,11 @@
           </div>
         </div>
 
-
       </form>
     </div>
 
-
   </div>
 </div>
-
 
 <!-- CONFIRMATION MODAL -->
 <div class="modal-overlay" id="confirmModal">
@@ -636,7 +675,6 @@
   </div>
 </div>
 
-
 <!-- SUCCESS MODAL -->
 <div class="modal-overlay" id="submittedModal">
   <div class="modal-box">
@@ -651,7 +689,6 @@
   </div>
 </div>
 
-
 <!-- ERROR MODAL -->
 <div class="modal-overlay" id="errorModal">
   <div class="modal-box">
@@ -665,11 +702,9 @@
   </div>
 </div>
 
-
 <script>
 const API_BASE_URL = "http://127.0.0.1:8000";
 const BUYER_REGISTRY_ENDPOINT = `${API_BASE_URL}/api/buyer-registry/buyer-registry`;
-
 
 const step1 = document.getElementById("step-1");
 const step2 = document.getElementById("step-2");
@@ -679,17 +714,18 @@ const step2Error = document.getElementById("step2Error");
 const fileInput = document.getElementById("fileInput");
 const uploadName = document.getElementById("uploadName");
 const submitBtn = document.getElementById("submitBtn");
-
+const filePreview = document.getElementById("filePreview");
+const imagePreview = document.getElementById("imagePreview");
+const pdfPreview = document.getElementById("pdfPreview");
+const removeFileBtn = document.getElementById("removeFileBtn");
 
 const confirmModal = document.getElementById("confirmModal");
 const confirmCancelBtn = document.getElementById("confirmCancelBtn");
 const confirmProceedBtn = document.getElementById("confirmProceedBtn");
 
-
 const submittedModal = document.getElementById("submittedModal");
 const errorModal = document.getElementById("errorModal");
 const errorModalMessage = document.getElementById("errorModalMessage");
-
 
 function showStep(step) {
   [step1, step2].forEach(function(s) {
@@ -698,11 +734,9 @@ function showStep(step) {
   step.classList.add("active-step");
 }
 
-
 document.getElementById("cancelStep1").addEventListener("click", function() {
   window.location.href = "index.html";
 });
-
 
 document.getElementById("toStep2").addEventListener("click", function() {
   const orgName = document.getElementById("orgName").value.trim();
@@ -711,13 +745,25 @@ document.getElementById("toStep2").addEventListener("click", function() {
   const phoneNumber = document.getElementById("phoneNumber").value.trim();
   const buyerEmail = document.getElementById("buyerEmail").value.trim();
 
-
   if (!orgName || !contactPerson || !address || !phoneNumber || !buyerEmail) {
     step1Error.textContent = "Please fill in all required fields.";
     step1Error.classList.add("show");
     return;
   }
 
+  // ✅ PHONE NUMBER VALIDATION — 11 digits only
+  if (!/^09\d{9}$/.test(phoneNumber)) {
+    step1Error.textContent = "Please enter a valid Philippine phone number with 11 digits (e.g., 09171234567).";
+    step1Error.classList.add("show");
+    return;
+  }
+
+  // ✅ EMAIL VALIDATION — must end with @gmail.com
+  if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(buyerEmail)) {
+    step1Error.textContent = "Email must be a valid @gmail.com address (e.g., buyer@gmail.com).";
+    step1Error.classList.add("show");
+    return;
+  }
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailPattern.test(buyerEmail)) {
@@ -726,57 +772,104 @@ document.getElementById("toStep2").addEventListener("click", function() {
     return;
   }
 
-
   step1Error.classList.remove("show");
   showStep(step2);
 });
-
 
 document.getElementById("backToStep1").addEventListener("click", function() {
   step2Error.classList.remove("show");
   showStep(step1);
 });
 
-
 document.getElementById("selectFileBtn").addEventListener("click", function() {
   fileInput.click();
 });
 
-
 fileInput.addEventListener("change", function() {
+
   if (!fileInput.files.length) {
-    uploadName.value = "";
+    clearFilePreview();
     return;
   }
-
 
   const file = fileInput.files[0];
   const fileName = file.name.toLowerCase();
+
   const allowedExtensions = [".jpg", ".jpeg", ".pdf"];
+
   const validExtension = allowedExtensions.some(function(extension) {
     return fileName.endsWith(extension);
   });
-  const validMime = file.type === "image/jpeg" || file.type === "application/pdf";
 
+  const validMime =
+    file.type === "image/jpeg" ||
+    file.type === "application/pdf";
 
+  // INVALID FILE
   if (!validExtension || !validMime) {
+
     fileInput.value = "";
     uploadName.value = "";
-    step2Error.textContent = "Invalid file. Please upload JPEG/JPG or PDF only.";
+
+    clearFilePreview();
+
+    step2Error.textContent =
+      "Invalid file. Please upload JPEG/JPG or PDF only.";
+
     step2Error.classList.add("show");
+
     return;
   }
 
-
+  // VALID FILE
   uploadName.value = file.name;
   step2Error.classList.remove("show");
+
+  const fileURL = URL.createObjectURL(file);
+
+  // Reset previews first
+  imagePreview.classList.remove("show");
+  pdfPreview.classList.remove("show");
+
+  // IMAGE PREVIEW
+  if (file.type === "image/jpeg") {
+    imagePreview.src = fileURL;
+    imagePreview.classList.add("show");
+  }
+
+  // PDF PREVIEW
+  else if (file.type === "application/pdf") {
+    pdfPreview.src = fileURL;
+    pdfPreview.classList.add("show");
+  }
+
+  filePreview.classList.add("show");
+  removeFileBtn.classList.add("show");
 });
 
+function clearFilePreview() {
+
+  fileInput.value = "";
+  uploadName.value = "";
+
+  imagePreview.src = "";
+  pdfPreview.src = "";
+
+  imagePreview.classList.remove("show");
+  pdfPreview.classList.remove("show");
+
+  filePreview.classList.remove("show");
+  removeFileBtn.classList.remove("show");
+}
+
+removeFileBtn.addEventListener("click", function() {
+  clearFilePreview();
+  step2Error.classList.remove("show");
+});
 
 /* PINDOT NG SUBMIT APPLICATION -> MAGBUBUKAS ANG CONFIRM MODAL */
 submitBtn.addEventListener("click", function(e) {
   e.preventDefault();
-
 
   if (!fileInput.files.length) {
     step2Error.textContent = "Please upload a document before submitting.";
@@ -784,7 +877,6 @@ submitBtn.addEventListener("click", function(e) {
     return;
   }
 
-
   const file = fileInput.files[0];
   const fileName = file.name.toLowerCase();
   const allowedExtensions = [".jpg", ".jpeg", ".pdf"];
@@ -793,25 +885,21 @@ submitBtn.addEventListener("click", function(e) {
   });
   const validMime = file.type === "image/jpeg" || file.type === "application/pdf";
 
-
   if (!validExtension || !validMime) {
     step2Error.textContent = "Invalid file. Please upload JPEG/JPG or PDF only.";
     step2Error.classList.add("show");
     return;
   }
 
-
   step2Error.classList.remove("show");
   confirmModal.classList.add("show");
 });
-
 
 /* CANCEL SA CONFIRM MODAL */
 confirmCancelBtn.addEventListener("click", function(e) {
   e.preventDefault();
   confirmModal.classList.remove("show");
 });
-
 
 /* CONFIRM & SUBMIT SA MODAL */
 confirmProceedBtn.addEventListener("click", async function(e) {
@@ -820,11 +908,9 @@ confirmProceedBtn.addEventListener("click", async function(e) {
   await executeSubmission();
 });
 
-
 /* FETCH DISPATCH */
 async function executeSubmission() {
   const file = fileInput.files[0];
-
 
   const formData = new FormData();
   formData.append("organization", document.getElementById("orgName").value.trim());
@@ -835,10 +921,8 @@ async function executeSubmission() {
   formData.append("message", document.getElementById("message").value.trim());
   formData.append("document", file);
 
-
   submitBtn.disabled = true;
   submitBtn.textContent = "Submitting...";
-
 
   try {
     const response = await fetch(BUYER_REGISTRY_ENDPOINT, {
@@ -846,14 +930,12 @@ async function executeSubmission() {
       body: formData
     });
 
-
     let data = null;
     try {
       data = await response.json();
     } catch (jsonError) {
       data = null;
     }
-
 
     if (!response.ok) {
       let errorMessage = "Unable to submit buyer registry.";
@@ -869,7 +951,6 @@ async function executeSubmission() {
       throw new Error(errorMessage);
     }
 
-
     // Mananatili ang success modal dito
     submittedModal.classList.add("show");
   } catch (error) {
@@ -881,13 +962,11 @@ async function executeSubmission() {
   }
 }
 
-
 /* OK BUTTON CLICK PARA LUMIPAT */
 document.getElementById("modalOkBtn").addEventListener("click", function(e) {
   e.preventDefault();
   window.location.href = "index.html";
 });
-
 
 document.getElementById("errorModalOkBtn").addEventListener("click", function(e) {
   e.preventDefault();
@@ -895,7 +974,5 @@ document.getElementById("errorModalOkBtn").addEventListener("click", function(e)
 });
 </script>
 
-
 </body>
 </html>
-
