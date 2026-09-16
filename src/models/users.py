@@ -9,21 +9,6 @@ from src.core.database import Base
 class User(Base):
     __tablename__ = "users"
 
-    user_id = Column(Integer, primary_key=True, index=True)
-    first_name = Column(String(100))
-    last_name = Column(String(100))
-    username = Column(String(100), unique=True)
-    email_address = Column(String(255))
-    phone_number = Column(String(20))
-    password = Column(String(255))
-    role = Column(String(100))
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-    reset_token = Column(String(255))
-    reset_token_expires = Column(DateTime)
-    is_active = Column(Boolean, default=True)
-    municipality = Column(String(100), nullable=True)
-
     # ============================================================
     # PRIMARY KEY
     # ============================================================
@@ -109,6 +94,8 @@ class User(Base):
         nullable=False,
         server_default="true"
     )
+
+    municipality = Column(String(100), nullable=True)
 
     # ============================================================
     # TIMESTAMPS

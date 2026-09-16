@@ -22,6 +22,8 @@ if [ -d "assets" ] && [ ! -d "frontend/assets" ]; then
     cp -R assets frontend/assets
 fi
 
+python migrate_db.py
+
 python init_db.py
 python seed_admin.py
 python seed_aew.py
