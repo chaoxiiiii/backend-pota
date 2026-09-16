@@ -1,739 +1,689 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DA-RFO Officer — eSaka</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DA-RFO Officer — eSaka</title>
  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-
-
-
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
-  <link rel="stylesheet" href="../assets/css/base.css">
-
-
-
-
-  <style>
-    :root{
-      --cream:#F2EDE1;
-      --white:#FBF8F1;
-      --ink:#2E2A22;
-      --muted:#6b6656;
-      --border:#DFD8C6;
-      --green:#5B6B4F;
-      --green-dark:#495a3f;
-      --brown:#C08A4E;
-      --gold:#C9A15A;
-      --status-confirmed:#3d8b40;
-      --status-submitted:#d99a1b;
-      --status-rejected:#a1382b;
-      --status-neutral:#8a8a8a;
-      --topbar-height:73px;
-      --radius-sm:5px;
-      --radius-md:8px;
-    }
-
-
-
-
-    *{ margin:0; padding:0; box-sizing:border-box; }
-    html,body{
-      width:100%;
-      min-height:100vh;
-      font-family:'Inter', sans-serif;
-      background:var(--cream);
-      color:var(--ink);
-    }
-    a{ color:inherit; }
-    button, input, select, textarea{ font-family:'Inter', sans-serif; }
-
-
-
-
-    .topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:14px 24px;
-      background:var(--cream);
-      border-bottom:1px solid var(--border);
-      position:sticky;
-      top:0;
-      z-index:2100;
-    }
-    .topbar-left{ display:flex; align-items:center; gap:16px; }
-    .hamburger{
-      background:none;
-      border:none;
-      cursor:pointer;
-      padding:6px;
-      display:flex;
-      flex-direction:column;
-      gap:5px;
-    }
-    .hamburger span{
-      display:block;
-      width:26px;
-      height:3px;
-      background:var(--ink);
-      border-radius:2px;
-    }
-    .logos{ display:flex; align-items:center; gap:10px; }
-    .seal{ width:44px; height:44px; }
-    .brand-word{
-      font-family:'Dancing Script', cursive;
-      font-weight:700;
-      font-size:28px;
-      color:var(--green);
-      margin-left:-6px;
-    }
-    .brand-logo svg{ width:60px; height:50px; }
-    .topbar-right{ display:flex; align-items:center; gap:18px; }
-    .bell-wrap{
-      position:relative;
-      width:38px;
-      height:38px;
-      border-radius:50%;
-      background:var(--green);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-      flex-shrink:0;
-    }
-    .bell-wrap svg{ width:18px; height:18px; fill:#fff; }
-    .bell-dot{
-      position:absolute;
-      top:2px;
-      right:2px;
-      width:9px;
-      height:9px;
-      background:#C0392B;
-      border-radius:50%;
-      border:2px solid var(--cream);
-    }
-    .user-info{ display:flex; align-items:center; gap:10px; }
-    .user-text{ text-align:right; line-height:1.25; }
-    .user-name{ font-size:14px; font-weight:700; color:var(--ink); }
-    .user-role{ font-size:12px; font-weight:600; color:var(--gold); }
-    .avatar{
-      width:38px;
-      height:38px;
-      border-radius:50%;
-      background:#4a4a4a;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-    .avatar svg{ width:20px; height:20px; fill:#fff; }
-
-
-
-
-    .layout{ display:flex; min-height:calc(100vh - 73px); }
-    .sidebar{
-      width:230px;
-      background:var(--green);
-      color:#fff;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      padding:22px 0;
-      flex-shrink:0;
-      position:fixed;
-      top:73px;
-      left:-230px;
-      bottom:0;
-      z-index:2000;
-      transition:left .28s ease;
-    }
-    .sidebar.open{ left:0; }
-    .nav-list{ display:flex; flex-direction:column; gap:2px; }
-    .nav-item{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding:14px 24px;
-      color:#fff;
-      text-decoration:none;
-      font-size:14.5px;
-      font-weight:500;
-      cursor:pointer;
-      background:transparent;
-      border:none;
-      width:100%;
-      text-align:left;
-    }
-    .nav-item svg{ width:19px; height:19px; fill:#fff; flex-shrink:0; }
-    .nav-item:hover{ background:rgba(255,255,255,0.08); }
-    .nav-item.active{ background:var(--green-dark); font-weight:700; }
-    .signout{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:14px 24px;
-      color:#fff;
-      text-decoration:none;
-      font-size:14.5px;
-      font-weight:500;
-      border:none;
-      background:transparent;
-      cursor:pointer;
-      width:100%;
-    }
-    .signout svg{ width:18px; height:18px; fill:#fff; }
-    .signout:hover{ opacity:0.8; }
-
-
-
-
-    .main{ flex:1; padding:36px 40px; min-width:0; }
-    .view{ display:none; }
-    .view.active-view{ display:block; }
-    .main-header{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      flex-wrap:wrap;
-      gap:16px;
-      margin-bottom:22px;
-    }
-    .main-header h1{
-      font-family:'Oswald', sans-serif;
-      font-weight:700;
-      font-size:36px;
-      color:var(--green);
-      letter-spacing:0.02em;
-      margin:0;
-    }
-    .card{
-      background:var(--white);
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:24px 28px;
-    }
-
-
-
-
-    .section-heading{
-      font-family:'Oswald', sans-serif;
-      font-size:32px;
-      font-weight:700;
-      color:var(--green);
-      margin:28px 0 16px;
-    }
-    .section-heading.first{ margin-top:0; }
-
-
-
-
-    .search-row{ display:flex; gap:10px; align-items:center; }
-    .search-box{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      background:#fff;
-      border:1.5px solid var(--ink);
-      border-radius:8px;
-      padding:8px 14px;
-      min-width:260px;
-    }
-    .search-box svg{ width:16px; height:16px; fill:none; stroke:var(--ink); stroke-width:2; }
-    .search-box input{ border:none; outline:none; font-size:14px; width:100%; background:transparent; }
-    .filter-btn{
-      width:38px;
-      height:38px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:#fff;
-      border:1.5px solid var(--ink);
-      border-radius:8px;
-      cursor:pointer;
-    }
-    .filter-btn svg{ width:18px; height:18px; fill:var(--ink); }
-
-
-
-
-    table{ width:100%; border-collapse:separate; border-spacing:0; margin-bottom:20px; }
-    thead tr{ background:#DEDDDC; }
-    thead th{
-      text-align:center;
-      font-size:13px;
-      font-weight:700;
-      color:#222;
-      padding:14px 10px;
-    }
-    thead th:first-child{ border-top-left-radius:8px; border-bottom-left-radius:8px; }
-    thead th:last-child{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
-    tbody td{
-      padding:14px 8px;
-      font-size:13.5px;
-      text-align:center;
-      vertical-align:middle;
-    }
-    .pill{
-      display:inline-block;
-      padding:6px 18px;
-      border-radius:999px;
-      background:#EEEEEE;
-      font-size:12.5px;
-      color:#222;
-      white-space:nowrap;
-    }
-    .status-text-verified{
-      color:#118308;
-      font-weight:700;
-      font-size:13px;
-    }
-    .clickable-row{ cursor:pointer; }
-    .clickable-row:hover td{ background:#F6F3EB; }
-
-
-
-
-    .review-details-card{
-      background:#fff;
-      border:1.5px solid #CCC;
-      border-radius:12px;
-      padding:28px 32px;
-    }
-    .detail-field-row{
-      display:flex;
-      align-items:center;
-      margin-bottom:14px;
-      gap:16px;
-    }
-    .detail-field-label{
-      width:160px;
-      font-weight:700;
-      font-size:14px;
-      color:#222;
-    }
-    .detail-pills-wrap{ display:flex; gap:8px; flex-wrap:wrap; }
-    .message-field-wrap{ margin-top:18px; }
-    .message-field-wrap label{
-      display:block;
-      font-weight:700;
-      font-size:14px;
-      margin-bottom:8px;
-      color:#222;
-    }
-    .message-field-wrap textarea{
-      width:100%;
-      height:90px;
-      border:1.5px solid #666;
-      border-radius:4px;
-      padding:10px;
-      font-size:13.5px;
-      outline:none;
-      resize:vertical;
-    }
-    .btn-outline-report{
-      appearance:none;
-      border:1.5px solid #5A6B52;
-      background:#EFEAE0;
-      color:#333;
-      font-size:13.5px;
-      font-weight:600;
-      padding:10px 24px;
-      border-radius:8px;
-      cursor:pointer;
-      transition:all .2s ease;
-    }
-    .btn-outline-report:hover:not(:disabled){ background:#DEDDDC; }
-    .actions-row{
-      display:flex;
-      justify-content:flex-end;
-      gap:14px;
-      margin-top:24px;
-    }
-
-
-
-
-    #map{ width:100%; height:360px; border-radius:8px; border:1px solid var(--border); }
-
-
-
-
-    .threshold-card{
-      background:#fff;
-      border:1.5px solid #CCC;
-      border-radius:12px;
-      padding:28px 32px;
-      max-width:480px;
-    }
-    .threshold-card-title{ font-size:16px; font-weight:700; margin-bottom:18px; }
-    .form-group{ margin-bottom:20px; }
-    .form-group label{ display:block; font-size:13.5px; font-weight:700; margin-bottom:8px; }
-    .form-group .help-text{ font-size:11.5px; color:#777; margin-bottom:10px; line-height:1.3; }
-    .form-select, .form-input{
-      width:100%;
-      padding:10px 14px;
-      border:1.5px solid #CCC;
-      border-radius:6px;
-      font-size:13.5px;
-      outline:none;
-      background:#fff;
-    }
-    .form-select:focus, .form-input:focus{ border-color:var(--green); }
-    .slider-row{ display:flex; align-items:center; gap:16px; margin-bottom:12px; }
-    .slider-row input[type="range"]{ flex:1; accent-color:#222; cursor:pointer; }
-    .slider-value{ font-weight:700; font-size:15px; color:#0B823A; min-width:45px; text-align:right; }
-    .threshold-chips{ display:flex; gap:8px; }
-    .threshold-chip{
-      padding:6px 14px;
-      border-radius:999px;
-      border:none;
-      background:#DEDDDC;
-      color:#444;
-      font-size:12px;
-      font-weight:600;
-      cursor:pointer;
-    }
-    .threshold-chip.active{ background:#5A7365; color:#fff; }
-    .btn-save-config{
-      background:#536B5C;
-      color:#fff;
-      border:none;
-      font-weight:600;
-      font-size:14px;
-      padding:12px 24px;
-      border-radius:6px;
-      cursor:pointer;
-      margin-top:12px;
-    }
-    .btn-save-config:hover{ background:#43574A; }
-
-
-
-
-    .crop-reports-banner{
-      background:#C4986C;
-      color:#fff;
-      font-weight:700;
-      font-size:15px;
-      text-align:center;
-      padding:12px;
-      border-radius:10px;
-      margin-bottom:20px;
-    }
-    .report-item-list{
-      display:flex;
-      flex-direction:column;
-      border:1px solid #E0E0E0;
-      border-radius:8px;
-      overflow:hidden;
-    }
-    .report-item{
-      display:block;
-      width:100%;
-      text-align:left;
-      background:#fff;
-      border:none;
-      border-bottom:1px solid #E0E0E0;
-      padding:18px 24px;
-      font-size:14px;
-      color:var(--ink);
-      cursor:pointer;
-    }
-    .report-item:last-child{ border-bottom:none; }
-    .report-item:hover{ background:#F6F3EB; }
-
-
-
-
-    .status-pill.approved{ background:#118308; }
-    .notes-row{
-      display:flex;
-      gap:24px;
-      align-items:flex-end;
-      margin-top:24px;
-      padding-top:16px;
-      border-top:1px solid #E0E0E0;
-    }
-    .notes-field{ flex:1; }
-    .notes-field label{ display:block; font-size:14px; font-weight:700; margin-bottom:8px; color:var(--ink); }
-    .notes-field textarea{
-      width:100%;
-      height:90px;
-      padding:12px;
-      font-size:14px;
-      border:1.5px solid #666;
-      border-radius:4px;
-      background:#fff;
-      color:var(--ink);
-      outline:none;
-      resize:vertical;
-    }
-    .flag-btn.active{ background:#C83232; border-color:#C83232; color:#fff; }
-
-
-
-
-    .modal-overlay{
-      display:none;
-      position:fixed;
-      inset:0;
-      background:rgba(30,35,28,0.55);
-      align-items:center;
-      justify-content:center;
-      z-index:3000;
-    }
-    .modal-overlay.show{ display:flex; }
-    .modal-box{
-      background:#DEDDDC;
-      border-radius:8px;
-      padding:36px 48px;
-      text-align:center;
-      box-shadow:0 14px 40px rgba(0,0,0,0.3);
-      max-width:480px;
-      width:90%;
-    }
-    .modal-box h2{
-      font-family:'Oswald', sans-serif;
-      font-size:28px;
-      font-weight:700;
-      color:#536B5C;
-      margin:0 0 16px;
-    }
-    .modal-box p{ font-size:15px; color:var(--ink); margin-bottom:24px; line-height:1.4; }
-    .modal-actions{ display:flex; justify-content:center; gap:16px; }
-    .modal-btn-confirm{
-      border:none;
-      background:#5A7365;
-      color:#fff;
-      font-size:13.5px;
-      font-weight:600;
-      padding:10px 24px;
-      border-radius:6px;
-      cursor:pointer;
-    }
-    .actions-right{ display:flex; justify-content:flex-end; margin-top:20px; }
-    .spacing-top-sm{ margin-top:16px; }
-    .hidden-element{ display:none; }
-
-
-    /* =========================================
-   REPORT DETAILS - NOTES / REMARKS
-========================================= */
-
-
-.report-desc-subtitle {
-  font-size: 14px;
-  color: var(--muted);
-  margin: -10px 0 22px;
-}
-
-
-
-
-/* NOTES + REMARKS CONTAINER */
-.report-field-group {
-  margin-top: 28px;
-  width: 100%;
-}
-
-
-.report-field-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  margin-bottom: 10px;
-}
-
-
-
-
-/* NOTES */
-.notes-flex-container {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  width: 100%;
-}
-
-
-.textarea-notes-readonly {
-  flex: 1;
-  width: 100%;
-  min-height: 90px;
-  padding: 12px 14px;
-  border: 1.5px solid #CCC;
-  border-radius: 6px;
-  background: #F8F8F8;
-  color: var(--ink);
-  font-size: 13.5px;
-  outline: none;
-  resize: vertical;
-}
-
-
-
-
-/* VIEW ATTACHMENTS */
-.btn-view-attachments {
-  flex-shrink: 0;
-  min-height: 42px;
-  padding: 10px 18px;
-  border: 1.5px solid var(--green);
-  border-radius: 6px;
-  background: #EFEAE0;
-  color: var(--ink);
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-
-.btn-view-attachments:hover {
-  background: #DEDDDC;
-}
-
-
-
-
-/* REMARKS */
-.remarks-group {
-  margin-top: 30px;
-}
-
-
-.textarea-remarks-input {
-  display: block;
-  width: 100%;
-  min-height: 100px;
-  padding: 12px 14px;
-  border: 1.5px solid #666;
-  border-radius: 6px;
-  background: #fff;
-  color: var(--ink);
-  font-size: 13.5px;
-  outline: none;
-  resize: vertical;
-}
-
-
-.textarea-remarks-input:focus {
-  border-color: var(--green);
-}
-
-
-
-
-/* =========================================
-   REPORT ACTION BUTTONS
-========================================= */
-
-
-.matched-actions-row {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 12px;
-  margin-top: 24px;
-  margin-bottom: 20px;
-}
-
-
-.matched-actions-row button {
-  min-height: 42px;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-
-
-
-/* RETURN */
-.btn-action-return {
-  border: 1.5px solid #999;
-  background: #fff;
-  color: var(--ink);
-}
-
-
-.btn-action-return:hover {
-  background: #F0F0F0;
-}
-
-
-
-
-/* FLAG FOR REVISION */
-.btn-action-flag {
-  border: 1.5px solid #C83232;
-  background: #fff;
-  color: #C83232;
-}
-
-
-.btn-action-flag:hover {
-  background: #FCEAEA;
-}
-
-
-
-
-/* APPROVE & ESCALATE */
-.btn-action-approve {
-  border: 1.5px solid var(--green);
-  background: var(--green);
-  color: #fff;
-}
-
-
-.btn-action-approve:hover {
-  background: var(--green-dark);
-}
-
-
-
-
-/* MOBILE */
-@media (max-width: 768px) {
-
-
-  .notes-flex-container {
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+<link rel="stylesheet" href="../assets/css/base.css">
+
+
+<style>
+  :root {
+    --cream: #F2EDE1;
+    --white: #FBF8F1;
+    --ink: #2E2A22;
+    --muted: #625E52;
+    --border: #DFD8C6;
+    --border-light: #ECE5D4;
+    --green: #5B6B4F;
+    --green-dark: #445439;
+    --green-light: #E7EDDF;
+    --brown: #C08A4E;
+    --gold: #C9A15A;
+    --topbar-height: 72px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+  }
+
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+ 
+  html, body {
+    width: 100%;
+    min-height: 100vh;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+
+  a { color: inherit; }
+  button, input, select, textarea { font-family: inherit; }
+
+
+  /* --- TOPBAR --- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    background: var(--cream);
+    border-bottom: 1.5px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2100;
+    height: var(--topbar-height);
+  }
+
+
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+
+
+  .hamburger {
+    background: #FFF;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    padding: 8px 10px;
+    display: flex;
     flex-direction: column;
+    gap: 4px;
+    transition: all 0.2s ease;
+  }
+
+
+  .hamburger:hover {
+    background: var(--green-light);
+    border-color: var(--green);
+  }
+
+
+  .hamburger span {
+    display: block;
+    width: 20px;
+    height: 2.5px;
+    background: var(--ink);
+    border-radius: 2px;
+  }
+
+
+  .logos { display: flex; align-items: center; gap: 12px; }
+
+
+  .topbar-right { display: flex; align-items: center; gap: 18px; }
+
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.7);
+    padding: 6px 14px 6px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #FFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+
+  .avatar svg { width: 18px; height: 18px; fill: #fff; }
+
+
+  .user-text { text-align: left; line-height: 1.2; }
+  .user-name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .user-role { font-size: 11px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: 0.04em; }
+
+
+  /* --- SIDEBAR --- */
+  .layout { display: flex; min-height: calc(100vh - var(--topbar-height)); }
+ 
+  .sidebar {
+    width: 230px;
+    background: var(--green);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px 12px;
+    flex-shrink: 0;
+    position: fixed;
+    top: var(--topbar-height);
+    left: -230px;
+    bottom: 0;
+    z-index: 2000;
+    transition: left .28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+
+  .sidebar.open { left: 0; }
+  .nav-list { display: flex; flex-direction: column; gap: 4px; }
+
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    color: #E8E5DD;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    transition: all 0.2s ease;
+  }
+
+
+  .nav-item svg { width: 19px; height: 19px; fill: currentColor; flex-shrink: 0; }
+  .nav-item:hover { background: rgba(255, 255, 255, 0.12); color: #FFFFFF; }
+  .nav-item.active { background: var(--green-dark); color: #FFFFFF; font-weight: 700; }
+
+
+  .signout {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    color: #FFC0C0;
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: var(--radius-sm);
+    width: 100%;
+    transition: all 0.2s ease;
+  }
+
+
+  .signout svg { width: 18px; height: 18px; fill: currentColor; }
+  .signout:hover { background: rgba(192, 57, 43, 0.25); color: #FFF; }
+
+
+  /* --- MAIN CONTENT & ACTION PANELS --- */
+  .main { flex: 1; padding: 32px 40px; min-width: 0; }
+  .view { display: none; }
+  .view.active-view { display: block; }
+
+
+  .main-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+
+  .main-header h1 {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--green-dark);
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+
+  .card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 15px rgba(46, 42, 34, 0.02);
+  }
+
+
+  .section-heading {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--green-dark);
+    margin: 32px 0 16px;
+    letter-spacing: -0.01em;
+  }
+  .section-heading.first { margin-top: 0; }
+
+
+  .search-row { display: flex; gap: 12px; align-items: center; }
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #FFFFFF;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    min-width: 260px;
+    transition: all 0.2s ease;
+  }
+  .search-box:focus-within {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
+  }
+  .search-box svg { width: 15px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 2.4; flex-shrink: 0; }
+  .search-box input { border: none; outline: none; font-size: 13.5px; width: 100%; background: transparent; color: var(--ink); }
+
+
+  /* TABLES */
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+  }
+
+
+  table { width: 100%; border-collapse: separate; border-spacing: 0; }
+ 
+  thead th {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    padding: 14px 20px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1.5px solid var(--border);
+    background: #EAE3D2;
+  }
+
+
+  tbody td {
+    padding: 16px 20px;
+    font-size: 14px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--ink);
+    text-align: center;
+    font-weight: 500;
+    background: var(--white);
+  }
+
+
+  tbody tr { transition: background 0.15s ease; background: var(--white); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #EDE7D9; }
+
+
+  /* Gray pill background look para sa bawat text sa table cells */
+  .table-text-main, .table-text-sub {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 999px;
+    background:#E5E2DA;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+
+  .status-text-verified {
+    color: #2E7D32;
+    font-weight: 700;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    background: #E8F5E9;
+    padding: 6px 14px;
+    border-radius: 999px;
+    display: inline-block;
+  }
+
+
+  .clickable-row { cursor: pointer; }
+
+
+  .review-details-card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 28px 32px;
+  }
+
+
+  .detail-field-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 16px;
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 12px;
+  }
+
+
+  .detail-field-label {
+    width: 180px;
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+
+  .detail-field-value {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+
+  .detail-pills-wrap { display: flex; gap: 8px; flex-wrap: wrap; }
+  .detail-pill-tag {
+    background: var(--green-light);
+    color: var(--green-dark);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+ 
+  .message-field-wrap { margin-top: 24px; }
+  .message-field-wrap label {
+    display: block;
+    font-weight: 700;
+    font-size: 12.5px;
+    margin-bottom: 8px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .message-field-wrap textarea {
+    width: 100%;
+    height: 100px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 14px;
+    outline: none;
+    resize: vertical;
+    background: #FFFFFF;
+    color: var(--ink);
+  }
+
+
+  .btn-outline-report {
+    appearance: none;
+    border: 1.5px solid var(--border);
+    background: #FFFFFF;
+    color: var(--ink);
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-outline-report:hover:not(:disabled) {
+    background: var(--cream);
+    border-color: var(--green);
+  }
+
+
+  .actions-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+
+  #map { width: 100%; height: 420px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); }
+
+
+  .threshold-card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 28px 32px;
+    max-width: 540px;
+  }
+  .threshold-card-title { font-size: 16px; font-weight: 800; color: var(--green-dark); margin-bottom: 18px; text-transform: uppercase; }
+  .form-group { margin-bottom: 20px; }
+  .form-group label { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .form-group .help-text { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.4; }
+ 
+  .form-select, .form-input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    outline: none;
+    background: #fff;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .form-select:focus, .form-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15); }
+ 
+  .slider-row { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+  .slider-row input[type="range"] { flex: 1; accent-color: var(--green); cursor: pointer; }
+  .slider-value { font-weight: 700; font-size: 15px; color: var(--green-dark); min-width: 45px; text-align: right; }
+ 
+  .threshold-chips { display: flex; gap: 8px; }
+  .threshold-chip {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .threshold-chip.active { background: var(--green); border-color: var(--green); color: #fff; }
+ 
+  .btn-save-config {
+    background: var(--green);
+    color: #fff;
+    border: none;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 24px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.2s ease;
+  }
+  .btn-save-config:hover { background: var(--green-dark); }
+
+
+  /* ALERT LOGS */
+  .alert-container-card { padding: 24px; }
+  .alert-list { display: flex; flex-direction: column; gap: 16px; }
+
+
+  .alert-card {
+    background: #F6F3EB;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px 24px;
+    cursor: pointer;
+    transition: 0.2s ease;
+  }
+  .alert-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.08); border-color: var(--green); }
+
+
+  .alert-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .alert-title-group { display: flex; align-items: center; gap: 12px; }
+  .alert-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+
+
+  .sev-pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .sev-pill.high { background: #C0392B; color: #FFFFFF; }
+  .sev-pill.medium { background: #D97706; color: #FFFFFF; }
+  .sev-pill.low { background: #2E7D32; color: #FFFFFF; }
+
+
+  .alert-desc { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin: 0 0 12px; }
+  .alert-stats { display: flex; align-items: center; gap: 36px; font-size: 13px; color: var(--muted); }
+  .alert-stats span b { color: var(--ink); font-weight: 700; }
+
+
+  /* MODALS */
+  .alert-detail-box { max-width: 480px; text-align: left !important; }
+  .alert-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; width: 100%; }
+  .alert-modal-header h2 { font-size: 18px; font-weight: 800; color: var(--green); margin: 0; }
+
+
+  .modal-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    background: #FFFFFF;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    margin-bottom: 24px;
+    font-size: 13px;
+  }
+  .modal-stats-grid div { color: var(--muted); }
+  .modal-stats-grid div b { color: var(--ink); display: block; font-size: 14px; margin-top: 2px; }
+  .modal-actions-row { display: flex; justify-content: flex-end; gap: 12px; }
+
+
+  .status-pill {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  .status-pill.approved { background: #2E7D32; }
+
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(30, 35, 28, 0.6);
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+  }
+  .modal-overlay.show { display: flex; }
+ 
+  .modal-box {
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 32px 38px;
+    text-align: center;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.2);
+    max-width: 440px;
+    width: 90%;
+  }
+  .modal-box h2 { font-size: 20px; font-weight: 800; color: var(--green); margin: 0 0 12px; }
+  .modal-box p { font-size: 14px; color: var(--ink); margin-bottom: 22px; line-height: 1.45; }
+  .modal-actions { display: flex; justify-content: center; gap: 12px; }
+ 
+  .modal-btn-confirm {
+    appearance: none;
+    background: var(--green);
+    color: #FFF;
+    border: none;
+    font-size: 13.5px;
+    font-weight: 700;
+    padding: 9px 24px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .modal-btn-confirm:hover { background: var(--green-dark); }
+
+
+  .hidden-element { display: none; }
+
+
+  /* REPORT DETAILS */
+  .report-desc-subtitle { font-size: 13.5px; color: var(--muted); margin: -10px 0 20px; }
+  .report-field-group { margin-top: 24px; width: 100%; }
+  .report-field-label { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink); margin-bottom: 8px; text-transform: uppercase; }
+
+
+  .notes-flex-container { display: flex; align-items: flex-start; gap: 16px; width: 100%; }
+  .textarea-notes-readonly {
+    flex: 1;
+    width: 100%;
+    min-height: 90px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #F8F8F8;
+    color: var(--ink);
+    font-size: 13.5px;
+    outline: none;
+    resize: vertical;
   }
 
 
   .btn-view-attachments {
+    flex-shrink: 0;
+    min-height: 42px;
+    padding: 10px 18px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #FFFFFF;
+    color: var(--ink);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-view-attachments:hover { background: var(--cream); border-color: var(--green); }
+
+
+  .remarks-group { margin-top: 24px; }
+  .textarea-remarks-input {
+    display: block;
     width: 100%;
+    min-height: 90px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--ink);
+    font-size: 13.5px;
+    outline: none;
+    resize: vertical;
+    transition: all 0.2s ease;
   }
+  .textarea-remarks-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15); }
 
 
-  .matched-actions-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  .matched-actions-row { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 24px; }
+  .matched-actions-row button { min-height: 40px; padding: 9px 20px; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
 
 
-  .matched-actions-row button {
-    width: 100%;
-  }
-}
-  </style>
+  .btn-action-return { border: 1.5px solid var(--border); background: #fff; color: var(--ink); }
+  .btn-action-return:hover { background: var(--cream); border-color: var(--green); }
+
+
+  .btn-action-flag { border: 1.5px solid #C0392B; background: #fff; color: #C0392B; }
+  .btn-action-flag:hover { background: #FCEAEA; }
+
+
+  .btn-action-approve { border: 1.5px solid var(--green); background: var(--green); color: #fff; }
+  .btn-action-approve:hover { background: var(--green-dark); }
+</style>
 </head>
 <body>
-
-
 
 
   <!-- TOPBAR -->
@@ -744,54 +694,26 @@
       </button>
 
 
-
-
       <div class="logos">
-        <svg class="seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="46" fill="none" stroke="#5B6B4F" stroke-width="3"/>
-          <path d="M50 20 C 35 30, 30 45, 50 65 C 70 45, 65 30, 50 20 Z" fill="#5B6B4F"/>
-          <path d="M50 30 L50 62" stroke="#F2EDE1" stroke-width="2"/>
-        </svg>
-        <div class="brand-logo">
-          <svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg">
-            <g fill="none" stroke="#8C6A4A" stroke-width="3" stroke-linecap="round">
-              <path d="M8 90 C 40 40, 90 20, 150 15"/>
-              <path d="M8 90 C 45 55, 95 40, 155 45"/>
-              <path d="M8 90 C 50 78, 100 72, 158 82"/>
-              <path d="M8 90 C 45 105, 95 118, 150 130"/>
-              <path d="M8 90 C 40 130, 85 150, 130 158"/>
-            </g>
-          </svg>
-        </div>
-        <span class="brand-word">eSaka</span>
+        <a href="../home.html" style="display: flex; align-items: center; text-decoration: none;">
+          <img src="../images/esakalogo.png" alt="eSaka Logo" style="height: 40px; width: auto; display: block;">
+        </a>
       </div>
     </div>
 
 
-
-
     <div class="topbar-right">
-      <div class="bell-wrap" aria-label="Notifications">
-        <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
-        <span class="bell-dot"></span>
-      </div>
-
-
-
-
       <div class="user-info">
-        <div class="user-text">
-          <div class="user-name" id="userDisplayName">Juan Dela Cruz</div>
-          <div class="user-role" id="userDisplayRole">DA-RFO Officer</div>
-        </div>
         <div class="avatar">
           <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
+        </div>
+        <div class="user-text">
+          <div class="user-name" id="userDisplayName">Ramon Dela Cruz</div>
+          <div class="user-role" id="userDisplayRole">DA-RFO Officer</div>
         </div>
       </div>
     </div>
   </div>
-
-
 
 
   <div class="layout">
@@ -807,16 +729,18 @@
           View Map
         </button>
         <button class="nav-item" type="button" data-view="threshold">
-          <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
           Alert Threshold
+        </button>
+        <button class="nav-item" type="button" data-view="alerts">
+          <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+          Alert Log
         </button>
         <button class="nav-item" type="button" data-view="reports">
           <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
           View Reports
         </button>
       </div>
-
-
 
 
       <button class="signout" id="signoutBtn" type="button">
@@ -826,75 +750,71 @@
     </nav>
 
 
-
-
     <!-- MAIN CONTENT -->
     <main class="main">
-
-
 
 
       <!-- VIEW 1: Buyer Registry -->
       <section class="view active-view" id="view-buyer-registry">
         <div id="buyerRegistryList">
           <h2 class="section-heading first">Pending Requests</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Organization</th>
-                <th>Contact</th>
-              </tr>
-            </thead>
-            <tbody id="pendingBuyersBody">
-              <tr class="clickable-row" data-org="LGU Public Market San Jose City" data-contact="Engr. Lito Dizon" data-email="lgupublicmarket@sanjose.gov.ph" data-commodities="Tomato, Cabbage">
-                <td><span class="pill">LGU Public Market San Jose City</span></td>
-                <td><span class="pill">Engr. Lito Dizon</span></td>
-              </tr>
-              <tr class="clickable-row" data-org="Kadiwa ng Pangulo Nueva Ecija Hub" data-contact="Ms. Carmen Flores" data-email="kadiwa.ne@gov.ph" data-commodities="Onion, Tomato">
-                <td><span class="pill">Kadiwa ng Pangulo Nueva Ecija Hub</span></td>
-                <td><span class="pill">Ms. Carmen Flores</span></td>
-              </tr>
-              <tr class="clickable-row" data-org="Verde Foods Trading Inc." data-contact="Mr. Ramon Castro" data-email="rcastro@verdefoods.com" data-commodities="Cabbage">
-                <td><span class="pill">Verde Foods Trading Inc.</span></td>
-                <td><span class="pill">Mr. Ramon Castro</span></td>
-              </tr>
-            </tbody>
-          </table>
-
-
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Organization</th>
+                  <th>Contact</th>
+                </tr>
+              </thead>
+              <tbody id="pendingBuyersBody">
+                <tr class="clickable-row" data-org="LGU Public Market San Jose City" data-contact="Engr. Lito Dizon" data-email="lgupublicmarket@sanjose.gov.ph" data-commodities="Tomato, Cabbage">
+                  <td><span class="table-text-main">LGU Public Market San Jose City</span></td>
+                  <td><span class="table-text-sub">Engr. Lito Dizon</span></td>
+                </tr>
+                <tr class="clickable-row" data-org="Kadiwa ng Pangulo Nueva Ecija Hub" data-contact="Ms. Carmen Flores" data-email="kadiwa.ne@gov.ph" data-commodities="Onion, Tomato">
+                  <td><span class="table-text-main">Kadiwa ng Pangulo Nueva Ecija Hub</span></td>
+                  <td><span class="table-text-sub">Ms. Carmen Flores</span></td>
+                </tr>
+                <tr class="clickable-row" data-org="Verde Foods Trading Inc." data-contact="Mr. Ramon Castro" data-email="rcastro@verdefoods.com" data-commodities="Cabbage">
+                  <td><span class="table-text-main">Verde Foods Trading Inc.</span></td>
+                  <td><span class="table-text-sub">Mr. Ramon Castro</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
 
           <h2 class="section-heading">All Verified Buyers</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Organization</th>
-                <th>Contact</th>
-                <th>Email</th>
-                <th>Commodities</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="verifiedBuyersBody">
-              <tr>
-                <td><span class="pill">Verde Farms Inc.</span></td>
-                <td><span class="pill">Ms. Mariem Fabiao</span></td>
-                <td><span class="pill">berde@farm.ph</span></td>
-                <td><span class="pill">Tomato</span></td>
-                <td><span class="status-text-verified">verified</span></td>
-              </tr>
-              <tr>
-                <td><span class="pill">Sun Harvest Co.</span></td>
-                <td><span class="pill">Mr. Edgardo Malrilao</span></td>
-                <td><span class="pill">sunharvest@co.ph</span></td>
-                <td><span class="pill">Onion</span></td>
-                <td><span class="status-text-verified">verified</span></td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Organization</th>
+                  <th>Contact</th>
+                  <th>Email</th>
+                  
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="verifiedBuyersBody">
+                <tr>
+                  <td><span class="table-text-main">Verde Farms Inc.</span></td>
+                  <td><span class="table-text-sub">Ms. Mariem Fabiao</span></td>
+                  <td><span class="table-text-sub">berde@farm.ph</span></td>
+                  <td><span class="table-text-sub">Tomato</span></td>
+                  <td><span class="status-text-verified">Verified</span></td>
+                </tr>
+                <tr>
+                  <td><span class="table-text-main">Sun Harvest Co.</span></td>
+                  <td><span class="table-text-sub">Mr. Edgardo Malrilao</span></td>
+                  <td><span class="table-text-sub">sunharvest@co.ph</span></td>
+                  <td><span class="table-text-sub">Onion</span></td>
+                  <td><span class="status-text-verified">Verified</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-
-
 
 
         <!-- Review Details Subview -->
@@ -902,58 +822,51 @@
           <div class="main-header"><h1>Review Details</h1></div>
           <div class="review-details-card">
             <div class="detail-field-row">
-              <div class="detail-field-label">Organization Name:</div>
-              <span class="pill" id="reviewOrg">LGU Public Market San Jose City</span>
+              <div class="detail-field-label">Organization Name</div>
+              <div class="detail-field-value" id="reviewOrg">LGU Public Market San Jose City</div>
             </div>
             <div class="detail-field-row">
-              <div class="detail-field-label">Contact Person:</div>
-              <span class="pill" id="reviewContact">Engr. Lito Dizon</span>
+              <div class="detail-field-label">Contact Person</div>
+              <div class="detail-field-value" id="reviewContact">Engr. Lito Dizon</div>
             </div>
             <div class="detail-field-row">
-              <div class="detail-field-label">Email:</div>
-              <span class="pill" id="reviewEmail">lgupublicmarket@sanjose.gov.ph</span>
+              <div class="detail-field-label">Email</div>
+              <div class="detail-field-value" id="reviewEmail">lgupublicmarket@sanjose.gov.ph</div>
             </div>
             <div class="detail-field-row">
-              <div class="detail-field-label">Commodities:</div>
+              <div class="detail-field-label">Commodities</div>
               <div class="detail-pills-wrap" id="reviewCommodities">
-                <span class="pill">Tomato</span>
-                <span class="pill">Cabbage</span>
+                <span class="detail-pill-tag">Tomato</span>
+                <span class="detail-pill-tag">Cabbage</span>
               </div>
             </div>
 
 
-
-
             <div class="message-field-wrap">
-              <label>Message:</label>
+              <label>Message</label>
               <textarea readonly placeholder="No message provided."></textarea>
             </div>
 
 
+            <div class="spacing-top-sm" style="margin-top: 16px;">
+                <button
+                  class="btn-outline-report"
+                  id="viewBuyerAttachmentBtn"
+                  type="button"
+                >
+                  View Attachments
+                </button>
+            </div>
 
 
-            <div class="spacing-top-sm">
-  <button
-    class="btn-outline-report"
-    id="viewBuyerAttachmentBtn"
-    type="button"
-  >
-    View Attachments
-  </button>
-</div>
-
-
-
-
-          <div class="actions-row">
-            <button class="btn-outline-report" id="returnBuyerListBtn" type="button">Return</button>
-            <button class="btn-outline-report" id="rejectBuyerBtn" type="button">Reject</button>
-            <button class="btn-outline-report" id="approveBuyerBtn" type="button">Approve</button>
+            <div class="actions-row">
+              <button class="btn-outline-report" id="returnBuyerListBtn" type="button">Return</button>
+              <button class="btn-outline-report btn-action-flag" id="rejectBuyerBtn" type="button">Reject</button>
+              <button class="btn-outline-report btn-action-approve" id="approveBuyerBtn" type="button">Approve</button>
+            </div>
           </div>
         </div>
       </section>
-
-
 
 
       <!-- VIEW 2: View Map -->
@@ -965,15 +878,11 @@
       </section>
 
 
-
-
       <!-- VIEW 3: Alert Threshold -->
       <section class="view" id="view-threshold">
         <div class="main-header"><h1>Oversupply Threshold</h1></div>
         <div class="threshold-card">
           <div class="threshold-card-title">Alert Threshold</div>
-
-
 
 
           <div class="form-group">
@@ -987,14 +896,10 @@
           </div>
 
 
-
-
           <div class="form-group">
             <label for="baseDemandInput">Target Demand</label>
             <input type="number" id="baseDemandInput" class="form-input" placeholder="e.g. 50000">
           </div>
-
-
 
 
           <div class="form-group">
@@ -1013,241 +918,148 @@
           </div>
 
 
-
-
-
           <button class="btn-save-config" id="saveConfigBtn" type="button">Save Configuration</button>
         </div>
       </section>
 
 
-<!-- VIEW 4: View Reports -->
-<section class="view" id="view-reports">
-
-
-  <!-- REPORT LIST SUBVIEW -->
-  <div id="reportListSubview">
-
-
-    <div class="main-header">
-      <h1>Reports</h1>
-
-
-      <div class="search-row">
-        <div class="search-box">
-          <svg viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="7"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-
-
-          <input
-            type="text"
-            id="reportSearchInput"
-            placeholder="Search reports..."
-          >
-        </div>
-      </div>
-    </div>
-
-
-    <div class="card">
-
-
-      <div
-        style="
-          font-size:16px;
-          font-weight:700;
-          margin-bottom:16px;
-          color:var(--ink);
-        "
-      >
-        Pending Reports
-      </div>
-
-
-      <table>
-        <thead>
-          <tr>
-            <th>Report ID</th>
-            <th>Title</th>
-            <th>Commodity</th>
-            <th>Planting Date</th>
-            <th>Estimated Yield (kg)</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-
-
-        <tbody id="pendingReportsBody">
-          <tr>
-            <td colspan="6" style="text-align:center;">
-              Loading reports...
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-
-    </div>
-  </div>
-
-
-
-
-  <!-- REPORT DETAIL SUBVIEW -->
-  <div id="reportDetailSubview" class="hidden-element">
-
-
-    <div class="main-header">
-      <h1>Report Details</h1>
-    </div>
-
-
-    <p class="report-desc-subtitle">
-      Inspect production data and provide provincial feedback.
-    </p>
-
-
-
-
-    <!-- REPORT INFORMATION -->
-    <div class="card">
-
-
-      <table class="report-detail-table">
-
-
-        <thead>
-          <tr>
-            <th>Report ID</th>
-            <th>Commodity</th>
-            <th>Planting Date</th>
-            <th>Harvest Date</th>
-            <th>Estimated Yield (kg)</th>
-            <th>Encoded By</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-
-
-        <tbody id="reportDetailBody">
-          <!-- JavaScript will insert the report details here -->
-        </tbody>
-
-
-      </table>
-
-
-
-
-      <!-- NOTES -->
-      <div class="report-field-group">
-
-
-        <label
-          for="reportNotesTextarea"
-          class="report-field-label"
-        >
-          NOTES
-        </label>
-
-
-        <div class="notes-flex-container">
-
-
-          <textarea
-            id="reportNotesTextarea"
-            class="textarea-notes-readonly"
-            readonly
-            placeholder="No notes provided."
-          ></textarea>
-
-
-          <button
-            class="btn-view-attachments"
-            id="viewAttachmentsBtn"
-            type="button"
-          >
-            View Attachments
-          </button>
-
-
+      <!-- VIEW: Alert Log -->
+      <section class="view" id="view-alerts">
+        <div class="main-header">
+          <h1>System Alert Logs</h1>
+          <div class="search-row">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="searchAlerts" placeholder="Search alerts...">
+            </div>
+          </div>
         </div>
 
 
-      </div>
+        <div class="card alert-container-card">
+          <div class="alert-list" id="alertList">
+            <div class="alert-card" data-severity="medium">
+              <div class="alert-top">
+                <div class="alert-title-group">
+                  <span class="alert-title">Tomato Oversupply Risk — CALABARZON</span>
+                  <span class="sev-pill medium">Medium</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
 
+      <!-- VIEW 4: View Reports -->
+      <section class="view" id="view-reports">
+        <!-- REPORT LIST SUBVIEW -->
+        <div id="reportListSubview">
+          <div class="main-header">
+            <h1>Reports</h1>
+            <div class="search-row">
+              <div class="search-box">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="reportSearchInput" placeholder="Search reports...">
+              </div>
+            </div>
+          </div>
 
 
-      <!-- REMARKS -->
-      <div class="report-field-group remarks-group">
+          <div class="card">
+            <div class="text-section-title" style="margin-bottom:16px;">
+              Pending Reports
+            </div>
 
 
-        <label
-          for="remarksTextarea"
-          class="report-field-label"
-        >
-          REMARKS
-        </label>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Report ID</th>
+                    <th>Title</th>
+                    <th>Commodity</th>
+                    <th>Planting Date</th>
+                    <th>Estimated Yield (kg)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingReportsBody">
+                  <tr>
+                    <td colspan="6" style="text-align:center;">
+                      Loading reports...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
 
-        <textarea
-          id="remarksTextarea"
-          class="textarea-remarks-input"
-          placeholder="Enter provincial feedback or revision notes..."
-        ></textarea>
+        <!-- REPORT DETAIL SUBVIEW -->
+        <div id="reportDetailSubview" class="hidden-element">
+          <div class="main-header">
+            <h1>Report Details</h1>
+          </div>
 
 
-      </div>
+          <p class="report-desc-subtitle">
+            Inspect production data and provide provincial feedback.
+          </p>
 
 
-    </div>
+          <!-- REPORT INFORMATION -->
+          <div class="card">
+            <div class="table-wrapper">
+              <table class="report-detail-table">
+                <thead>
+                  <tr>
+                    <th>Report ID</th>
+                    <th>Commodity</th>
+                    <th>Planting Date</th>
+                    <th>Harvest Date</th>
+                    <th>Estimated Yield (kg)</th>
+                    <th>Encoded By</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="reportDetailBody">
+                  <!-- JavaScript will insert details here -->
+                </tbody>
+              </table>
+            </div>
 
 
+            <!-- NOTES -->
+            <div class="report-field-group">
+              <label for="reportNotesTextarea" class="report-field-label">NOTES</label>
+              <div class="notes-flex-container">
+                <textarea id="reportNotesTextarea" class="textarea-notes-readonly" readonly placeholder="No notes provided."></textarea>
+                <button class="btn-view-attachments" id="viewAttachmentsBtn" type="button">View Attachments</button>
+              </div>
+            </div>
 
 
-    <!-- ACTION BUTTONS -->
-    <div class="matched-actions-row">
+            <!-- REMARKS -->
+            <div class="report-field-group remarks-group">
+              <label for="remarksTextarea" class="report-field-label">REMARKS</label>
+              <textarea id="remarksTextarea" class="textarea-remarks-input" placeholder="Enter provincial feedback or revision notes..."></textarea>
+            </div>
+          </div>
 
 
-      <button
-        class="btn-action-return"
-        id="backToPendingBtn"
-        type="button"
-      >
-        Return
-      </button>
-
-
-      <button
-        class="btn-action-flag"
-        id="flagReportBtn"
-        type="button"
-      >
-        Flag for Revision
-      </button>
-
-
-      <button
-        class="btn-action-approve"
-        id="approveReportBtn"
-        type="button"
-      >
-        Approve &amp; Escalate
-      </button>
-
-
-    </div>
-
-
-  </div>
-
-
-</section>
-
-
+          <!-- ACTION BUTTONS -->
+          <div class="matched-actions-row">
+            <button class="btn-action-return" id="backToPendingBtn" type="button">Return</button>
+            <button class="btn-action-flag" id="flagReportBtn" type="button">Flag for Revision</button>
+            <button class="btn-action-approve" id="approveReportBtn" type="button">Approve &amp; Escalate</button>
+          </div>
+        </div>
+      </section>
 
 
     </main>
@@ -1267,8 +1079,6 @@
   </div>
 
 
-
-
   <div class="modal-overlay" id="confirmRejectModal">
     <div class="modal-box">
       <h2>Confirmation</h2>
@@ -1281,8 +1091,6 @@
   </div>
 
 
-
-
   <div class="modal-overlay" id="reportApprovedModal">
     <div class="modal-box">
       <h2>Report Has Been Approved</h2>
@@ -1293,16 +1101,35 @@
   </div>
 
 
+  <!-- ALERT DETAIL MODAL -->
+  <div class="modal-overlay" id="alertDetailModal">
+    <div class="modal-box alert-detail-box">
+      <div class="alert-modal-header">
+        <h2 id="modalAlertTitle">Alert Details</h2>
+        <span id="modalAlertSev" class="sev-pill high">High</span>
+      </div>
+      <p id="modalAlertDesc" class="alert-desc"></p>
+
+
+      <div class="modal-stats-grid">
+        <div>Supply: <b id="modalAlertSupply"></b></div>
+        <div>Demand: <b id="modalAlertDemand"></b></div>
+        <div>Surplus: <b id="modalAlertSurplus"></b></div>
+        <div>Date Logged: <b id="modalAlertDate"></b></div>
+      </div>
+
+
+      <div class="modal-actions-row">
+        <button class="modal-btn-confirm modal-cancel-btn" type="button" onclick="document.getElementById('alertDetailModal').classList.remove('show')">Close</button>
+      </div>
+    </div>
+  </div>
 
 
   <!-- Leaflet & App JS -->
-    <script src="../assets/js/logout.js"></script>
+  <script src="../assets/js/logout.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <script src="../assets/js/da.js"></script>
 </body>
 </html>
-
-
-
-
 

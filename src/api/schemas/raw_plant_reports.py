@@ -15,6 +15,9 @@ class RawPlantReportCreate(RawPlantReportBase):
 
 
 class RawPlantReportUpdate(BaseModel):
+    title: str | None = None    
+    notes: str | None = None    
+    status: str | None = None    
     planting_date: date | None = None
     estimated_yield: Decimal | None = None
     municipal_coordinator_id: int | None = None

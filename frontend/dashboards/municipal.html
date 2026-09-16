@@ -4,729 +4,674 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Municipal Coordinator — eSaka</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-
-
-
-<!-- Leaflet -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
-
-
-
-
 <link rel="stylesheet" href="../assets/css/base.css">
+
 <style>
-  .topbar{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:14px 24px;
-    background:var(--cream);
-    border-bottom:1px solid var(--border);
-    position:sticky;
-    top:0;
-    z-index:2100;
+  :root {
+    --cream: #F2EDE1;
+    --white: #FBF8F1;
+    --ink: #2E2A22;
+    --muted: #625E52;
+    --border: #DFD8C6;
+    --border-light: #ECE5D4;
+    --green: #5B6B4F;
+    --green-dark: #445439;
+    --green-light: #E7EDDF;
+    --brown: #C08A4E;
+    --gold: #C9A15A;
+    --status-confirmed: #2E7D32;
+    --status-submitted: #D97706;
+    --status-rejected: #C0392B;
+    --topbar-height: 72px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
   }
 
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-
-
-  .topbar-left{ display:flex; align-items:center; gap:16px; }
-
-
-
-
-  .hamburger{
-    background:none;
-    border:none;
-    cursor:pointer;
-    padding:6px;
-    display:flex;
-    flex-direction:column;
-    gap:5px;
+  html, body {
+    width: 100%;
+    min-height: 100vh;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
   }
 
+  a { color: inherit; }
+  button, input, select, textarea { font-family: inherit; }
 
-
-
-  .hamburger span{
-    display:block;
-    width:26px;
-    height:3px;
-    background:var(--ink);
-    border-radius:2px;
+  /* ============================================================
+     TOPBAR (same as before)
+  ============================================================ */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    background: var(--cream);
+    border-bottom: 1.5px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2100;
+    height: var(--topbar-height);
   }
 
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
 
-
-
-  .logos{ display:flex; align-items:center; gap:10px; }
-  .seal{ width:44px; height:44px; }
-
-
-
-
-  .brand-word{
-    font-family:'Dancing Script', cursive;
-    font-weight:700;
-    font-size:28px;
-    color:var(--green);
-    margin-left:-6px;
+  .hamburger {
+    background: #FFF;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: all 0.2s ease;
   }
 
-
-
-
-  .brand-logo svg{ width:60px; height:50px; }
-
-
-
-
-  .topbar-right{ display:flex; align-items:center; gap:18px; }
-
-
-
-
-  .bell-wrap{
-    position:relative;
-    width:38px;
-    height:38px;
-    border-radius:50%;
-    background:var(--green);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    flex-shrink:0;
+  .hamburger:hover {
+    background: var(--green-light);
+    border-color: var(--green);
   }
 
-
-
-
-  .bell-wrap svg{ width:18px; height:18px; fill:#fff; }
-
-
-
-
-  .bell-dot{
-    position:absolute;
-    top:2px;
-    right:2px;
-    width:9px;
-    height:9px;
-    background:#C0392B;
-    border-radius:50%;
-    border:2px solid var(--cream);
+  .hamburger span {
+    display: block;
+    width: 20px;
+    height: 2.5px;
+    background: var(--ink);
+    border-radius: 2px;
   }
 
+  .logos { display: flex; align-items: center; gap: 12px; }
 
+  .brand-logo-img { height: 42px; width: auto; object-fit: contain; display: block; }
+  .brand-name-img { height: 44px; width: auto; object-fit: contain; display: block; }
 
+  .topbar-right { display: flex; align-items: center; gap: 18px; }
 
-  .user-info{ display:flex; align-items:center; gap:10px; }
-  .user-text{ text-align:right; line-height:1.25; }
-  .user-name{ font-size:14px; font-weight:700; color:var(--ink); }
-  .user-role{ font-size:12px; font-weight:600; color:var(--gold); }
-
-
-
-
-  .avatar{
-    width:38px;
-    height:38px;
-    border-radius:50%;
-    background:#4a4a4a;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+  .bell-wrap {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, background 0.2s ease;
   }
 
+  .bell-wrap:hover { background: var(--green-dark); transform: scale(1.04); }
+  .bell-wrap svg { width: 18px; height: 18px; fill: #fff; }
 
-
-
-  .avatar svg{ width:20px; height:20px; fill:#fff; }
-
-
-
-
-  .layout{ display:flex; min-height:calc(100vh - 73px); }
-
-
-
-
-  /* SIDEBAR STYLES */
-  .sidebar{
-    width:230px;
-    background:var(--green);
-    color:#fff;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    padding:22px 0;
-    flex-shrink:0;
-    position:fixed;
-    top:73px;
-    left:-230px;
-    bottom:0;
-    z-index:2000;
-    transition:left .28s ease;
+  .bell-dot {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 9px;
+    height: 9px;
+    background: #C0392B;
+    border-radius: 50%;
+    border: 2px solid var(--cream);
   }
 
-
-
-
-  .sidebar.open{ left:0; }
-
-
-
-
-  .nav-list{ display:flex; flex-direction:column; gap:2px; }
-
-
-
-
-  .nav-item{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    padding:14px 24px;
-    color:#fff;
-    text-decoration:none;
-    font-size:14.5px;
-    font-weight:500;
-    cursor:pointer;
-    background:transparent;
-    border:none;
-    width:100%;
-    text-align:left;
+  .notification-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 320px;
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    z-index: 3000;
+    overflow: hidden;
+    text-align: left;
   }
 
+  .notification-dropdown.show { display: block; }
 
-
-
-  .nav-item svg{ width:19px; height:19px; fill:#fff; flex-shrink:0; }
-  .nav-item:hover{ background:rgba(255,255,255,0.08); }
-  .nav-item.active{ background:var(--green-dark); font-weight:700; }
-
-
-
-
-  .signout{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:14px 24px;
-    color:#fff;
-    text-decoration:none;
-    font-size:14.5px;
-    font-weight:500;
+  .notification-header {
+    padding: 14px 18px;
+    background: #F4EFE6;
+    border-bottom: 1.5px solid var(--border);
+    font-size: 14px;
+    color: var(--ink);
   }
 
+  .notification-list { max-height: 300px; overflow-y: auto; }
 
-
-
-  .signout svg{ width:18px; height:18px; fill:#fff; }
-  .signout:hover{ opacity:0.8; }
-
-
-
-
-  .main{
-    flex:1;
-    padding:36px 40px;
-    min-width:0;
+  .notification-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
   }
 
-
-
-
-  .view{ display:none; }
-  .view.active-view{ display:block; }
-
-
-
-
-  .main-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:16px;
-    margin-bottom:22px;
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.7);
+    padding: 6px 14px 6px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
   }
 
-
-
-
-  .main-header h1{
-    font-family:'Oswald', sans-serif;
-    font-weight:700;
-    font-size:36px;
-    color:var(--green);
-    letter-spacing:0.02em;
-    margin:0;
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #FFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
   }
 
+  .user-text { text-align: left; line-height: 1.2; }
 
-
-
-  .card{
-    background:var(--white);
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding:24px 28px;
+  .user-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ink);
   }
 
-
-
-
-  /* MAP DESIGN */
-  #map{
-    width:100%;
-    height:360px;
-    border-radius:8px;
-    border:1px solid var(--border);
+  .user-role {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brown);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
+  /* ============================================================
+     LAYOUT + SIDEBAR
+  ============================================================ */
+  .layout { display: flex; min-height: calc(100vh - var(--topbar-height)); }
 
-
-
-  /* SEARCH & FILTER BAR */
-  .search-row{ display:flex; gap:10px; align-items:center; }
-  .search-box{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    background:#fff;
-    border:1.5px solid var(--ink);
-    border-radius:8px;
-    padding:8px 14px;
-    min-width:260px;
-  }
-  .search-box svg{ width:16px; height:16px; fill:none; stroke:var(--ink); stroke-width:2; }
-  .search-box input{ border:none; outline:none; font-size:14px; width:100%; background:transparent; }
-
-
-
-
-  /* TAB BUTTONS (SUMMARY / VIEW INDIVIDUAL / APPROVED / PENDING) */
-  .tab-buttons-row{
-    display:flex;
-    gap:16px;
-    margin-bottom:24px;
-    align-items:center;
+  .sidebar {
+    width: 230px;
+    background: var(--green);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px 12px;
+    flex-shrink: 0;
+    position: fixed;
+    top: var(--topbar-height);
+    left: -230px;
+    bottom: 0;
+    z-index: 2000;
+    transition: left .28s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  .sidebar.open { left: 0; }
 
+  .nav-list { display: flex; flex-direction: column; gap: 4px; }
 
-
-  .tab-btn{
-    padding:12px 24px;
-    border:1.5px solid var(--ink);
-    border-radius:8px;
-    background:#EFEAE0;
-    font-family:'Inter', sans-serif;
-    font-size:13.5px;
-    font-weight:700;
-    color:var(--ink);
-    cursor:pointer;
-    transition:all 0.2s ease;
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    color: #E8E5DD;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    transition: all 0.2s ease;
   }
 
+  .nav-item svg { width: 19px; height: 19px; fill: currentColor; flex-shrink: 0; }
 
+  .nav-item:hover { background: rgba(255, 255, 255, 0.12); color: #FFFFFF; }
+  .nav-item.active { background: var(--green-dark); color: #FFFFFF; font-weight: 700; }
 
-
-  .tab-btn:hover{ background:#DEDDDC; }
-  .tab-btn.active{
-    background:#C4C3C2;
-    border-color:var(--ink);
+  .signout {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    color: #FFC0C0;
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: var(--radius-sm);
+    width: 100%;
+    transition: all 0.2s ease;
   }
 
+  .signout svg { width: 18px; height: 18px; fill: currentColor; }
+  .signout:hover { background: rgba(192, 57, 43, 0.25); color: #FFF; }
 
+  .main { flex: 1; padding: 32px 40px; min-width: 0; }
 
+  .view { display: none; }
+  .view.active-view { display: block; }
 
-  /* SUMMARY TAB CONTENT DESIGN */
-  .summary-grid{
-    display:grid;
-    grid-template-columns:1.5fr 1fr;
-    gap:24px;
+  /* ============================================================
+     HEADERS
+  ============================================================ */
+  .main-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
   }
 
-
-
-
-  .summary-left-box, .summary-right-card{
-    background:#fff;
-    border:1px solid #D0D0D0;
-    border-radius:8px;
-    padding:20px;
+  .header-left h1 {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--green-dark);
+    letter-spacing: -0.01em;
+    margin: 0;
   }
 
-
-
-
-  .summary-stat-chips{
-    display:flex;
-    gap:10px;
-    margin:14px 0 20px;
-    flex-wrap:wrap;
+  .header-left p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
   }
 
+  .header-actions { display: flex; align-items: center; gap: 12px; }
 
-
-
-  .stat-chip{
-    padding:10px 14px;
-    border-radius:8px;
-    text-align:center;
-    font-size:12px;
-    font-weight:700;
-    min-width:70px;
+  /* ============================================================
+     CARDS
+  ============================================================ */
+  .card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 22px 24px;
+    margin-bottom: 24px;
   }
 
-
-
-
-  .stat-chip.gray{ background:#F2EFE9; border:1px solid #CCC; color:#333; }
-  .stat-chip.black{ background:#000; color:#fff; }
-  .stat-chip.green{ background:#0B823A; color:#fff; }
-  .stat-chip.gold{ background:#D69E3D; color:#fff; }
-  .stat-chip.red{ background:#B82218; color:#fff; }
-
-
-
-
-  .stat-chip span{ display:block; font-size:14px; margin-top:2px; }
-
-
-
-
-  .placeholder-line{
-    height:24px;
-    background:#F2EFE9;
-    border-radius:4px;
-    margin-bottom:10px;
+  /* ============================================================
+     SEARCH
+  ============================================================ */
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #FFFFFF;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    min-width: 260px;
+    transition: all 0.2s ease;
   }
 
-
-
-
-  .top-commodity-body{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:16px;
-    margin-top:12px;
+  .search-box:focus-within {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
   }
 
+  .search-box svg { width: 15px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 2.4; }
 
-
-
-  .top-commodity-img{
-    width:120px;
-    height:80px;
-    background:#D6E5B3;
-    border-radius:6px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+  .search-box input {
+    border: none;
+    outline: none;
+    font-size: 13.5px;
+    width: 100%;
+    background: transparent;
+    color: var(--ink);
   }
 
+  /* ============================================================
+     TABLES
+  ============================================================ */
+  table { width: 100%; border-collapse: separate; border-spacing: 0; }
 
-
-
-  /* TABLE COMMON DESIGN */
-  table{ width:100%; border-collapse:separate; border-spacing:0; }
-  thead tr{ background:#DEDDDC; }
-  thead th{
-    text-align:center;
-    font-size:13px;
-    font-weight:700;
-    color:#222;
-    padding:14px 10px;
-  }
-  thead th:first-child{ border-top-left-radius:8px; border-bottom-left-radius:8px; }
-  thead th:last-child{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
-
-
-
-
-  tbody td{
-    padding:14px 8px;
-    font-size:13.5px;
-    text-align:center;
-    vertical-align:middle;
+  thead th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    padding: 12px 14px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-bottom: 1.5px solid var(--border);
   }
 
+  thead th.center-col, tbody td.center-col { text-align: center; }
 
-
-
-  .pill{
-    display:inline-block;
-    padding:6px 16px;
-    border-radius:999px;
-    background:#EEEEEE;
-    font-size:12.5px;
-    color:#222;
-    white-space:nowrap;
+  tbody td {
+    padding: 13px 14px;
+    font-size: 13.5px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--ink);
   }
 
+  tbody tr { transition: background 0.15s ease; }
+  tbody tr:hover td { background: #F3EEE4; }
+  tbody tr.selected td { background: #EAF1E3; }
 
+  .clickable-row { cursor: pointer; }
 
-
-  .status-pill{
-    display:inline-block;
-    padding:6px 20px;
-    border-radius:999px;
-    font-size:12.5px;
-    font-weight:700;
-    color:#fff;
+  /* ============================================================
+     CHECKBOX
+  ============================================================ */
+  input[type="checkbox"].row-check,
+  input[type="checkbox"]#selectAllCheckbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--green);
   }
 
-
-
-
-  .status-pill.confirmed, .status-pill.approved, .status-pill.harvested{ background:#118308; }
-  .status-pill.submitted, .status-pill.mediating{ background:#E5A510; }
-  .status-pill.planted{ background:#E06030; }
-  .status-pill.pending{ background:#C48D53; }
-
-
-
-
-  /* REMARKS / NOTES SECTION */
-  .notes-row{
-    display:flex;
-    gap:24px;
-    align-items:flex-end;
-    margin-top:24px;
-    padding-top:16px;
-    border-top:1px solid #E0E0E0;
+  /* ============================================================
+     STATUS PILLS
+  ============================================================ */
+  .status-pill {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #FFFFFF !important;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    text-align: center;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
   }
 
+  .status-pill.pending   { background-color: #D97706 !important; }
+  .status-pill.provincial { background-color: #D97706 !important; }
+  .status-pill.submitted,
+  .status-pill.approved  { background-color: var(--status-confirmed) !important; }
+  .status-pill.revision,
+  .status-pill.flagged   { background-color: #C0392B !important; }
+  .status-pill.rfo        { background-color: #2980B9 !important; }
 
-
-
-  .notes-field{ flex:1; }
-  .notes-field label{ display:block; font-size:14px; font-weight:700; margin-bottom:8px; color:var(--ink); }
-
-
-
-
-  .btn-outline-report{
-    appearance:none;
-    border:1.5px solid #5A6B52;
-    background:#EFEAE0;
-    color:#333;
-    font-family:'Inter', sans-serif;
-    font-size:13.5px;
-    font-weight:600;
-    padding:10px 24px;
-    border-radius:8px;
-    cursor:pointer;
-    transition:all .2s ease;
+  /* ============================================================
+     PILLS (generic)
+  ============================================================ */
+  .pill {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 999px;
+    background: #EEEEEE;
+    font-size: 12px;
+    color: #222;
+    white-space: nowrap;
   }
 
-
-
-
-  .btn-outline-report:hover:not(:disabled){ background:#DEDDDC; }
-
-
-
-
-  .detail-actions-row{
-    display:flex;
-    justify-content:flex-end;
-    gap:16px;
-    margin-top:24px;
+  /* ============================================================
+     BUTTONS
+  ============================================================ */
+  .btn-primary {
+    appearance: none;
+    background: var(--green);
+    color: #FFF;
+    border: none;
+    font-size: 13.5px;
+    font-weight: 700;
+    padding: 9px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
   }
 
-
-
-
-  .flag-btn.active{ background:#C83232; border-color:#C83232; color:#fff; }
-  .approve-btn.active{ background:#5A7365; border-color:#5A7365; color:#fff; }
-
-
-
-
-  /* MODAL OVERLAY */
-  .modal-overlay{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(30,35,28,0.55);
-    align-items:center;
-    justify-content:center;
-    z-index:3000;
+  .btn-primary:hover:not(:disabled) {
+    background: var(--green-dark);
+    transform: translateY(-1px);
   }
 
-
-
-
-  .modal-overlay.show{ display:flex; }
-
-
-
-
-  .modal-box{
-    background:#DEDDDC;
-    border-radius:8px;
-    padding:36px 48px;
-    text-align:center;
-    box-shadow:0 14px 40px rgba(0,0,0,0.3);
-    max-width:480px;
-    width:90%;
+  .btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
-
-
-
-  .modal-box p{
-    font-family:'Oswald', sans-serif;
-    font-size:28px;
-    font-weight:700;
-    color:#536B5C;
-    margin-bottom:24px;
-    line-height:1.25;
+  .btn-outline-report {
+    appearance: none;
+    border: 1.5px solid var(--border);
+    background: #FFFFFF;
+    color: var(--ink);
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 9px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
   }
 
-
-
-
-  .modal-confirm-btn{
-    border:none;
-    background:#5A7365;
-    color:#fff;
-    font-family:'Inter', sans-serif;
-    font-size:14px;
-    font-weight:600;
-    padding:10px 36px;
-    border-radius:10px;
-    cursor:pointer;
+  .btn-outline-report:hover:not(:disabled) {
+    background: var(--cream);
+    border-color: var(--green);
   }
 
+  .flag-btn.active { background: #C83232; border-color: #C83232; color: #fff; }
+  .approve-btn.active { background: var(--green-dark); border-color: var(--green-dark); color: #fff; }
 
+  .detail-actions-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 22px;
+  }
 
+  /* ============================================================
+     NOTES / TEXTAREA
+  ============================================================ */
+  .notes-row {
+    display: flex;
+    gap: 24px;
+    align-items: flex-end;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
 
-  .clickable-row{ cursor:pointer; }
-  .clickable-row:hover td{ background:#F6F3EB; }
+  .notes-field { flex: 1; }
 
+  .notes-field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
 
+  .textarea-notes {
+    width: 100%;
+    height: 90px;
+    padding: 12px;
+    font-size: 13.5px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--ink);
+    outline: none;
+    resize: vertical;
+    transition: all 0.2s ease;
+  }
 
+  .textarea-notes:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
+  }
 
-  /* HELPER CLASSES PARANG WALA NANG INLINE STYLE WARNINGS */
-  .text-loc { font-size: 12px; color: #666; }
-  .text-section-title { font-size: 13px; font-weight: 700; margin-top: 6px; }
-  .text-alert-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
-  .text-narrative-title { font-size: 13px; font-weight: 700; margin: 16px 0 8px; }
-  .textarea-narrative { width: 100%; height: 80px; border: 1.5px solid #666; border-radius: 6px; padding: 8px; font-size: 13px; outline: none; resize: vertical; }
-
-
-
-
-  .text-top-commodity { font-size: 13px; font-weight: 700; }
-  .text-green-highlight { color: #0B823A; }
-  .top-commodity-text { font-size: 12.5px; line-height: 1.6; }
-  .text-as-of { font-size: 11px; color: #888; text-align: right; margin-top: 20px; }
-
-
-
-
-  .upload-section { margin-top: 28px; border-top: 1px solid #EEE; padding-top: 16px; }
-  .upload-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
-  .upload-flex { display: flex; gap: 8px; }
-  .input-required { flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid #CCC; border-radius: 4px; }
-  .btn-select-file { padding: 6px 12px; font-size: 12px; }
-
-
-
-
-  .actions-right-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
-  .btn-submit-bg { background: #E5E4E3; }
-
-
-
-
-  .hidden-element { display: none; }
   .notes-row-clean { border-top: none; padding-top: 0; }
-  .textarea-notes { width:100%; height:90px; padding:12px; font-size:14px; font-family:'Inter', sans-serif; border:1.5px solid #666; border-radius:4px; background:#fff; color:var(--ink); outline:none; resize:vertical; }
+
+  /* ============================================================
+     MAP
+  ============================================================ */
+  #map {
+    width: 100%;
+    height: 400px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+  }
+
+  .map-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  /* ============================================================
+     MODALS
+  ============================================================ */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(30, 35, 28, 0.6);
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal-box {
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 32px 38px;
+    text-align: center;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.2);
+    max-width: 440px;
+    width: 90%;
+  }
+
+  .modal-box p {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--green-dark);
+    margin-bottom: 22px;
+    line-height: 1.4;
+  }
+
+  .modal-confirm-btn {
+    border: none;
+    background: var(--green);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .modal-confirm-btn:hover { background: var(--green-dark); }
+
+  /* ============================================================
+     HELPERS
+  ============================================================ */
+  .hidden-element { display: none !important; }
+
+  .text-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 8px;
+    background: var(--green);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .count-badge.muted {
+    background: var(--muted);
+  }
 </style>
 </head>
 <body>
 
-
-
-
+  <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
         <span></span><span></span><span></span>
       </button>
 
-
-
-
       <div class="logos">
-        <svg class="seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="46" fill="none" stroke="#5B6B4F" stroke-width="3"/>
-          <path d="M50 20 C 35 30, 30 45, 50 65 C 70 45, 65 30, 50 20 Z" fill="#5B6B4F"/>
-          <path d="M50 30 L50 62" stroke="#F2EDE1" stroke-width="2"/>
-        </svg>
-        <div class="brand-logo">
-          <svg viewBox="0 0 200 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <g fill="none" stroke="#8C6A4A" stroke-width="3" stroke-linecap="round">
-              <path d="M8 90 C 40 40, 90 20, 150 15"/>
-              <path d="M8 90 C 45 55, 95 40, 155 45"/>
-              <path d="M8 90 C 50 78, 100 72, 158 82"/>
-              <path d="M8 90 C 45 105, 95 118, 150 130"/>
-              <path d="M8 90 C 40 130, 85 150, 130 158"/>
-            </g>
-          </svg>
-        </div>
-        <span class="brand-word">eSaka</span>
+        <img src="../images/esakalogo.png" alt="eSaka Logo" class="brand-logo-img">
+        <img src="../images/esakaname.png" alt="eSaka" class="brand-name-img">
       </div>
     </div>
 
-
-
-
     <div class="topbar-right">
-      <div class="bell-wrap" aria-label="Notifications">
-        <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
+      <div class="bell-wrap" id="notificationBell" aria-label="Notifications">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/>
+        </svg>
         <span class="bell-dot"></span>
+
+        <div class="notification-dropdown" id="notificationDropdown">
+          <div class="notification-header"><strong>Notifications</strong></div>
+          <div class="notification-list">
+            <div class="notification-empty">No new notifications.</div>
+          </div>
+        </div>
       </div>
 
-
-
-
       <div class="user-info">
+        <div class="avatar" id="userDisplayInitials">--</div>
         <div class="user-text">
-          <div class="user-name">Juan Dela Cruz</div>
-          <div class="user-role">Municipal Coordinator</div>
-        </div>
-        <div class="avatar">
-          <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
+          <div class="user-name" id="userDisplayName">Loading...</div>
+          <div class="user-role" id="userDisplayRole">Loading...</div>
         </div>
       </div>
     </div>
   </div>
 
-
-
-
+  <!-- LAYOUT -->
   <div class="layout">
-
-
-
-
     <nav class="sidebar" id="sidebar">
       <div class="nav-list">
         <button class="nav-item active" type="button" data-view="reports">
-          <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
           View Reports
         </button>
         <button class="nav-item" type="button" data-view="map">
@@ -735,1878 +680,299 @@
         </button>
       </div>
 
-
-
-
       <a class="signout" href="../index.html">
         <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
         Sign Out
       </a>
     </nav>
 
-
-
-
     <main class="main">
 
-
-
-
-      <!-- ===================== VIEW 1: View Reports ===================== -->
+      <!-- ===================== VIEW: Reports ===================== -->
       <section class="view active-view" id="view-reports">
+        <div class="main-header" id="reportsMainHeader">
+          <div class="header-left">
+            <h1>Reports</h1>
+            <p>Review AEW reports and forward approved ones to Provincial.</p>
+          </div>
 
-
-
-
-        <!-- REPORTS HEADER -->
-        <div class="main-header">
-          <h1>Reports</h1>
-
-
-
-
-          <div class="search-row">
+          <div class="header-actions">
             <div class="search-box">
               <svg viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="7"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
-
-
-
-
-              <input
-                type="text"
-                id="reportSearchInput"
-                placeholder="Search reports..."
-                autocomplete="off"
-              >
+              <input type="text" id="reportSearchInput" placeholder="Search pending reports..." autocomplete="off">
             </div>
           </div>
         </div>
 
-
-
-
-        <!-- ===================== PENDING REPORTS ===================== -->
+        <!-- PENDING REPORTS -->
         <div id="pendingReportsView">
-
-
-
-
           <div class="card">
-
-
-
-
-            <div class="text-section-title" style="font-size:16px; margin-bottom:16px;">
-              Pending Reports
-            </div>
-
-
-
-
-            <table>
-              <thead>
-                <tr>
-                  <th>Report ID</th>
-                  <th>Title</th>
-                  <th>Commodity</th>
-                  <th>Planting Date</th>
-                  <th>Estimated Yield (kg)</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-
-
-
-
-              <tbody id="pendingReportsBody">
-                <tr>
-                  <td colspan="6">
-                    Loading reports...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-
-
-
-          </div>
-
-
-
-
-        </div>
-
-
-
-
-        <!-- ===================== REPORT DETAIL ===================== -->
-        <div
-          id="individualDetailView"
-          class="hidden-element"
-        >
-
-
-
-
-          <div class="card">
-
-
-
-
-            <table>
-              <thead>
-                <tr>
-                  <th>Commodity</th>
-                  <th>Planting Date</th>
-                  <th>Harvest Date</th>
-                  <th>Estimated Yield (kg)</th>
-                  <th>Encoded By</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-
-
-
-
-              <tbody id="reportDetailBody">
-              </tbody>
-            </table>
-
-
-
-
-            <!-- NOTES -->
-            <div class="notes-row">
-              <div class="notes-field">
-                <label>Notes</label>
-                <textarea
-                  id="reportNotesTextarea"
-                  class="textarea-notes"
-                  readonly
-                ></textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+              <div class="text-section-title" style="margin-bottom:0;">
+                Pending Reports
+                <span class="count-badge" id="pendingCountBadge">0</span>
               </div>
 
-
-
-
-              <div>
-                <button
-                  class="btn-outline-report"
-                  id="viewAttachmentsBtn"
-                  type="button"
-                >
-                  View Attachments
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn-outline-report" id="selectAllPendingBtn" type="button">
+                  Select All
+                </button>
+                <button class="btn-primary" id="bulkApproveBtn" type="button" disabled>
+                  Approve Selected &amp; Send to Provincial
                 </button>
               </div>
             </div>
 
+            <div style="overflow-x:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:40px;">
+                      <input type="checkbox" id="selectAllCheckbox" aria-label="Select all pending reports">
+                    </th>
+                    <th class="center-col">Report ID</th>
+                    <th>Title</th>
+                    <th>Commodity</th>
+                    <th>Municipality</th>
+                    <th class="center-col">Planting Date</th>
+                    <th class="center-col">Est. Yield</th>
+                    <th class="center-col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingReportsBody">
+                  <tr><td colspan="8" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
+       <!-- AWAITING REVISION (filtered by user's level) -->
+      <div id="awaitingRevisionView">
+        <div class="card">
+          <div class="text-section-title">
+            Awaiting AEW Revision
+            <span class="count-badge muted" id="awaitingRevisionCountBadge">0</span>
+          </div>
 
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th class="center-col">Report ID</th>
+                  <th>Title</th>
+                  <th>Commodity</th>
+                  <th>Municipality</th>
+                  <th class="center-col">Flagged At</th>
+                  <th class="center-col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="awaitingRevisionBody">
+                <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-            <!-- REMARKS -->
-            <div class="notes-row notes-row-clean">
-              <div class="notes-field">
-                <label>Remarks</label>
-                <textarea
-                  id="remarksTextarea"
-                  class="textarea-notes"
-                  placeholder="Enter remarks..."
-                ></textarea>
+        <!-- SENT TO PROVINCIAL -->
+        <div id="sentToProvincialView">
+          <div class="card">
+            <div class="text-section-title">
+              Sent to Provincial
+              <span class="count-badge muted" id="sentCountBadge">0</span>
+            </div>
+
+            <div style="overflow-x:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="center-col">Report ID</th>
+                    <th>Title</th>
+                    <th>Commodity</th>
+                    <th>Municipality</th>
+                    <th class="center-col">Submitted</th>
+                    <th class="center-col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="sentToProvincialBody">
+                  <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- REPORT DETAIL (for individual view) -->
+        <div id="individualDetailView" class="hidden-element">
+          <div class="main-header">
+            <div class="header-left">
+              <h1 id="detailReportTitle">Report Details</h1>
+              <p id="detailReportSubtitle">—</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <!-- ==================== REPORT INFO — COMPACT ==================== -->
+            <div style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+              gap: 20px 28px;
+              padding: 18px 20px;
+              background: #F6F3EB;
+              border-radius: 10px;
+              margin-bottom: 24px;
+            ">
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Report ID</div>
+                <div id="detailReportId" style="font-size: 14px; font-weight: 700; color: var(--ink);">—</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Municipality</div>
+                <div id="detailReportMunicipality" style="font-size: 14px; font-weight: 600; color: var(--ink);">—</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Status</div>
+                <div id="detailReportStatus" style="font-size: 14px; color: var(--ink);">—</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Submitted Date</div>
+                <div id="detailReportDate" style="font-size: 14px; font-weight: 600; color: var(--ink);">—</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Encoded By</div>
+                <div id="detailReportEncodedBy" style="font-size: 14px; font-weight: 600; color: var(--ink);">—</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Est. Yield</div>
+                <div id="detailReportYield" style="font-size: 14px; font-weight: 600; color: var(--ink);">—</div>
+              </div>
+              <div style="grid-column: 1 / -1;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Notes / Remarks</div>
+                <div id="detailReportNotes" style="font-size: 14px; color: var(--ink); line-height: 1.5;">—</div>
               </div>
             </div>
 
+            <!-- ==================== ATTACHMENTS ==================== -->
+            <div style="margin-bottom: 24px;">
+              <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Attachments</div>
+              <div id="detailReportAttachments" style="font-size: 14px; color: var(--muted);">No attachments</div>
+            </div>
 
+            <!-- ==================== REVISION REMARKS (kung may flag history) ==================== -->
+            <div id="detailRevisionRemarksWrapper" style="
+              display: none;
+              margin-top: 28px;
+              margin-bottom: 24px;
+              padding: 16px 20px;
+              background: #FEE2E2;
+              border-left: 4px solid #C0392B;
+              border-radius: 0 8px 8px 0;
+            ">
+              <div style="
+                font-size: 11px;
+                font-weight: 700;
+                color: #C0392B;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 12px;
+              ">
+                Revision Remarks (Flagged by Municipal)
+              </div>
+              <div id="detailRevisionRemarks" style="font-size: 14px; color: #333; line-height: 1.6;">—</div>
+            </div>
 
+            <!-- ==================== INCLUDED PLANTING INTENTS ==================== -->
+            <div style="margin-top: 8px;">
+              <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;">Included Planting Intents</div>
+              <div style="overflow-x: auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="center-col">Intent ID</th>
+                      <th>Farmer</th>
+                      <th>Commodity</th>
+                      <th class="center-col">Volume</th>
+                      <th class="center-col">Planting Date</th>
+                      <th class="center-col">Harvest Date</th>
+                      <th class="center-col">Harvest Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="detailReportIntentsBody">
+                    <tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
+            <!-- ==================== REMARKS (for flagging) ==================== -->
+            <div class="notes-row notes-row-clean" style="margin-top: 28px;">
+              <div class="notes-field">
+                <label>Remarks</label>
+                <textarea id="remarksTextarea" class="textarea-notes" placeholder="Enter remarks (required if flagging for revision)..."></textarea>
+              </div>
+            </div>
           </div>
 
+                    <!-- ==================== ACTION BUTTONS ==================== -->
+                    <div class="detail-actions-row">
+                      <button class="btn-outline-report" id="backToPendingBtn" type="button">Return</button>
+                      <button class="btn-outline-report" id="editReportBtn" type="button" style="display: none;">
+                        Edit
+                      </button>
+                      <button class="btn-outline-report flag-btn" id="flagBtn" type="button">Flag for Revision</button>
+                      <button class="btn-primary approve-btn" id="approveBtn" type="button" style="background:#2E7D32;">
+                        Approve &amp; Send to Provincial
+                      </button>
+                      <button class="btn-primary" id="resubmitReportBtn" type="button" style="background: #2E7D32; display: none;">
+                        Resubmit to Provincial
+                      </button>
+                    </div>
+                  </div>        
+                </section>    
 
+                <!-- ===================== VIEW: Map ===================== -->
+                      <section class="view" id="view-map">
+                        <div class="main-header">
+                          <div class="header-left">
+                            <h1>Regional Field Map</h1>
+                            <p>Geospatial tracking of crop production clusters in Pampanga.</p>
+                          </div>
+                        </div>
 
+                        <div class="card">
+                          <div class="map-title">Field Monitoring &amp; Geographic Clusters</div>
+                          <div id="map"></div>
+                        </div>
+                      </section>
 
-          <!-- ACTION BUTTONS -->
-          <div class="detail-actions-row">
-            <button
-              class="btn-outline-report"
-              id="backToPendingBtn"
-              type="button"
-            >
-              Return
-            </button>
+          </main>
+        </div>
 
-
-
-
-            <button
-              class="btn-outline-report flag-btn"
-              id="flagBtn"
-              type="button"
-            >
-              Flag for Revision
-            </button>
-
-
-
-
-            <button
-              class="btn-outline-report approve-btn"
-              id="approveBtn"
-              type="button"
-            >
-              Approve
-            </button>
+        <!-- CONFIRMATION MODAL -->
+        <div class="modal-overlay" id="reportModal">
+          <div class="modal-box">
+            <p id="reportModalText">Report Submitted to Provincial Level</p>
+            <button class="modal-confirm-btn" id="reportModalConfirmBtn" type="button">Confirm</button>
           </div>
-
-
-
-
         </div>
 
-
-
-
-      </section>
-
-
-
-
-      <!-- ===================== VIEW 2: Map ===================== -->
-      <section class="view" id="view-map">
-        <div class="main-header">
-          <h1>Map</h1>
+        <!-- BULK CONFIRM MODAL -->
+        <div class="modal-overlay" id="bulkApproveModal">
+          <div class="modal-box">
+            <p id="bulkApproveText">Approve selected reports?</p>
+            <div style="display:flex; justify-content:center; gap:12px;">
+              <button class="btn-outline-report" id="bulkApproveCancelBtn" type="button">Cancel</button>
+              <button class="modal-confirm-btn" id="bulkApproveConfirmBtn" type="button">Confirm</button>
+            </div>
+          </div>
         </div>
 
-
-
-
-        <div class="card">
-          <div id="map"></div>
-        </div>
-      </section>
-
-
-
-
-    </main>
-  </div>
-
-
-
-
-  <!-- CONFIRMATION MODAL -->
-  <div class="modal-overlay" id="reportModal">
-    <div class="modal-box">
-      <p id="reportModalText">Report Submitted to Provincial Level</p>
-      <button class="modal-confirm-btn" id="reportModalConfirmBtn" type="button">Confirm</button>
-    </div>
-  </div>
-
-
-
-
-<!-- Leaflet-->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-
-
-
-
-<script>
-  // SIDEBAR & VIEW SWITCHING
-  const hamburgerBtn = document.getElementById('hamburgerBtn');
-  const sidebar = document.getElementById('sidebar');
-
-
-
-
-  hamburgerBtn.addEventListener('click', () => {
-    sidebar.classList.toggle('open');
-    setTimeout(() => {
-      if (window.leafletMap) window.leafletMap.invalidateSize();
-    }, 300);
-  });
-
-
-
-
-  const navButtons = document.querySelectorAll('.nav-item[data-view]');
-  const views = document.querySelectorAll('.view');
-
-
-
-
-  function switchView(viewKey){
-    views.forEach(v => v.classList.remove('active-view'));
-    document.getElementById('view-' + viewKey).classList.add('active-view');
-    navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewKey));
-
-
-
-
-    if (viewKey === 'map' && window.leafletMap){
-      setTimeout(() => window.leafletMap.invalidateSize(), 50);
-    }
-  }
-
-
-
-
-  navButtons.forEach(btn => {
-    btn.addEventListener('click', () => switchView(btn.dataset.view));
-  });
-
-
-
-
-  // MAP INITIALIZATION
-  const pampangaBounds = L.latLngBounds([14.85, 120.35], [15.35, 120.95]);
-  const map = L.map('map', {
-    maxBounds: pampangaBounds,
-    maxBoundsViscosity: 1.0,
-    minZoom: 10
-  }).setView([15.0794, 120.6200], 10);
-  window.leafletMap = map;
-
-
-
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 18
-  }).addTo(map);
-
-const API_BASE_URL = "http://127.0.0.1:8000";
-
-  // ============================================================
-// PAMPANGA MUNICIPALITY COORDINATES
-// Static coordinates only for displaying map markers.
-// These are NOT stored in the database.
-// ============================================================
-
-const municipalityCoordinates = {
-
-    "Angeles": [15.1450, 120.5887],
-    "Apalit": [14.9470, 120.7700],
-    "Arayat": [15.1500, 120.7690],
-    "Bacolor": [15.0000, 120.6520],
-    "Candaba": [15.0950, 120.8260],
-    "Floridablanca": [14.9770, 120.5280],
-    "Guagua": [14.9650, 120.6350],
-    "Lubao": [14.9400, 120.6000],
-    "Mabalacat": [15.2230, 120.5740],
-    "Macabebe": [14.9080, 120.7150],
-    "Magalang": [15.2160, 120.6630],
-    "Masantol": [14.8960, 120.7100],
-    "Mexico": [15.0640, 120.7190],
-    "Minalin": [14.9670, 120.6840],
-    "Porac": [15.0710, 120.5420],
-    "San Fernando": [15.0343, 120.6840],
-    "San Luis": [15.0400, 120.7870],
-    "San Simon": [14.9990, 120.7800],
-    "Santa Ana": [15.0950, 120.7720],
-    "Santa Rita": [15.0190, 120.6110],
-    "Santo Tomas": [14.9950, 120.7090]
-
-};
-
-
-// ============================================================
-// LOAD MUNICIPALITY MAP DATA
-// ============================================================
-
-async function loadMunicipalityMapData(municipalityCoordinates) {
-    try {
-        const response = await fetch(
-            `${API_BASE_URL}/api/planting-intents/municipality-map`,
-            {
-                method: "GET",
-                headers: {
-                    "Accept": "application/json"
-                }
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        console.log("Municipality Map Data:", result);
-
-        if (!result.data || !Array.isArray(result.data)) {
-            console.warn("No municipality map data found.");
-            return;
-        }
-
-        result.data.forEach(municipalityData => {
-
-            const municipality = municipalityData.municipality;
-            const coordinates = municipalityCoordinates[municipality];
-
-            if (!coordinates) {
-                console.warn(
-                    `No coordinates found for municipality: ${municipality}`
-                );
-                return;
-            }
-
-            let popupContent = `
-                <div style="min-width: 180px;">
-                    <strong>Municipality:</strong>
-                    ${municipality}
-                    <br><br>
-            `;
-
-            if (
-                municipalityData.commodities &&
-                Array.isArray(municipalityData.commodities)
-            ) {
-                municipalityData.commodities.forEach(item => {
-
-                    popupContent += `
-                        <strong>Commodity:</strong>
-                        ${item.commodity}
-                        <br>
-
-                        <strong>Status:</strong>
-                        ${item.status}
-                        <br><br>
-                    `;
-                });
-            }
-
-            popupContent += `</div>`;
-
-            L.marker(coordinates)
-                .addTo(map)
-                .bindPopup(popupContent);
-        });
-
-    } catch (error) {
-        console.error(
-            "Failed to load municipality map data:",
-            error
-        );
-    }
-}
-
-// ============================================================
-// LOAD MAP DATA
-// ============================================================
-
-loadMunicipalityMapData(
-    municipalityCoordinates
-);
-
-
-
-
-
-// ============================================================
-// MUNICIPAL REPORTS
-// PENDING REPORTS + SEARCH + DETAIL VIEW
-// ============================================================
-
-
-
-
-
-const MUNICIPAL_REPORTS_ENDPOINT =
-  `${API_BASE_URL}/api/report-submissions/for-municipal-validation`;
-
-
-
-
-
-
-
-
-// ============================================================
-// ELEMENTS
-// ============================================================
-
-
-
-
-const pendingReportsBody =
-  document.getElementById("pendingReportsBody");
-
-
-
-
-const pendingReportsView =
-  document.getElementById("pendingReportsView");
-
-
-
-
-const individualDetailView =
-  document.getElementById("individualDetailView");
-
-
-
-
-const reportSearchInput =
-  document.getElementById("reportSearchInput");
-
-
-
-
-const reportDetailBody =
-  document.getElementById("reportDetailBody");
-
-
-
-
-const reportNotesTextarea =
-  document.getElementById("reportNotesTextarea");
-
-
-
-
-const remarksTextarea =
-  document.getElementById("remarksTextarea");
-
-
-
-
-const backToPendingBtn =
-  document.getElementById("backToPendingBtn");
-
-
-
-
-const flagBtn =
-  document.getElementById("flagBtn");
-
-
-
-
-const approveBtn =
-  document.getElementById("approveBtn");
-
-
-
-
-
-
-
-
-// ============================================================
-// DATA
-// ============================================================
-
-
-
-
-let municipalReports = [];
-
-
-
-
-let selectedReport = null;
-
-
-
-
-
-
-
-
-// ============================================================
-// LOAD REPORTS
-// ============================================================
-
-
-
-
-async function loadMunicipalReports() {
-
-
-
-
-  if (!pendingReportsBody) {
-    return;
-  }
-
-
-
-
-  pendingReportsBody.innerHTML = `
-    <tr>
-      <td colspan="6">
-        Loading reports...
-      </td>
-    </tr>
-  `;
-
-
-
-
-  try {
-
-
-
-
-    const response = await fetch(
-      MUNICIPAL_REPORTS_ENDPOINT,
-      {
-        method: "GET",
-        headers: {
-          "Accept": "application/json"
-        }
-      }
-    );
-
-
-
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to load reports. Status: ${response.status}`
-      );
-    }
-
-
-
-
-    municipalReports = await response.json();
-
-
-
-
-    console.log(
-      "Municipal reports:",
-      municipalReports
-    );
-
-
-
-
-    renderMunicipalReports(
-      municipalReports
-    );
-
-
-
-
-  } catch (error) {
-
-
-
-
-    console.error(
-      "Error loading municipal reports:",
-      error
-    );
-
-
-
-
-    pendingReportsBody.innerHTML = `
-      <tr>
-        <td colspan="6">
-          Failed to load reports.
-        </td>
-      </tr>
-    `;
-
-
-
-
-  }
-
-
-
-
-}
-
-
-
-
-
-
-
-
-// ============================================================
-// RENDER PENDING REPORTS
-// ============================================================
-
-
-
-
-function renderMunicipalReports(
-  reports = municipalReports
-) {
-
-
-
-
-  if (!pendingReportsBody) {
-    return;
-  }
-
-
-
-
-  pendingReportsBody.innerHTML = "";
-
-
-
-
-  if (!reports || reports.length === 0) {
-
-
-
-
-    pendingReportsBody.innerHTML = `
-      <tr>
-        <td colspan="6">
-          No reports waiting for municipal validation.
-        </td>
-      </tr>
-    `;
-
-
-
-
-    return;
-  }
-
-
-
-
-  reports.forEach(report => {
-
-
-
-
-    const row =
-      document.createElement("tr");
-
-
-
-
-    row.classList.add(
-      "clickable-row"
-    );
-
-
-
-
-    row.dataset.id =
-      report.report_id;
-
-
-
-
-    row.innerHTML = `
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.report_id ?? "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.title || "Crop Harvest Report"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.commodity || "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${formatDate(report.planting_date)}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.estimated_yield ?? "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="status-pill pending">
-          For Municipal Validation
-        </span>
-      </td>
-
-
-
-
-    `;
-
-
-
-
-    row.addEventListener(
-      "click",
-      () => openReportDetail(report)
-    );
-
-
-
-
-    pendingReportsBody.appendChild(row);
-
-
-
-
-  });
-
-
-
-
-}
-
-
-
-
-
-
-
-
-// ============================================================
-// SEARCH REPORTS
-// ============================================================
-
-
-
-
-if (reportSearchInput) {
-
-
-
-
-  reportSearchInput.addEventListener(
-    "input",
-    () => {
-
-
-
-
-      const searchTerm =
-        reportSearchInput.value
-          .trim()
-          .toLowerCase();
-
-
-
-
-      if (!searchTerm) {
-
-
-
-
-        renderMunicipalReports(
-          municipalReports
-        );
-
-
-
-
-        return;
-      }
-
-
-
-
-      const filteredReports =
-        municipalReports.filter(report => {
-
-
-
-
-          const reportId =
-            String(
-              report.report_id ?? ""
-            ).toLowerCase();
-
-
-
-
-          const title =
-            String(
-              report.title ?? ""
-            ).toLowerCase();
-
-
-
-
-          const commodity =
-            String(
-              report.commodity ?? ""
-            ).toLowerCase();
-
-
-
-
-          const plantingDate =
-            String(
-              report.planting_date ?? ""
-            ).toLowerCase();
-
-
-
-
-          const yieldValue =
-            String(
-              report.estimated_yield ?? ""
-            ).toLowerCase();
-
-
-
-
-          return (
-            reportId.includes(searchTerm) ||
-            title.includes(searchTerm) ||
-            commodity.includes(searchTerm) ||
-            plantingDate.includes(searchTerm) ||
-            yieldValue.includes(searchTerm)
-          );
-
-
-
-
-        });
-
-
-
-
-      renderMunicipalReports(
-        filteredReports
-      );
-
-
-
-
-    }
-  );
-
-
-
-
-}
-
-
-
-
-
-
-
-
-// ============================================================
-// DATE FORMAT
-// ============================================================
-
-
-
-
-function formatDate(dateString) {
-
-
-
-
-  if (!dateString) {
-    return "—";
-  }
-
-
-
-
-  const date =
-    new Date(dateString);
-
-
-
-
-  if (isNaN(date.getTime())) {
-    return dateString;
-  }
-
-
-
-
-  return date.toLocaleDateString(
-    "en-US",
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    }
-  );
-
-
-
-
-}
-
-
-
-
-
-
-
-
-// ============================================================
-// OPEN REPORT DETAIL
-// ============================================================
-
-
-
-
-function openReportDetail(report) {
-
-
-
-
-  selectedReport = report;
-
-
-
-
-  // Hide pending list
-  pendingReportsView.style.display =
-    "none";
-
-
-
-
-  // Show detail
-  individualDetailView.style.display =
-    "block";
-
-
-
-
-  // Reset buttons
-  flagBtn.classList.remove("active");
-  flagBtn.textContent =
-    "Flag for Revision";
-
-
-
-
-  approveBtn.classList.remove("active");
-  approveBtn.textContent =
-    "Approve";
-
-
-
-
-  // Fill report details
-  reportDetailBody.innerHTML = `
-
-
-
-
-    <tr>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.commodity || "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${formatDate(
-            report.planting_date
-          )}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${formatDate(
-            report.harvest_date
-          )}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.estimated_yield ?? "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="pill">
-          ${report.encoded_by_name || "—"}
-        </span>
-      </td>
-
-
-
-
-      <td>
-        <span class="status-pill pending">
-          For Municipal Validation
-        </span>
-      </td>
-
-
-
-
-    </tr>
-
-
-
-
-  `;
-
-
-
-
-  // Notes
-  reportNotesTextarea.value =
-    report.notes ||
-    report.narrative ||
-    "";
-
-
-
-
-  // Remarks
-  remarksTextarea.value =
-    report.revision_remarks ||
-    "";
-
-
-
-
-  // Scroll to top of reports
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
-
-
-
-
-}
-
-
-
-
-
-
-
-
-// ============================================================
-// RETURN TO PENDING LIST
-// ============================================================
-
-
-
-
-backToPendingBtn.addEventListener(
-  "click",
-  () => {
-
-
-
-
-    selectedReport = null;
-
-
-
-
-    individualDetailView.style.display =
-      "none";
-
-
-
-
-    pendingReportsView.style.display =
-      "block";
-
-
-
-
-    flagBtn.classList.remove("active");
-    flagBtn.textContent =
-      "Flag for Revision";
-
-
-
-
-    approveBtn.classList.remove("active");
-    approveBtn.textContent =
-      "Approve";
-
-
-
-
-  }
-);
-
-
-
-
-
-
-// ============================================================
-// FLAG FOR REVISION - WITH ACTUAL API CALL
-// ============================================================
-// ============================================================
-// FLAG FOR REVISION - WITH ACTUAL API CALL
-// ============================================================
-
-
-flagBtn.addEventListener("click", async () => {
-
-
-  if (!selectedReport) {
-    return;
-  }
-
-
-  flagBtn.disabled = true;
-  flagBtn.textContent = "Processing...";
-
-
-  try {
-
-
-    // ============================================================
-    // GET LOGGED-IN USER
-    // ============================================================
-
-
-    const validatorId = localStorage.getItem("user_id");
-    const accessToken = localStorage.getItem("access_token");
-    const tokenType =
-      localStorage.getItem("token_type") || "bearer";
-
-
-    const userRole = localStorage.getItem("role");
-
-
-    console.log("Validator ID:", validatorId);
-    console.log("User Role:", userRole);
-    console.log("Has Access Token:", !!accessToken);
-
-
-    if (!validatorId) {
-      throw new Error(
-        "No logged-in user found. Please log in again."
-      );
-    }
-
-
-    if (!accessToken) {
-      throw new Error(
-        "No access token found. Please log in again."
-      );
-    }
-
-
-    // ============================================================
-    // CHECK ROLE
-    // ============================================================
-
-
-    if (
-      userRole !== "Municipal Coordinator" &&
-      userRole !== "Municipal"
-    ) {
-      throw new Error(
-        "Only a Municipal Coordinator can request revision."
-      );
-    }
-
-
-    // ============================================================
-    // REPORT DATA
-    // ============================================================
-
-
-    const reportId = selectedReport.report_id;
-
-
-    const remarks =
-      remarksTextarea.value.trim();
-
-
-    if (!remarks) {
-      throw new Error(
-        "Revision remarks are required."
-      );
-    }
-
-
-    // ============================================================
-    // REQUEST REVISION API
-    // ============================================================
-
-
-    const revisionUrl =
-      `${API_BASE_URL}/api/report-submissions/${reportId}/revision` +
-      `?validator_id=${encodeURIComponent(validatorId)}` +
-      `&validator_role=municipal_coordinator` +
-      `&remarks=${encodeURIComponent(remarks)}`;
-
-
-    console.log(
-      "Revision URL:",
-      revisionUrl
-    );
-
-
-    const response = await fetch(
-      revisionUrl,
-      {
-        method: "POST",
-
-
-        headers: {
-          "Accept": "application/json",
-          "Authorization":
-            `${tokenType} ${accessToken}`
-        }
-      }
-    );
-
-
-    // ============================================================
-    // HANDLE ERROR
-    // ============================================================
-
-
-    if (!response.ok) {
-
-
-      const errorData =
-        await response.json().catch(() => ({}));
-
-
-      throw new Error(
-        errorData.detail ||
-        `Failed to request revision. Status: ${response.status}`
-      );
-    }
-
-
-    // ============================================================
-    // SUCCESS RESPONSE
-    // ============================================================
-
-
-    const result =
-      await response.json();
-
-
-    console.log(
-      "Revision result:",
-      result
-    );
-
-
-    // ============================================================
-    // UPDATE LOCAL DATA
-    // ============================================================
-
-
-    selectedReport.status =
-      "REVISION_REQUIRED";
-
-
-    selectedReport.revision_remarks =
-      remarks;
-
-
-    // ============================================================
-    // UPDATE BUTTON
-    // ============================================================
-
-
-    flagBtn.classList.add("active");
-    flagBtn.textContent =
-      "Flagged ✓";
-
-
-    // ============================================================
-    // UPDATE STATUS IN DETAIL VIEW
-    // ============================================================
-
-
-    const statusCell =
-      document.querySelector(
-        "#reportDetailBody td:last-child .status-pill"
-      );
-
-
-    if (statusCell) {
-
-
-      statusCell.className =
-        "status-pill pending";
-
-
-      statusCell.textContent =
-        "Revision Required";
-    }
-
-
-    // ============================================================
-    // SUCCESS MODAL
-    // ============================================================
-
-
-    openModal(
-      "Report Flagged for Revision"
-    );
-
-
-    // ============================================================
-    // RELOAD REPORT LIST
-    // ============================================================
-
-
-    await loadMunicipalReports();
-
-
-  } catch (error) {
-
-
-    console.error(
-      "Error requesting revision:",
-      error
-    );
-
-
-    openModal(
-      `Error: ${error.message}`
-    );
-
-
-    flagBtn.classList.remove("active");
-    flagBtn.textContent =
-      "Flag for Revision";
-
-
-  } finally {
-
-
-    flagBtn.disabled = false;
-
-
-  }
-
-
-});
-
-
-// ============================================================
-// APPROVE REPORT - WITH ACTUAL API CALL
-// ============================================================
-
-
-approveBtn.addEventListener("click", async () => {
-
-
-  if (!selectedReport) {
-    return;
-  }
-
-
-  approveBtn.disabled = true;
-  approveBtn.textContent = "Processing...";
-
-
-  try {
-
-
-    // ============================================================
-    // GET LOGGED-IN USER
-    // ============================================================
-
-
-    // ✅ BAGONG CODE
-const validatorId = localStorage.getItem("user_id");
-const accessToken = localStorage.getItem("access_token");
-const tokenType = localStorage.getItem("token_type") || "bearer";
-
-
-console.log("Validator ID:", validatorId);
-console.log("Has Access Token:", !!accessToken);
-
-
-if (!validatorId) {
-  throw new Error(
-    "No logged-in user found. Please log in again."
-  );
-}
-
-
-if (!accessToken) {
-  throw new Error(
-    "No access token found. Please log in again."
-  );
-}
-    // ============================================================
-    // REPORT DATA
-    // ============================================================
-
-
-    const reportId = selectedReport.report_id;
-
-
-    const remarks =
-      remarksTextarea.value.trim() ||
-      "Approved by Municipal Coordinator";
-
-
-    // ============================================================
-    // APPROVE API
-    // ============================================================
-
-
-    const approveUrl =
-      `${API_BASE_URL}/api/report-submissions/${reportId}/approve` +
-      `?validator_id=${validatorId}` +
-      `&validator_role=municipal_coordinator` +
-      `&remarks=${encodeURIComponent(remarks)}`;
-
-
-    console.log("Approve URL:", approveUrl);
-
-
-    // ✅ BAGONG CODE
-const response = await fetch(
-  approveUrl,
-  {
-    method: "POST",
-    headers: {
-      "Accept": "application/json",
-      "Authorization": `${tokenType} ${accessToken}` // ← ITO ANG KULANG!
-    }
-  }
-);
-
-
-    // ============================================================
-    // HANDLE ERROR
-    // ============================================================
-
-
-    if (!response.ok) {
-
-
-      const errorData =
-        await response.json().catch(() => ({}));
-
-
-      throw new Error(
-        errorData.detail ||
-        `Failed to approve report. Status: ${response.status}`
-      );
-    }
-
-
-    // ============================================================
-    // SUCCESS RESPONSE
-    // ============================================================
-
-
-    const result = await response.json();
-
-
-    console.log("Approve result:", result);
-
-
-    // ============================================================
-    // UPDATE LOCAL DATA
-    // ============================================================
-
-
-    selectedReport.status =
-      "FOR_PROVINCIAL_VALIDATION";
-
-
-    selectedReport.revision_remarks =
-      remarks;
-
-
-    // ============================================================
-    // UPDATE BUTTON
-    // ============================================================
-
-
-    approveBtn.classList.add("active");
-    approveBtn.textContent = "Approved ✓";
-
-
-    // ============================================================
-    // UPDATE STATUS IN DETAIL VIEW
-    // ============================================================
-
-
-    const statusCell =
-      document.querySelector(
-        "#reportDetailBody td:last-child .status-pill"
-      );
-
-
-    if (statusCell) {
-
-
-      statusCell.className =
-        "status-pill approved";
-
-
-      statusCell.textContent =
-        "For Provincial Validation";
-    }
-
-
-    // ============================================================
-    // SUCCESS MODAL
-    // ============================================================
-
-
-    openModal(
-      "Report Approved Successfully"
-    );
-
-
-    // ============================================================
-    // RELOAD REPORT LIST
-    // ============================================================
-
-
-    await loadMunicipalReports();
-
-
-  } catch (error) {
-
-
-    console.error(
-      "Error approving report:",
-      error
-    );
-
-
-    openModal(
-      `Error: ${error.message}`
-    );
-
-
-    approveBtn.classList.remove("active");
-    approveBtn.textContent = "Approve";
-
-
-  } finally {
-
-
-    approveBtn.disabled = false;
-
-
-  }
-
-
-});
-
-
-// ============================================================
-// SUBMIT REPORT TO PROVINCIAL LEVEL
-// ============================================================
-
-
-
-
-const submitReportToProvBtn =
-  document.getElementById(
-    "submitReportToProvBtn"
-  );
-
-
-
-
-if (submitReportToProvBtn) {
-
-
-
-
-  submitReportToProvBtn.addEventListener(
-    "click",
-    () => {
-
-
-
-
-      openModal(
-        "Report Submitted to Provincial Level"
-      );
-
-
-
-
-    }
-  );
-
-
-
-
-}
-
-
-
-
-
-
-
-
-// ============================================================
-// MODAL
-// ============================================================
-
-
-
-
-const reportModal =
-  document.getElementById(
-    "reportModal"
-  );
-
-
-
-
-const reportModalText =
-  document.getElementById(
-    "reportModalText"
-  );
-
-
-
-
-const reportModalConfirmBtn =
-  document.getElementById(
-    "reportModalConfirmBtn"
-  );
-
-
-
-
-
-
-
-
-function openModal(message) {
-
-
-
-
-  reportModalText.textContent =
-    message;
-
-
-
-
-  reportModal.classList.add(
-    "show"
-  );
-
-
-
-
-}
-
-
-
-
-
-
-
-
-reportModalConfirmBtn.addEventListener(
-  "click",
-  () => {
-
-
-
-
-    reportModal.classList.remove(
-      "show"
-    );
-
-
-
-
-  }
-);
-
-
-
-
-
-
-
-
-// ============================================================
-// LOAD REPORTS WHEN PAGE OPENS
-// ============================================================
-
-
-
-
-loadMunicipalReports();
-
-
-
-
-</script>
-
-
-  <script src="../assets/js/logout.js"></script>
-</body>
-</html>
-
-
-
-
-
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+        <script src="../assets/js/municipal.js"></script>
+        <script src="../assets/js/logout.js"></script>
+      </body>
+      </html>

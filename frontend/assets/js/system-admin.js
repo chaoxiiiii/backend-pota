@@ -740,6 +740,25 @@ async function createAccount(event) {
         return;
     }
 
+     // ✅ PHONE NUMBER VALIDATION — 11 digits only
+    if (!/^\d{11}$/.test(phone)) {
+
+        alert(
+            "Phone number must be exactly 11 digits (numbers only)."
+        );
+
+        return;
+    }
+
+     // ✅ EMAIL VALIDATION — must end with @gmail.com
+    if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
+
+        alert(
+            "Email must be a valid @gmail.com address."
+        );
+
+        return;
+    }
     if (password !== confirmPassword) {
 
         alert(
@@ -2265,6 +2284,89 @@ function initializeETLSearch() {
         }
     );
 }
+/* ============================================================
+   SIDEBAR (Hover-Based)
+============================================================ */
+
+function initHoverSidebar() {
+
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const sidebar = document.getElementById("sidebar");
+
+    if (!hamburgerBtn || !sidebar) return;
+
+    let hoverTimer = null;
+
+    // Open sidebar when hovering hamburger
+    hamburgerBtn.addEventListener("mouseenter", function () {
+
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
+        }
+
+        sidebar.classList.add("open");
+
+        setTimeout(function () {
+            if (window.leafletMap) {
+                window.leafletMap.invalidateSize();
+            }
+        }, 300);
+    });
+
+    // Keep sidebar open when mouse enters sidebar
+    sidebar.addEventListener("mouseenter", function () {
+
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
+        }
+    });
+
+    // Close sidebar when mouse leaves
+    sidebar.addEventListener("mouseleave", function () {
+
+        hoverTimer = setTimeout(function () {
+            sidebar.classList.remove("open");
+        }, 200);
+    });
+
+    // Close when clicking outside
+    document.addEventListener("click", function (event) {
+
+        const isInsideSidebar = sidebar.contains(event.target);
+        const isHamburger = hamburgerBtn.contains(event.target);
+
+        if (!isInsideSidebar && !isHamburger) {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    // Close after clicking nav item
+    sidebar.querySelectorAll(".nav-item").forEach(function (item) {
+
+        item.addEventListener("click", function () {
+            sidebar.classList.remove("open");
+        });
+    });
+
+    // Close with Escape key
+    document.addEventListener("keydown", function (event) {
+
+        if (event.key === "Escape") {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    // Close on sign out
+    const signoutBtn = sidebar.querySelector(".signout");
+
+    if (signoutBtn) {
+        signoutBtn.addEventListener("click", function () {
+            sidebar.classList.remove("open");
+        });
+    }
+}
 
 /* ============================================================
    DOM READY
@@ -2298,6 +2400,11 @@ document.addEventListener(
 
             initViewSwitching();
         }
+
+        // ✅ SIDEBAR — dito mo ilalagay
+    if (typeof  initHoverSidebar === "function") {
+        initHoverSidebar();
+    }
 
 
         /* USERS */

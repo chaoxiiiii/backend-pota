@@ -33,20 +33,83 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+
 // ---------- Sidebar & Navigation ----------
 function initSidebar() {
-  const hamburgerBtn = document.getElementById('hamburgerBtn');
-  const sidebar = document.getElementById('sidebar');
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const sidebar = document.getElementById("sidebar");
 
+    if (!hamburgerBtn || !sidebar) return;
 
-  if (hamburgerBtn && sidebar) {
-    hamburgerBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-      setTimeout(() => {
-        if (mapInstance) mapInstance.invalidateSize();
-      }, 300);
+    let hoverTimer = null;
+
+    // Open sidebar when hovering hamburger
+    hamburgerBtn.addEventListener("mouseenter", function() {
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
+        }
+
+        setTimeout(function() {
+            sidebar.classList.add("open");
+
+            // Fix Leaflet map size after sidebar opens
+            setTimeout(function() {
+                if (mapInstance) {
+                    mapInstance.invalidateSize();
+                }
+            }, 300);
+
+        }, 100);
     });
-  }
+
+    // Close sidebar when mouse leaves
+    sidebar.addEventListener("mouseleave", function() {
+        hoverTimer = setTimeout(function() {
+            sidebar.classList.remove("open");
+        }, 200);
+    });
+
+    // Cancel close timer when mouse goes back to sidebar
+    sidebar.addEventListener("mouseenter", function() {
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
+        }
+    });
+
+    // Close when clicking outside
+    document.addEventListener("click", function(event) {
+        const isClickInsideSidebar = sidebar.contains(event.target);
+        const isClickOnHamburger = hamburgerBtn.contains(event.target);
+
+        if (!isClickInsideSidebar && !isClickOnHamburger) {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    // Close sidebar after clicking navigation item
+    sidebar.querySelectorAll(".nav-item").forEach(function(item) {
+        item.addEventListener("click", function() {
+            sidebar.classList.remove("open");
+        });
+    });
+
+    // Close sidebar using Escape key
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    // Close sidebar on sign out
+    const signoutBtn = sidebar.querySelector(".signout");
+
+    if (signoutBtn) {
+        signoutBtn.addEventListener("click", function() {
+            sidebar.classList.remove("open");
+        });
+    }
 }
 
 

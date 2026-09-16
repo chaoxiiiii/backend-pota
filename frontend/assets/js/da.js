@@ -1,6 +1,6 @@
 /* ============================================================
    eSAKA — DA-RFO OFFICER DASHBOARD
-   Dynamic Buyer Registry + Map + Alert Threshold + Reports
+   Dynamic Buyer Registry + Map + Alert Threshold + Reports + Alerts
 
    Backend:
    GET  /api/buyer-status/pending
@@ -83,6 +83,8 @@ let pendingBuyersCache = [];
 
 let verifiedBuyersCache = [];
 
+let currentActiveAlertCard = null;
+
 
 /* ============================================================
    PAGE INITIALIZATION
@@ -99,6 +101,8 @@ document.addEventListener("DOMContentLoaded", () => {
     initBuyerRegistry();
 
     initAlertThreshold();
+
+    initAlertsSection();
 
     initReportsSection();
 
@@ -171,45 +175,82 @@ function loadUserInformation() {
 ============================================================ */
 
 function initSidebar() {
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const sidebar = document.getElementById("sidebar");
 
-    const hamburgerBtn =
-        document.getElementById("hamburgerBtn");
+    if (!hamburgerBtn || !sidebar) return;
 
-    const sidebar =
-        document.getElementById("sidebar");
+    let hoverTimer = null;
 
-
-    if (!hamburgerBtn || !sidebar) {
-
-        return;
-
-    }
-
-
-    hamburgerBtn.addEventListener(
-        "click",
-        () => {
-
-            sidebar.classList.toggle("open");
-
-
-            setTimeout(
-                () => {
-
-                    if (mapInstance) {
-
-                        mapInstance.invalidateSize();
-
-                    }
-
-                },
-                300
-            );
-
+    // Open sidebar when hovering hamburger
+    hamburgerBtn.addEventListener("mouseenter", function() {
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
         }
-    );
 
+        setTimeout(function() {
+            sidebar.classList.add("open");
+
+            // Fix Leaflet map size after sidebar opens
+            setTimeout(function() {
+                if (mapInstance) {
+                    mapInstance.invalidateSize();
+                }
+            }, 300);
+
+        }, 100);
+    });
+
+    // Close sidebar when mouse leaves
+    sidebar.addEventListener("mouseleave", function() {
+        hoverTimer = setTimeout(function() {
+            sidebar.classList.remove("open");
+        }, 200);
+    });
+
+    // Cancel close timer when mouse goes back to sidebar
+    sidebar.addEventListener("mouseenter", function() {
+        if (hoverTimer) {
+            clearTimeout(hoverTimer);
+            hoverTimer = null;
+        }
+    });
+
+    // Close when clicking outside
+    document.addEventListener("click", function(event) {
+        const isClickInsideSidebar = sidebar.contains(event.target);
+        const isClickOnHamburger = hamburgerBtn.contains(event.target);
+
+        if (!isClickInsideSidebar && !isClickOnHamburger) {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    // Close sidebar after clicking navigation item
+    sidebar.querySelectorAll(".nav-item").forEach(function(item) {
+        item.addEventListener("click", function() {
+            sidebar.classList.remove("open");
+        });
+    });
+
+    // Close sidebar using Escape key
+    document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+            sidebar.classList.remove("open");
+        }
+    });
+
+    // Close sidebar on sign out
+    const signoutBtn = sidebar.querySelector(".signout");
+
+    if (signoutBtn) {
+        signoutBtn.addEventListener("click", function() {
+            sidebar.classList.remove("open");
+        });
+    }
 }
+
 
 
 /* ============================================================
@@ -360,12 +401,8 @@ function initSignout() {
 ============================================================ */
 
 function initMap() {
-
     const mapEl = document.getElementById("map");
-
-    if (!mapEl || typeof L === "undefined") {
-        return;
-    }
+    if (!mapEl || typeof L === "undefined") return;
 
     const pampangaBounds = L.latLngBounds(
         [14.85, 120.35],
@@ -373,232 +410,191 @@ function initMap() {
     );
 
     mapInstance = L.map("map", {
-
         maxBounds: pampangaBounds,
-
         maxBoundsViscosity: 1.0,
-
         minZoom: 10
-
-    }).setView(
-        [15.0794, 120.6200],
-        10
-    );
-
+    }).setView([15.0794, 120.6200], 10);
 
     L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
-            attribution:
-                "&copy; OpenStreetMap contributors",
-
+            attribution: "&copy; OpenStreetMap contributors",
             maxZoom: 18
         }
     ).addTo(mapInstance);
 
-
-    // ============================================================
-    // PAMPANGA MUNICIPALITY COORDINATES
-    // Static coordinates only for displaying the map marker.
-    // These are NOT stored in the database.
-    // ============================================================
-
+    // Pampanga municipality coordinates (static)
     const municipalityCoordinates = {
-
         "Angeles": [15.1450, 120.5887],
-
         "Apalit": [14.9470, 120.7700],
-
         "Arayat": [15.1500, 120.7690],
-
         "Bacolor": [15.0000, 120.6520],
-
         "Candaba": [15.0950, 120.8260],
-
         "Floridablanca": [14.9770, 120.5280],
-
         "Guagua": [14.9650, 120.6350],
-
         "Lubao": [14.9400, 120.6000],
-
         "Mabalacat": [15.2230, 120.5740],
-
         "Macabebe": [14.9080, 120.7150],
-
         "Magalang": [15.2160, 120.6630],
-
         "Masantol": [14.8960, 120.7100],
-
         "Mexico": [15.0640, 120.7190],
-
         "Minalin": [14.9670, 120.6840],
-
         "Porac": [15.0710, 120.5420],
-
         "San Fernando": [15.0343, 120.6840],
-
         "San Luis": [15.0400, 120.7870],
-
         "San Simon": [14.9990, 120.7800],
-
         "Santa Ana": [15.0950, 120.7720],
-
         "Santa Rita": [15.0190, 120.6110],
-
         "Santo Tomas": [14.9950, 120.7090]
-
     };
 
+    // I-store sa global para magamit ng render function
+    window.MUNICIPALITY_COORDINATES = municipalityCoordinates;
 
-    // ============================================================
-    // LOAD MUNICIPALITY MAP DATA
-    // ============================================================
-
-    loadMunicipalityMapData(
-        municipalityCoordinates
-    );
-
+    loadMunicipalityMapData();
 }
-
 
 /* ============================================================
    LOAD MUNICIPALITY MAP DATA
 ============================================================ */
 
-async function loadMunicipalityMapData(
-    municipalityCoordinates
-) {
+let MUNICIPALITY_MAP_RAW_DATA = [];
+let mapMarkersLayer = null;
 
+async function loadMunicipalityMapData() {
     try {
-
         const response = await fetch(
             `${API_BASE_URL}/api/planting-intents/municipality-map`,
             {
                 method: "GET",
-                headers: getAuthHeaders(false)
+                headers: { "Accept": "application/json" }
             }
         );
-
 
         if (!response.ok) {
-
-            throw new Error(
-                `HTTP ${response.status}`
-            );
-
+            throw new Error(`HTTP ${response.status}`);
         }
 
+        const result = await response.json();
+        console.log("DA-RFO Municipality Map Data:", result);
 
-        const result =
-            await response.json();
-
-
-        console.log(
-            "Municipality Map Data:",
-            result
-        );
-
-
-        if (
-            !result.data ||
-            !Array.isArray(result.data)
-        ) {
-
-            console.warn(
-                "No municipality map data found."
-            );
-
+        if (!result.data || !Array.isArray(result.data)) {
+            console.warn("No municipality map data found.");
             return;
-
         }
 
+        MUNICIPALITY_MAP_RAW_DATA = result.data;
+        renderFilteredMapMarkers();
 
-        // ========================================================
-        // CREATE ONE MARKER PER MUNICIPALITY
-        // ========================================================
-
-        result.data.forEach(
-            municipalityData => {
-
-                const municipality =
-                    municipalityData.municipality;
-
-                const coordinates =
-                    municipalityCoordinates[
-                        municipality
-                    ];
-
-
-                // Skip if municipality has no
-                // static coordinate
-                if (!coordinates) {
-
-                    console.warn(
-                        `No coordinates found for municipality: ${municipality}`
-                    );
-
-                    return;
-
-                }
-
-
-                let popupContent = `
-                    <div style="min-width: 180px;">
-                        <strong>Municipality:</strong>
-                        ${municipality}
-                        <br><br>
-                `;
-
-
-                // =================================================
-                // ADD COMMODITIES
-                // =================================================
-
-                municipalityData.commodities.forEach(
-                    item => {
-
-                        popupContent += `
-                            <strong>Commodity:</strong>
-                            ${item.commodity}
-                            <br>
-
-                            <strong>Status:</strong>
-                            ${item.status}
-                            <br><br>
-                        `;
-
-                    }
-                );
-
-
-                popupContent += `
-                    </div>
-                `;
-
-
-                // =================================================
-                // CREATE MARKER
-                // =================================================
-
-                L.marker(coordinates)
-                    .addTo(mapInstance)
-                    .bindPopup(
-                        popupContent
-                    );
-
-            }
-        );
-
+        // I-attach ang event listeners sa filter dropdowns
+        document.getElementById('filterCommodity')
+            ?.addEventListener('change', renderFilteredMapMarkers);
+        document.getElementById('filterStatus')
+            ?.addEventListener('change', renderFilteredMapMarkers);
 
     } catch (error) {
+        console.error("Failed to load municipality map data:", error);
+    }
+}
 
-        console.error(
-            "Failed to load municipality map data:",
-            error
-        );
+function renderFilteredMapMarkers() {
+    if (!mapInstance) return;
 
+    // Remove existing markers layer
+    if (mapMarkersLayer) {
+        mapInstance.removeLayer(mapMarkersLayer);
     }
 
+    mapMarkersLayer = L.layerGroup().addTo(mapInstance);
+
+    const municipalityCoordinates = window.MUNICIPALITY_COORDINATES || {};
+    const selectedCommodity =
+        document.getElementById('filterCommodity')?.value || 'all';
+    const selectedStatus =
+        document.getElementById('filterStatus')?.value || 'all';
+
+    MUNICIPALITY_MAP_RAW_DATA.forEach(municipalityData => {
+        const municipality = municipalityData.municipality;
+        const baseCoordinates = municipalityCoordinates[municipality];
+
+        if (!baseCoordinates || !municipalityData.commodities) return;
+
+        // Filter commodities base sa dropdown selections
+        const filteredCommodities = municipalityData.commodities.filter(item => {
+            const commodityMatch =
+                selectedCommodity === 'all' ||
+                item.commodity.toLowerCase() === selectedCommodity.toLowerCase();
+
+            const statusVal = (item.status || "").toUpperCase();
+
+            let statusMatch = true;
+            if (selectedStatus !== 'all') {
+                statusMatch = statusVal.includes(selectedStatus);
+            }
+
+            return commodityMatch && statusMatch;
+        });
+
+        const totalFiltered = filteredCommodities.length;
+
+        filteredCommodities.forEach((item, index) => {
+            const commodity = item.commodity;
+            const status = (item.status || "").toUpperCase();
+
+            // Offset para hindi magpatong ang markers sa iisang munisipyo
+            const offsetLat =
+                baseCoordinates[0] + (index - (totalFiltered / 2)) * 0.0025;
+            const offsetLng =
+                baseCoordinates[1] + (index - (totalFiltered / 2)) * 0.0025;
+            const markerCoordinates = [offsetLat, offsetLng];
+
+            // Color-coding:
+            // Red = Surplus/Oversupply
+            // Green = Balanced
+            // Yellow = Deficit
+            // Gray = No Data
+            let markerColor = "#6c757d"; // Gray default
+
+            if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
+                markerColor = "#C0392B"; // Red
+            } else if (status.includes("BALANCED")) {
+                markerColor = "#2E7D32"; // Green
+            } else if (status.includes("DEFICIT")) {
+                markerColor = "#D97706"; // Yellow / Amber
+            }
+
+            const customIcon = L.divIcon({
+                className: 'custom-map-marker',
+                html: `<div style="
+                    background-color: ${markerColor};
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                "></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const popupContent = `
+                <div style="min-width:180px;">
+                    <strong>Municipality:</strong> ${municipality}
+                    <br><br>
+                    <strong>Commodity:</strong> ${commodity}
+                    <br>
+                    <strong>Status:</strong>
+                    <span style="font-weight:700; color:${markerColor};">
+                        ${status || 'NO DATA'}
+                    </span>
+                </div>
+            `;
+
+            L.marker(markerCoordinates, { icon: customIcon })
+                .addTo(mapMarkersLayer)
+                .bindPopup(popupContent);
+        });
+    });
 }
 
 /* ============================================================
@@ -1431,7 +1427,7 @@ function renderVerifiedBuyers(buyers) {
 
         tbody.innerHTML = `
             <tr>
-                <td colspan="5">
+                <td colspan="4">
                     No verified buyers found.
                 </td>
             </tr>
@@ -1475,13 +1471,7 @@ function renderVerifiedBuyers(buyers) {
                     </span>
                 </td>
 
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            getBuyerCommodities(buyer)
-                        )}
-                    </span>
-                </td>
+              
 
                 <td>
                     <span class="status-text-verified">
@@ -2509,6 +2499,785 @@ function initAlertThreshold() {
 );
 }
 
+
+/* ============================================================
+   ALERTS SECTION LOGIC
+============================================================ */
+
+/* ============================================================
+   ALERTS SECTION LOGIC
+============================================================ */
+
+function initAlertsSection() {
+
+    loadSystemAlertLogs();
+
+}
+
+
+/* ============================================================
+   LOAD SYSTEM ALERT LOGS
+============================================================ */
+
+async function loadSystemAlertLogs() {
+
+    const alertList =
+        document.getElementById("alertList");
+
+    if (!alertList) {
+        return;
+    }
+
+    alertList.innerHTML = `
+        <div style="text-align:center; padding:30px;">
+            Loading system alerts...
+        </div>
+    `;
+
+    try {
+
+        /* --------------------------------------------------------
+           GET ALL MUNICIPALITY MAP DATA
+        -------------------------------------------------------- */
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/planting-intents/municipality-map`,
+            {
+                method: "GET",
+                headers: getAuthHeaders(false)
+            }
+        );
+
+        if (!response.ok) {
+
+            throw new Error(
+                `Failed to load municipality map data: ${response.status}`
+            );
+
+        }
+
+        const result = await response.json();
+
+        if (
+            !result.data ||
+            !Array.isArray(result.data)
+        ) {
+
+            alertList.innerHTML = `
+                <div style="text-align:center; padding:30px;">
+                    No system alerts found.
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        /* --------------------------------------------------------
+           CHECK OVERSUPPLY FOR EVERY COMMODITY
+        -------------------------------------------------------- */
+
+        const alertResults = [];
+
+        for (const municipalityData of result.data) {
+
+            const municipality =
+                municipalityData.municipality;
+
+            if (
+                !municipality ||
+                !Array.isArray(
+                    municipalityData.commodities
+                )
+            ) {
+                continue;
+            }
+
+
+            for (
+                const item
+                of municipalityData.commodities
+            ) {
+
+                const commodity =
+                    item.commodity;
+
+                if (!commodity) {
+                    continue;
+                }
+
+
+                try {
+
+                    const alertResponse =
+                        await fetch(
+                            `${API_BASE_URL}/api/alert-thresholds/oversupply/${encodeURIComponent(commodity)}?municipality=${encodeURIComponent(municipality)}`,
+                            {
+                                method: "GET",
+                                headers: getAuthHeaders(false)
+                            }
+                        );
+
+
+                    if (!alertResponse.ok) {
+
+                        console.warn(
+                            `No oversupply data for ${commodity} - ${municipality}`
+                        );
+
+                        continue;
+
+                    }
+
+
+                    const alertData =
+                        await alertResponse.json();
+
+
+                    console.log(
+                        `Oversupply check: ${commodity} - ${municipality}`,
+                        alertData
+                    );
+
+
+                    /* ------------------------------------------------
+                       ONLY ADD ACTUAL OVERSUPPLY ALERTS
+                    ------------------------------------------------ */
+
+                    if (
+                        String(
+                            alertData.status || ""
+                        ).toUpperCase() === "OVERSUPPLY"
+                    ) {
+
+                        alertResults.push({
+
+                            commodity:
+                                alertData.commodity ||
+                                commodity,
+
+                            municipality:
+                                alertData.municipality ||
+                                municipality,
+
+                            base_demand:
+                                Number(
+                                    alertData.base_demand || 0
+                                ),
+
+                            projected_supply:
+                                Number(
+                                    alertData.projected_supply || 0
+                                ),
+
+                            excess_supply:
+                                Number(
+                                    alertData.excess_supply || 0
+                                ),
+
+                            supply_percentage:
+                                Number(
+                                    alertData.supply_percentage || 0
+                                ),
+
+                            status:
+                                alertData.status,
+
+                            date:
+                                new Date()
+
+                        });
+
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        `Error checking ${commodity} - ${municipality}:`,
+                        error
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        /* --------------------------------------------------------
+           RENDER ALERTS
+        -------------------------------------------------------- */
+
+        renderSystemAlertLogs(
+            alertResults
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "LOAD SYSTEM ALERT LOGS ERROR:",
+            error
+        );
+
+        alertList.innerHTML = `
+            <div style="text-align:center; padding:30px; color:#C0392B;">
+                Unable to load system alerts.
+            </div>
+        `;
+
+    }
+
+}
+
+
+/* ============================================================
+   RENDER SYSTEM ALERT LOGS
+============================================================ */
+
+function renderSystemAlertLogs(alerts) {
+
+    const alertList =
+        document.getElementById("alertList");
+
+    if (!alertList) {
+        return;
+    }
+
+
+    alertList.innerHTML = "";
+
+
+    /* --------------------------------------------------------
+       NO ALERTS
+    -------------------------------------------------------- */
+
+    if (!alerts.length) {
+
+        alertList.innerHTML = `
+            <div style="text-align:center; padding:30px;">
+                No active oversupply alerts.
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    /* --------------------------------------------------------
+       RENDER EACH ALERT
+    -------------------------------------------------------- */
+
+    alerts.forEach(alert => {
+
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "alert-card";
+
+        card.dataset.severity =
+            "high";
+
+
+        const supply =
+            alert.projected_supply;
+
+        const demand =
+            alert.base_demand;
+
+
+        /* --------------------------------------------------------
+           CALCULATE SURPLUS PERCENTAGE
+        -------------------------------------------------------- */
+
+        let surplusPercentage = 0;
+
+        if (demand > 0) {
+
+            surplusPercentage =
+                ((supply - demand) / demand) * 100;
+
+        }
+
+
+        /* --------------------------------------------------------
+           DATE
+        -------------------------------------------------------- */
+
+        const alertDate =
+            new Date(
+                alert.date
+            ).toLocaleDateString(
+                "en-CA"
+            );
+
+
+        /* --------------------------------------------------------
+           DESCRIPTION
+        -------------------------------------------------------- */
+
+        const description =
+            `${alert.commodity} supply in ${alert.municipality} is ${Math.round(surplusPercentage)}% above projected demand. Monitor closely and coordinate with buyers.`;
+
+
+        /* --------------------------------------------------------
+           CARD HTML
+        -------------------------------------------------------- */
+
+        card.innerHTML = `
+
+            <div class="alert-top">
+
+                <div class="alert-title-group">
+
+                    <span class="alert-title">
+                        ${escapeHtml(
+                            alert.commodity
+                        )}
+                        Oversupply Risk —
+                        ${escapeHtml(
+                            alert.municipality
+                        )}
+                    </span>
+
+                    <span class="sev-pill high">
+                        High
+                    </span>
+
+                </div>
+
+
+            
+
+            </div>
+
+
+            <p class="alert-desc">
+                ${escapeHtml(
+                    description
+                )}
+            </p>
+
+
+            <div class="alert-stats">
+
+                <span>
+                    Supply:
+                    <b>
+                        ${formatKg(supply)}
+                    </b>
+                </span>
+
+
+                <span>
+                    Demand:
+                    <b>
+                        ${formatKg(demand)}
+                    </b>
+                </span>
+
+
+                <span>
+                    Surplus:
+                    <b>
+                        +${Math.round(
+                            surplusPercentage
+                        )}%
+                    </b>
+                </span>
+
+
+                <span class="alert-date">
+                    ${alertDate}
+                </span>
+
+            </div>
+
+        `;
+
+
+        /* --------------------------------------------------------
+           STATUS BUTTON
+        -------------------------------------------------------- */
+
+        const statusButton =
+            card.querySelector(
+                ".status-pill-btn"
+            );
+
+
+        statusButton?.addEventListener(
+            "click",
+            event => {
+
+                event.stopPropagation();
+
+                toggleAlertCardStatus(
+                    statusButton
+                );
+
+            }
+        );
+
+
+        /* --------------------------------------------------------
+           OPEN ALERT DETAIL MODAL
+        -------------------------------------------------------- */
+
+        card.addEventListener(
+            "click",
+            () => {
+
+                currentActiveAlertCard =
+                    card;
+
+                openAlertDetailModal(
+                    card
+                );
+
+            }
+        );
+
+
+        alertList.appendChild(card);
+
+    });
+
+}
+
+
+/* ============================================================
+   FORMAT KG → TONS
+============================================================ */
+
+/* ============================================================
+   FORMAT KG
+============================================================ */
+
+function formatKg(value) {
+
+    return `${Number(value || 0).toLocaleString(
+        "en-US",
+        {
+            maximumFractionDigits: 2
+        }
+    )} kg`;
+
+}
+
+
+/* ============================================================
+   TOGGLE ALERT STATUS
+============================================================ */
+
+function toggleAlertCardStatus(button) {
+
+    const unresolved =
+        button.classList.contains(
+            "unresolved"
+        );
+
+
+    if (unresolved) {
+
+        button.textContent =
+            "Acknowledged";
+
+        button.classList.remove(
+            "unresolved"
+        );
+
+        button.classList.add(
+            "acknowledged"
+        );
+
+    } else {
+
+        button.textContent =
+            "Unresolved";
+
+        button.classList.remove(
+            "acknowledged"
+        );
+
+        button.classList.add(
+            "unresolved"
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   OPEN ALERT DETAIL MODAL
+============================================================ */
+
+function openAlertDetailModal(card) {
+
+    const title =
+        card.querySelector(
+            ".alert-title"
+        )?.textContent || "—";
+
+
+    const desc =
+        card.querySelector(
+            ".alert-desc"
+        )?.textContent || "—";
+
+
+    const severity =
+        card.querySelector(
+            ".sev-pill"
+        );
+
+
+    const stats =
+        card.querySelectorAll(
+            ".alert-stats span b"
+        );
+
+
+    const date =
+        card.querySelector(
+            ".alert-date"
+        )?.textContent || "—";
+
+
+    const alertStatus =
+        card.querySelector(
+            ".status-pill-btn"
+        );
+
+
+    const titleElement =
+        document.getElementById(
+            "modalAlertTitle"
+        );
+
+    if (titleElement) {
+
+        titleElement.textContent =
+            title;
+
+    }
+
+
+    const descElement =
+        document.getElementById(
+            "modalAlertDesc"
+        );
+
+    if (descElement) {
+
+        descElement.textContent =
+            desc;
+
+    }
+
+
+    const modalSeverity =
+        document.getElementById(
+            "modalAlertSev"
+        );
+
+
+    if (
+        modalSeverity &&
+        severity
+    ) {
+
+        modalSeverity.textContent =
+            severity.textContent;
+
+        modalSeverity.className =
+            "sev-pill";
+
+        modalSeverity.classList.add(
+            severity.classList.contains(
+                "high"
+            )
+                ? "high"
+                : "medium"
+        );
+
+    }
+
+
+    const supply =
+        document.getElementById(
+            "modalAlertSupply"
+        );
+
+    if (supply) {
+
+        supply.textContent =
+            stats[0]?.textContent || "—";
+
+    }
+
+
+    const demand =
+        document.getElementById(
+            "modalAlertDemand"
+        );
+
+    if (demand) {
+
+        demand.textContent =
+            stats[1]?.textContent || "—";
+
+    }
+
+
+    const surplus =
+        document.getElementById(
+            "modalAlertSurplus"
+        );
+
+    if (surplus) {
+
+        surplus.textContent =
+            stats[2]?.textContent || "—";
+
+    }
+
+
+    const dateElement =
+        document.getElementById(
+            "modalAlertDate"
+        );
+
+    if (dateElement) {
+
+        dateElement.textContent =
+            date;
+
+    }
+
+
+    const toggleButton =
+        document.getElementById(
+            "toggleAlertStatusBtn"
+        );
+
+
+    if (
+        toggleButton &&
+        alertStatus
+    ) {
+
+        toggleButton.textContent =
+            alertStatus.classList.contains(
+                "unresolved"
+            )
+                ? "Acknowledge Alert"
+                : "Mark as Unresolved";
+
+    }
+
+
+    document
+        .getElementById(
+            "alertDetailModal"
+        )
+        ?.classList.add("show");
+
+}
+
+
+/* ============================================================
+   SEARCH ALERTS
+============================================================ */
+
+const searchAlerts =
+    document.getElementById(
+        "searchAlerts"
+    );
+
+searchAlerts?.addEventListener(
+    "input",
+    () => {
+
+        const searchTerm =
+            searchAlerts.value
+                .toLowerCase()
+                .trim();
+
+
+        document
+            .querySelectorAll(
+                "#alertList .alert-card"
+            )
+            .forEach(card => {
+
+                const text =
+                    card.textContent
+                        .toLowerCase();
+
+
+                card.style.display =
+                    text.includes(
+                        searchTerm
+                    )
+                        ? ""
+                        : "none";
+
+            });
+
+    }
+);
+
+
+/* ============================================================
+   ALERT DETAIL MODAL TOGGLE
+============================================================ */
+
+document
+    .getElementById(
+        "toggleAlertStatusBtn"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            if (
+                currentActiveAlertCard
+            ) {
+
+                const button =
+                    currentActiveAlertCard
+                        .querySelector(
+                            ".status-pill-btn"
+                        );
+
+                if (button) {
+
+                    toggleAlertCardStatus(
+                        button
+                    );
+
+                }
+
+            }
+
+
+            document
+                .getElementById(
+                    "alertDetailModal"
+                )
+                ?.classList.remove(
+                    "show"
+                );
+
+        }
+    );
+
+
 /* ============================================================
    MODAL LISTENERS
 ============================================================ */
@@ -3022,28 +3791,6 @@ function initReportsSection() {
             // Show success modal
             reportApprovedModal?.classList.add('show');
 
-            // Update the success message with the new status
-            const successMessage = document.querySelector('#reportApprovedModal .modal-body p');
-            if (successMessage) {
-                successMessage.innerHTML = `
-                    <strong>✅ Report #${escapeHtml(reportId)}</strong> has been 
-                    <span style="color: #27AE60; font-weight: bold;">APPROVED</span> and 
-                    <span style="color: #2980B9; font-weight: bold;">ESCALATED</span> 
-                    to Regional Office for further validation.
-                    <br><br>
-                    <small style="color: #7F8C8D;">
-                        Status changed from FOR_DA_RFO_VALIDATION → FOR_REGIONAL_VALIDATION
-                    </small>
-                `;
-            }
-
-            // Update the status badge in detail view
-            const statusBadge = document.querySelector('#reportDetailSubview .status-pill');
-            if (statusBadge) {
-                statusBadge.textContent = 'FOR_REGIONAL_VALIDATION';
-                statusBadge.className = 'status-pill approved';
-            }
-
             // Refresh reports list in background
             await loadReports();
 
@@ -3207,23 +3954,11 @@ function initReportsSection() {
         }
     });
 
-    // Submit Report button
-    const submitReportBtn = document.querySelector('.actions-right .btn-outline-report');
-    submitReportBtn?.addEventListener('click', () => {
-        window.location.href = '/create-report.html';
-    });
-
     // Real-time validation for remarks textarea
     const remarksTextarea = document.querySelector('#reportDetailSubview textarea');
     if (remarksTextarea) {
         remarksTextarea.addEventListener('input', () => {
             const length = remarksTextarea.value.trim().length;
-            const charCount = document.querySelector('.char-count');
-            if (charCount) {
-                charCount.textContent = `${length}/10 characters minimum`;
-                charCount.style.color = length >= 10 ? '#27AE60' : '#C0392B';
-            }
-            // Toggle button states based on remarks length
             if (approveReportBtn) {
                 approveReportBtn.disabled = length < 10;
             }
@@ -3234,869 +3969,4 @@ function initReportsSection() {
     }
 
     console.log('✅ Reports section initialized with approval workflow');
-}
-
-/* ============================================================
-   REPORTS
-============================================================ */
-
-function initReportsSection() {
-
-    const reportListSubview =
-        document.getElementById(
-            "reportListSubview"
-        );
-
-    const reportDetailSubview =
-        document.getElementById(
-            "reportDetailSubview"
-        );
-
-    const reportApprovedModal =
-        document.getElementById(
-            "reportApprovedModal"
-        );
-
-    const flagReportBtn =
-        document.getElementById(
-            "flagReportBtn"
-        );
-
-    const approveReportBtn =
-        document.getElementById(
-            "approveReportBtn"
-        );
-
-    const backToPendingBtn =
-    document.getElementById("backToPendingBtn");
-
-    const closeReportApprovedBtn =
-        document.getElementById(
-            "closeReportApprovedBtn"
-        );
-
-    // ============================================================
-    // SEARCH FUNCTIONALITY - ADD THIS SECTION
-    // ============================================================
-    const searchInput = document.getElementById("reportSearchInput");
-    const searchBtn = document.getElementById("reportSearchBtn");
-
-    // Store all reports for searching
-    let allReportsCache = [];
-
-    // Modified loadReports to store data for search
-    async function loadReports() {
-        const pendingReportsBody =
-            document.querySelector("#pendingReportsBody");
-
-        if (!pendingReportsBody) {
-            console.error("pendingReportsBody not found.");
-            return;
-        }
-
-        pendingReportsBody.innerHTML = `
-            <tr>
-                <td colspan="6" style="text-align:center;">
-                    Loading reports...
-                </td>
-            </tr>
-        `;
-
-        try {
-            const response = await fetch(
-                `${API_BASE_URL}/api/report-submissions/all-reports`,
-                {
-                    method: "GET",
-                    headers: getAuthHeaders()
-                }
-            );
-
-            const data = await parseResponse(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.detail ||
-                    data.message ||
-                    `Failed to fetch reports: ${response.status}`
-                );
-            }
-
-            const reports = Array.isArray(data) ? data : [];
-
-            // Store all reports for search
-            allReportsCache = reports;
-
-            // Filter for DA validation
-            const daReports = reports.filter(report => {
-                const status =
-                    String(report.status || "")
-                        .trim()
-                        .toUpperCase();
-                return status === "FOR_DA_RFO_VALIDATION";
-            });
-
-            // Render the reports
-            renderReports(daReports);
-
-        } catch (error) {
-            console.error("LOAD DA REPORTS ERROR:", error);
-            pendingReportsBody.innerHTML = `
-                <tr>
-                    <td colspan="6"
-                        style="text-align:center; padding:30px; color:#C0392B;">
-                        Error loading reports:
-                        ${escapeHtml(error.message)}
-                    </td>
-                </tr>
-            `;
-        }
-    }
-
-    // ============================================================
-    // RENDER REPORTS (reusable function)
-    // ============================================================
-    function renderReports(reportsToShow) {
-        const pendingReportsBody =
-            document.querySelector("#pendingReportsBody");
-
-        if (!pendingReportsBody) return;
-
-        if (reportsToShow.length === 0) {
-            pendingReportsBody.innerHTML = `
-                <tr>
-                    <td colspan="6"
-                        style="text-align:center; padding:30px; color:#666;">
-                        No reports awaiting DA-RFO validation.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        pendingReportsBody.innerHTML = "";
-
-        reportsToShow.forEach(report => {
-            const row = document.createElement("tr");
-            row.className = "clickable-row";
-
-            row.innerHTML = `
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            report.report_id ??
-                            report.submission_id ??
-                            "N/A"
-                        )}
-                    </span>
-                </td>
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            report.title ||
-                            `${report.commodity || "Crop"} Harvest Report`
-                        )}
-                    </span>
-                </td>
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            report.commodity || "N/A"
-                        )}
-                    </span>
-                </td>
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            report.planting_date || "N/A"
-                        )}
-                    </span>
-                </td>
-                <td>
-                    <span class="pill">
-                        ${
-                            report.estimated_yield != null
-                                ? escapeHtml(
-                                    String(report.estimated_yield)
-                                ) + " kg"
-                                : "N/A"
-                        }
-                    </span>
-                </td>
-                <td>
-                    <span class="status-pill approved">
-                        ${escapeHtml(
-                            report.status || "N/A"
-                        )}
-                    </span>
-                </td>
-            `;
-
-            row.addEventListener("click", () => {
-                console.log("Selected DA report:", report);
-                showReportDetail(report);
-            });
-
-            pendingReportsBody.appendChild(row);
-        });
-    }
-
-    // ============================================================
-    // SEARCH FUNCTION
-    // ============================================================
-    function performSearch() {
-        if (!searchInput) return;
-
-        const searchTerm = searchInput.value.toLowerCase().trim();
-
-        // Filter only FOR_DA_RFO_VALIDATION reports
-        const daReports = allReportsCache.filter(report => {
-            const status =
-                String(report.status || "")
-                    .trim()
-                    .toUpperCase();
-            return status === "FOR_DA_RFO_VALIDATION";
-        });
-
-        if (!searchTerm) {
-            // Show all reports if search is empty
-            renderReports(daReports);
-            return;
-        }
-
-        // Search across multiple fields
-        const filtered = daReports.filter(report => {
-            const searchableFields = [
-                report.report_id,
-                report.submission_id,
-                report.title,
-                report.commodity,
-                report.planting_date,
-                report.harvest_date,
-                report.status,
-                report.encoded_by_name,
-                String(report.estimated_yield)
-            ];
-
-            return searchableFields.some(field => {
-                if (field === null || field === undefined) return false;
-                return String(field).toLowerCase().includes(searchTerm);
-            });
-        });
-
-        renderReports(filtered);
-    }
-
-    // ============================================================
-    // SEARCH EVENT LISTENERS
-    // ============================================================
-    
-    // Search on button click
-    searchBtn?.addEventListener("click", performSearch);
-
-    // Search on Enter key press
-    searchInput?.addEventListener("keyup", (event) => {
-        if (event.key === "Enter") {
-            performSearch();
-        }
-    });
-
-    // Optional: Real-time search as user types (uncomment if desired)
-    // searchInput?.addEventListener("input", performSearch);
-
-// ------------------------------------------------------------
-// LOAD REPORTS FROM API
-// ------------------------------------------------------------
-// ------------------------------------------------------------
-// LOAD DA REPORTS
-// ONLY REPORTS WITH STATUS = FOR_DA_VALIDATION
-// ------------------------------------------------------------
-
-async function loadReports() {
-    const pendingReportsBody =
-        document.querySelector("#pendingReportsBody");
-
-    if (!pendingReportsBody) {
-        console.error("pendingReportsBody not found.");
-        return;
-    }
-
-    // Loading state
-    pendingReportsBody.innerHTML = `
-        <tr>
-            <td colspan="6" style="text-align:center;">
-                Loading reports...
-            </td>
-        </tr>
-    `;
-
-    try {
-
-        const response = await fetch(
-            `${API_BASE_URL}/api/report-submissions/all-reports`,
-            {
-                method: "GET",
-                headers: getAuthHeaders()
-            }
-        );
-
-        const data = await parseResponse(response);
-
-        if (!response.ok) {
-            throw new Error(
-                data.detail ||
-                data.message ||
-                `Failed to fetch reports: ${response.status}`
-            );
-        }
-
-        // Make sure response is an array
-        const reports = Array.isArray(data)
-            ? data
-            : [];
-
-        // ----------------------------------------------------
-        // IMPORTANT:
-        // ONLY SHOW FOR_DA_VALIDATION
-        // ----------------------------------------------------
-
-        const daReports = reports.filter(report => {
-
-            const status =
-                String(report.status || "")
-                    .trim()
-                    .toUpperCase();
-
-            return status === "FOR_DA_RFO_VALIDATION";
-        });
-
-        console.log("ALL REPORTS:", reports);
-        console.log("DA VALIDATION REPORTS:", daReports);
-
-        // ----------------------------------------------------
-        // NO REPORTS
-        // ----------------------------------------------------
-
-        if (daReports.length === 0) {
-
-            pendingReportsBody.innerHTML = `
-                <tr>
-                    <td colspan="6"
-                        style="text-align:center; padding:30px; color:#666;">
-                        No reports awaiting DA-RFO validation.
-                    </td>
-                </tr>
-            `;
-
-            return;
-        }
-
-        // ----------------------------------------------------
-        // DISPLAY REPORTS
-        // ----------------------------------------------------
-
-        pendingReportsBody.innerHTML = "";
-
-        daReports.forEach(report => {
-
-            const row =
-                document.createElement("tr");
-
-            row.className = "clickable-row";
-
-            row.innerHTML = `
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            report.report_id ??
-                            report.submission_id ??
-                            "N/A"
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            report.title ||
-                            `${report.commodity || "Crop"} Harvest Report`
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            report.commodity || "N/A"
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            report.planting_date || "N/A"
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${
-                            report.estimated_yield != null
-                                ? escapeHtml(
-                                    String(report.estimated_yield)
-                                ) + " kg"
-                                : "N/A"
-                        }
-                    </span>
-                </td>
-
-                <td>
-                    <span class="status-pill approved">
-                        ${escapeHtml(
-                            report.status || "N/A"
-                        )}
-                    </span>
-                </td>
-            `;
-
-            // ------------------------------------------------
-            // CLICK REPORT
-            // ------------------------------------------------
-
-            row.addEventListener("click", () => {
-
-                console.log(
-                    "Selected DA report:",
-                    report
-                );
-
-                showReportDetail(report);
-            });
-
-            pendingReportsBody.appendChild(row);
-        });
-
-    } catch (error) {
-
-        console.error(
-            "LOAD DA REPORTS ERROR:",
-            error
-        );
-
-        pendingReportsBody.innerHTML = `
-            <tr>
-                <td colspan="6"
-                    style="text-align:center; padding:30px; color:#C0392B;">
-                    Error loading reports:
-                    ${escapeHtml(error.message)}
-                </td>
-            </tr>
-        `;
-    }
-}
-
-
-    // ------------------------------------------------------------
-    // SHOW REPORT DETAIL
-    // ------------------------------------------------------------
-// ------------------------------------------------------------
-// SHOW REPORT DETAIL
-// ------------------------------------------------------------
-
-    function showReportDetail(report) {
-        // Hide list, show detail
-        reportListSubview?.classList.add('hidden-element');
-        reportDetailSubview?.classList.remove('hidden-element');
-
-        // Store report ID
-        reportDetailSubview.dataset.reportId = report.report_id;
-        reportDetailSubview.dataset.submissionId = report.submission_id;
-
-      // Populate table with report data
-const tbody = document.querySelector('#reportDetailSubview table tbody');
-
-if (tbody) {
-    tbody.innerHTML = `
-        <tr>
-
-            <!-- REPORT ID -->
-            <td>
-                <span class="pill">
-                    ${escapeHtml(
-                        report.report_id ||
-                        report.submission_id ||
-                        'N/A'
-                    )}
-                </span>
-            </td>
-
-            <!-- COMMODITY -->
-            <td>
-                <span class="pill">
-                    ${escapeHtml(
-                        report.commodity || 'N/A'
-                    )}
-                </span>
-            </td>
-
-            <!-- PLANTING DATE -->
-            <td>
-                <span class="pill">
-                    ${escapeHtml(
-                        report.planting_date || 'N/A'
-                    )}
-                </span>
-            </td>
-
-            <!-- HARVEST DATE -->
-            <td>
-                <span class="pill">
-                    ${escapeHtml(
-                        report.harvest_date || 'N/A'
-                    )}
-                </span>
-            </td>
-
-            <!-- ESTIMATED YIELD -->
-            <td>
-                <span class="pill">
-                    ${
-                        report.estimated_yield != null
-                            ? escapeHtml(
-                                String(report.estimated_yield)
-                            ) + ' kg'
-                            : 'N/A'
-                    }
-                </span>
-            </td>
-
-            <!-- ENCODED BY -->
-            <td>
-                <span class="pill">
-                    ${escapeHtml(
-                        report.encoded_by_name || 'N/A'
-                    )}
-                </span>
-            </td>
-
-            <!-- STATUS -->
-            <td>
-                <span class="status-pill approved">
-                    ${escapeHtml(
-                        report.status || 'Pending'
-                    )}
-                </span>
-            </td>
-
-        </tr>
-    `;
-}
-        // Clear notes textarea
-        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
-        if (notesTextarea) {
-            notesTextarea.value = '';
-        }
-
-        // Reset flag button
-        if (flagReportBtn) {
-            flagReportBtn.classList.remove('active');
-            flagReportBtn.textContent = 'Flag for Revision';
-        }
-    }
-
-    // ------------------------------------------------------------
-    // APPROVE REPORT
-    // ------------------------------------------------------------
-
-    async function approveReport() {
-        const reportId = reportDetailSubview?.dataset.reportId;
-        
-        if (!reportId) {
-            alert('No report selected.');
-            return;
-        }
-
-        // Get current user ID from localStorage
-        const userId = getCurrentUserId();
-        
-        if (!userId) {
-            alert('User ID not found. Please login again.');
-            return;
-        }
-
-        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
-        const remarks = notesTextarea?.value || null;
-
-        const approveBtn = approveReportBtn;
-        const originalText = approveBtn?.textContent;
-
-        try {
-            if (approveBtn) {
-                approveBtn.disabled = true;
-                approveBtn.textContent = 'Approving...';
-            }
-
-           const params = new URLSearchParams({
-    validator_id: userId,
-    validator_role: "darfo"
-});
-
-if (remarks) {
-    params.append("remarks", remarks);
-}
-
-const response = await fetch(
-    `${API_BASE_URL}/api/report-submissions/${reportId}/approve?${params.toString()}`,
-    {
-        method: "POST",
-        headers: getAuthHeaders(false)
-    }
-);
-
-            const data = await parseResponse(response);
-
-            if (!response.ok) {
-                throw new Error(data.detail || data.message || 'Failed to approve report');
-            }
-
-            console.log('Report approved:', data);
-
-            // Show success modal
-            reportApprovedModal?.classList.add('show');
-
-            // Refresh reports list
-            await loadReports();
-
-        } catch (error) {
-            console.error('APPROVE REPORT ERROR:', error);
-            alert(error.message || 'Failed to approve report');
-        } finally {
-            if (approveBtn) {
-                approveBtn.disabled = false;
-                approveBtn.textContent = originalText || 'Approve';
-            }
-        }
-    }
-
-    // ------------------------------------------------------------
-    // FLAG REPORT FOR REVISION
-    // ------------------------------------------------------------
-async function flagReport() {
-
-    const reportId =
-        reportDetailSubview?.dataset.reportId;
-
-    if (!reportId) {
-        alert("No report selected.");
-        return;
-    }
-
-    const notesTextarea =
-        document.querySelector(
-            "#reportDetailSubview textarea"
-        );
-
-    const remarks =
-        notesTextarea?.value?.trim();
-
-    if (!remarks) {
-        alert(
-            "Please provide revision remarks in the notes field."
-        );
-        return;
-    }
-
-    const userId =
-        getCurrentUserId();
-
-    if (!userId) {
-        alert(
-            "User ID not found. Please login again."
-        );
-        return;
-    }
-
-    const flagBtn =
-        flagReportBtn;
-
-    const originalText =
-        flagBtn?.textContent;
-
-    try {
-
-        if (flagBtn) {
-            flagBtn.disabled = true;
-            flagBtn.textContent = "Flagging...";
-        }
-
-        /* QUERY PARAMETERS */
-        const params =
-            new URLSearchParams({
-                validator_id: userId,
-                validator_role: "darfo",
-                remarks: remarks
-            });
-
-        /* POST REQUEST */
-        const response =
-            await fetch(
-                `${API_BASE_URL}/api/report-submissions/${reportId}/revision?${params.toString()}`,
-                {
-                    method: "POST",
-                    headers: getAuthHeaders(false)
-                }
-            );
-
-        const data =
-            await parseResponse(response);
-
-        if (!response.ok) {
-            throw new Error(
-                data.detail ||
-                data.message ||
-                "Failed to flag report."
-            );
-        }
-
-        console.log(
-            "Report flagged for revision:",
-            data
-        );
-
-        alert(
-            "Report flagged for revision successfully!"
-        );
-
-        /* RETURN TO REPORT LIST */
-        reportDetailSubview?.classList.add(
-            "hidden-element"
-        );
-
-        reportListSubview?.classList.remove(
-            "hidden-element"
-        );
-
-        /* REFRESH REPORTS */
-        await loadReports();
-
-    } catch (error) {
-
-        console.error(
-            "FLAG REPORT ERROR:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Failed to flag report."
-        );
-
-    } finally {
-
-        if (flagBtn) {
-            flagBtn.disabled = false;
-            flagBtn.textContent =
-                originalText ||
-                "Flag for Revision";
-        }
-
-    }
-}
-
-    // ------------------------------------------------------------
-    // GET CURRENT USER ID
-    // ------------------------------------------------------------
-
-    function getCurrentUserId() {
-    const userId = localStorage.getItem('user_id');
-
-    if (!userId) {
-        console.error('No user_id found in localStorage.');
-        return null;
-    }
-
-    return userId;
-}
-
-    // ------------------------------------------------------------
-    // EVENT LISTENERS
-    // ------------------------------------------------------------
-
-    // Load reports when view is shown
-    // Since reports view might not be the default view, we need to 
-    // listen for navigation to reports view
-    const viewReports = document.getElementById('view-reports');
-    const observer = new MutationObserver(() => {
-        if (viewReports?.classList.contains('active-view')) {
-            loadReports();
-        }
-    });
-    if (viewReports) {
-        observer.observe(viewReports, { attributes: true, attributeFilter: ['class'] });
-    }
-
-    // Also load reports when page loads if reports view is active
-    if (viewReports?.classList.contains('active-view')) {
-        loadReports();
-    }
-
-    // Override existing report item click events - remove old listeners
-    // The new dynamic buttons will handle their own clicks
-
-    // Return to report list
-    
-
-    // Flag report button
-    flagReportBtn?.addEventListener(
-        "click",
-        flagReport
-    );
-
-    // Approve report button
-    approveReportBtn?.addEventListener(
-        "click",
-        approveReport
-    );
-
-    // Close approved modal
-    closeReportApprovedBtn?.addEventListener(
-        "click",
-        () => {
-            reportApprovedModal?.classList.remove('show');
-            reportDetailSubview?.classList.add('hidden-element');
-            reportListSubview?.classList.remove('hidden-element');
-            loadReports(); // Refresh list
-        }
-    );
-
-    // Submit Report button - redirect to create report page
-    const submitReportBtn = document.querySelector('.actions-right .btn-outline-report');
-    submitReportBtn?.addEventListener('click', () => {
-        window.location.href = '/create-report.html';
-    });
-
-    
-    // ============================================================
-    // BACK TO PENDING BUTTON - PLACE HERE
-    // ============================================================
-    backToPendingBtn?.addEventListener(
-        "click",
-        () => {
-
-            // Hide report details
-            reportDetailSubview?.classList.add(
-                "hidden-element"
-            );
-
-            // Show report list
-            reportListSubview?.classList.remove(
-                "hidden-element"
-            );
-
-            // Refresh reports list
-            loadReports();
-        }
-    );
-    
 }
