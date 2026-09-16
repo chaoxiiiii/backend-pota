@@ -4,16 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Municipal Coordinator — eSaka</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-
-<!-- Leaflet -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
-
-
 <link rel="stylesheet" href="../assets/css/base.css">
+
 <style>
   :root {
     --cream: #F2EDE1;
@@ -27,14 +25,15 @@
     --green-light: #E7EDDF;
     --brown: #C08A4E;
     --gold: #C9A15A;
+    --status-confirmed: #2E7D32;
+    --status-submitted: #D97706;
+    --status-rejected: #C0392B;
     --topbar-height: 72px;
     --radius-sm: 8px;
     --radius-md: 12px;
   }
 
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
 
   html, body {
     width: 100%;
@@ -45,178 +44,247 @@
     -webkit-font-smoothing: antialiased;
   }
 
-
   a { color: inherit; }
   button, input, select, textarea { font-family: inherit; }
 
-
-  .topbar{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:0 32px;
-    background:var(--cream);
-    border-bottom:1.5px solid var(--border);
-    position:sticky;
-    top:0;
-    z-index:2100;
-    height:var(--topbar-height);
+  /* ============================================================
+     TOPBAR (same as before)
+  ============================================================ */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    background: var(--cream);
+    border-bottom: 1.5px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 2100;
+    height: var(--topbar-height);
   }
 
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
 
-  .topbar-left{ display:flex; align-items:center; gap:16px; }
-
-
-  .hamburger{
-    background:#FFF;
-    border:1px solid var(--border);
-    border-radius:var(--radius-sm);
-    cursor:pointer;
-    padding:8px 10px;
-    display:flex;
-    flex-direction:column;
-    gap:4px;
+  .hamburger {
+    background: #FFF;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     transition: all 0.2s ease;
   }
-
 
   .hamburger:hover {
     background: var(--green-light);
     border-color: var(--green);
   }
 
-
-  .hamburger span{
-    display:block;
-    width:20px;
-    height:2.5px;
-    background:var(--ink);
-    border-radius:2px;
+  .hamburger span {
+    display: block;
+    width: 20px;
+    height: 2.5px;
+    background: var(--ink);
+    border-radius: 2px;
   }
 
+  .logos { display: flex; align-items: center; gap: 12px; }
 
-  .logos{ display:flex; align-items:center; gap:12px; }
+  .brand-logo-img { height: 42px; width: auto; object-fit: contain; display: block; }
+  .brand-name-img { height: 44px; width: auto; object-fit: contain; display: block; }
 
+  .topbar-right { display: flex; align-items: center; gap: 18px; }
 
-  .user-info{ display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.7); padding:6px 14px 6px 8px; border-radius:999px; border:1px solid var(--border); }
-  .user-text{ text-align:left; line-height:1.2; }
-  .user-name{ font-size:13.5px; font-weight:700; color:var(--ink); }
-  .user-role{ font-size:11px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:0.04em; }
-
-
-  .avatar{
-    width:32px;
-    height:32px;
-    border-radius:50%;
-    background:var(--green);
-    color:#FFF;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:700;
-    font-size:13px;
+  .bell-wrap {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, background 0.2s ease;
   }
 
+  .bell-wrap:hover { background: var(--green-dark); transform: scale(1.04); }
+  .bell-wrap svg { width: 18px; height: 18px; fill: #fff; }
 
-  .avatar svg{ width:18px; height:18px; fill:#fff; }
-
-
-  .layout{ display:flex; min-height:calc(100vh - var(--topbar-height)); }
-
-
-  /* SIDEBAR STYLES */
-  .sidebar{
-    width:230px;
-    background:var(--green);
-    color:#fff;
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-    padding:24px 12px;
-    flex-shrink:0;
-    position:fixed;
-    top:var(--topbar-height);
-    left:-230px;
-    bottom:0;
-    z-index:2000;
-    transition:left .28s cubic-bezier(0.4, 0, 0.2, 1);
+  .bell-dot {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 9px;
+    height: 9px;
+    background: #C0392B;
+    border-radius: 50%;
+    border: 2px solid var(--cream);
   }
 
+  .notification-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 320px;
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    z-index: 3000;
+    overflow: hidden;
+    text-align: left;
+  }
 
-  .sidebar.open{ left:0; }
+  .notification-dropdown.show { display: block; }
 
+  .notification-header {
+    padding: 14px 18px;
+    background: #F4EFE6;
+    border-bottom: 1.5px solid var(--border);
+    font-size: 14px;
+    color: var(--ink);
+  }
 
-  .nav-list{ display:flex; flex-direction:column; gap:4px; }
+  .notification-list { max-height: 300px; overflow-y: auto; }
 
+  .notification-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
 
-  .nav-item{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    padding:12px 18px;
-    color:#E8E5DD;
-    text-decoration:none;
-    font-size:14px;
-    font-weight:600;
-    border-radius:var(--radius-sm);
-    cursor:pointer;
-    background:transparent;
-    border:none;
-    width:100%;
-    text-align:left;
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.7);
+    padding: 6px 14px 6px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #FFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .user-text { text-align: left; line-height: 1.2; }
+
+  .user-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .user-role {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brown);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* ============================================================
+     LAYOUT + SIDEBAR
+  ============================================================ */
+  .layout { display: flex; min-height: calc(100vh - var(--topbar-height)); }
+
+  .sidebar {
+    width: 230px;
+    background: var(--green);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px 12px;
+    flex-shrink: 0;
+    position: fixed;
+    top: var(--topbar-height);
+    left: -230px;
+    bottom: 0;
+    z-index: 2000;
+    transition: left .28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar.open { left: 0; }
+
+  .nav-list { display: flex; flex-direction: column; gap: 4px; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    color: #E8E5DD;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
     transition: all 0.2s ease;
   }
 
+  .nav-item svg { width: 19px; height: 19px; fill: currentColor; flex-shrink: 0; }
 
-  .nav-item svg{ width:19px; height:19px; fill:currentColor; flex-shrink:0; }
-  .nav-item:hover{ background:rgba(255,255,255,0.12); color:#FFFFFF; }
-  .nav-item.active{ background:var(--green-dark); color:#FFFFFF; font-weight:700; }
+  .nav-item:hover { background: rgba(255, 255, 255, 0.12); color: #FFFFFF; }
+  .nav-item.active { background: var(--green-dark); color: #FFFFFF; font-weight: 700; }
 
-
-  .signout{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:12px 18px;
-    color:#FFC0C0;
-    text-decoration:none;
-    font-size:13.5px;
-    font-weight:600;
-    cursor:pointer;
-    border:none;
-    background:rgba(0, 0, 0, 0.08);
-    border-radius:var(--radius-sm);
-    width:100%;
+  .signout {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    color: #FFC0C0;
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: var(--radius-sm);
+    width: 100%;
     transition: all 0.2s ease;
   }
 
+  .signout svg { width: 18px; height: 18px; fill: currentColor; }
+  .signout:hover { background: rgba(192, 57, 43, 0.25); color: #FFF; }
 
-  .signout svg{ width:18px; height:18px; fill:currentColor; }
-  .signout:hover{ background: rgba(192, 57, 43, 0.25); color: #FFF; }
+  .main { flex: 1; padding: 32px 40px; min-width: 0; }
 
+  .view { display: none; }
+  .view.active-view { display: block; }
 
-  .main{
-    flex:1;
-    padding:32px 40px;
-    min-width:0;
+  /* ============================================================
+     HEADERS
+  ============================================================ */
+  .main-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
   }
 
-
-  .view{ display:none; }
-  .view.active-view{ display:block; }
-
-
-  .main-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:16px;
-    margin-bottom:20px;
-  }
-
-
-  .main-header h1{
+  .header-left h1 {
     font-size: 26px;
     font-weight: 800;
     color: var(--green-dark);
@@ -224,264 +292,386 @@
     margin: 0;
   }
 
+  .header-left p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
 
-  .card{
-    background:var(--white);
-    border:1.5px solid var(--border);
-    border-radius:var(--radius-md);
-    padding:24px 28px;
+  .header-actions { display: flex; align-items: center; gap: 12px; }
+
+  /* ============================================================
+     CARDS
+  ============================================================ */
+  .card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 22px 24px;
     margin-bottom: 24px;
-    box-shadow: 0 4px 15px rgba(46, 42, 34, 0.02);
   }
 
-
-  /* MAP DESIGN */
-  #map{
-    width:100%;
-    height:420px;
-    border-radius:var(--radius-sm);
-    border:1.5px solid var(--border);
-  }
-
-
-  /* SEARCH & FILTER BAR */
-  .search-row{ display:flex; gap:12px; align-items:center; }
-  .search-box{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    background:#FFFFFF;
-    border:1.5px solid var(--border);
-    border-radius:var(--radius-sm);
-    padding:8px 14px;
-    min-width:260px;
+  /* ============================================================
+     SEARCH
+  ============================================================ */
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #FFFFFF;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    min-width: 260px;
     transition: all 0.2s ease;
   }
+
   .search-box:focus-within {
     border-color: var(--green);
     box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
   }
-  .search-box svg{ width:15px; height:15px; fill:none; stroke:var(--muted); stroke-width:2.4; flex-shrink:0; }
-  .search-box input{ border:none; outline:none; font-size:13.5px; width:100%; background:transparent; color: var(--ink); }
 
+  .search-box svg { width: 15px; height: 15px; fill: none; stroke: var(--muted); stroke-width: 2.4; }
 
-  /* TABLE DESIGN */
-  .table-wrapper {
-    overflow-x: auto;
-    border-radius: 10px;
-    border: 1.5px solid var(--border);
-    background: var(--white);
+  .search-box input {
+    border: none;
+    outline: none;
+    font-size: 13.5px;
+    width: 100%;
+    background: transparent;
+    color: var(--ink);
   }
 
+  /* ============================================================
+     TABLES
+  ============================================================ */
+  table { width: 100%; border-collapse: separate; border-spacing: 0; }
 
-  table{ width:100%; border-collapse:separate; border-spacing:0; }
-  thead th{
-    text-align:center;
-    font-size:12px;
-    font-weight:700;
-    color:var(--muted);
-    padding:14px 20px;
-    letter-spacing:0.05em;
-    text-transform:uppercase;
-    border-bottom:1.5px solid var(--border);
-    background:#EAE3D2;
-  }
-
-
-  tbody td{
-    padding:16px 20px;
-    font-size:14px;
-    vertical-align:middle;
-    border-bottom:1px solid var(--border-light);
-    color:var(--ink);
-    text-align:center;
-    font-weight: 500;
-    background: var(--white);
-  }
-
-
-  tbody tr { transition: background 0.15s ease; background: var(--white); }
-  tbody tr:last-child td { border-bottom: none; }
-  tbody tr:hover td { background: #EDE7D9; }
-
-
-  /* Pill background look para sa bawat text sa table cells */
-  .pill, tbody td span {
-    display:inline-block;
-    padding:6px 16px;
-    border-radius:999px;
-    background:#E5E2DA;
-    font-size:12.5px;
-    font-weight:600;
-    color:var(--ink);
-    white-space:nowrap;
-  }
-
-
-  .status-pill{
-    display:inline-block;
-    padding:6px 16px;
-    border-radius:999px;
-    font-size:12px;
-    font-weight:700;
-    color:#fff;
+  thead th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    padding: 12px 14px;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    letter-spacing:0.03em;
+    border-bottom: 1.5px solid var(--border);
   }
 
+  thead th.center-col, tbody td.center-col { text-align: center; }
 
-  .status-pill.confirmed, .status-pill.approved, .status-pill.harvested{ background:#2E7D32; }
-  .status-pill.submitted, .status-pill.mediating{ background:#D97706; }
-  .status-pill.planted{ background:#E06030; }
-  .status-pill.pending{ background:#D97706; }
-
-
-  /* REMARKS / NOTES SECTION */
-  .notes-row{
-    display:flex;
-    gap:24px;
-    align-items:flex-end;
-    margin-top:24px;
-    padding-top:16px;
-    border-top:1.5px solid var(--border);
+  tbody td {
+    padding: 13px 14px;
+    font-size: 13.5px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--ink);
   }
 
+  tbody tr { transition: background 0.15s ease; }
+  tbody tr:hover td { background: #F3EEE4; }
+  tbody tr.selected td { background: #EAF1E3; }
 
-  .notes-field{ flex:1; }
-  .notes-field label{ display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--muted); text-transform:uppercase; letter-spacing:0.03em; }
+  .clickable-row { cursor: pointer; }
 
-
-  .btn-outline-report{
-    appearance:none;
-    border:1.5px solid var(--border);
-    background:#FFFFFF;
-    color:var(--ink);
-    font-size:13.5px;
-    font-weight:600;
-    padding:10px 22px;
-    border-radius:var(--radius-sm);
-    cursor:pointer;
-    transition:all .2s ease;
+  /* ============================================================
+     CHECKBOX
+  ============================================================ */
+  input[type="checkbox"].row-check,
+  input[type="checkbox"]#selectAllCheckbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--green);
   }
 
-
-  .btn-outline-report:hover:not(:disabled){ background:var(--cream); border-color:var(--green); }
-
-
-  .detail-actions-row{
-    display:flex;
-    justify-content:flex-end;
-    gap:12px;
-    margin-top:28px;
+  /* ============================================================
+     STATUS PILLS
+  ============================================================ */
+  .status-pill {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #FFFFFF !important;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    text-align: center;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
   }
 
+  .status-pill.pending   { background-color: #D97706 !important; }
+  .status-pill.provincial { background-color: #D97706 !important; }
+  .status-pill.submitted,
+  .status-pill.approved  { background-color: var(--status-confirmed) !important; }
+  .status-pill.revision,
+  .status-pill.flagged   { background-color: #C0392B !important; }
+  .status-pill.rfo        { background-color: #2980B9 !important; }
 
-  .flag-btn.active{ background:#C0392B; border-color:#C0392B; color:#fff; }
-  .approve-btn.active{ background:#2E7D32; border-color:#2E7D32; color:#fff; }
-
-
-  /* MODAL OVERLAY */
-  .modal-overlay{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(30,35,28,0.6);
-    align-items:center;
-    justify-content:center;
-    z-index:3000;
+  /* ============================================================
+     PILLS (generic)
+  ============================================================ */
+  .pill {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 999px;
+    background: #EEEEEE;
+    font-size: 12px;
+    color: #222;
+    white-space: nowrap;
   }
 
-
-  .modal-overlay.show{ display:flex; }
-
-
-  .modal-box{
-    background:var(--cream);
-    border:1.5px solid var(--border);
-    border-radius:var(--radius-md);
-    padding:32px 38px;
-    text-align:center;
-    box-shadow:0 14px 35px rgba(0,0,0,0.2);
-    max-width:440px;
-    width:90%;
+  /* ============================================================
+     BUTTONS
+  ============================================================ */
+  .btn-primary {
+    appearance: none;
+    background: var(--green);
+    color: #FFF;
+    border: none;
+    font-size: 13.5px;
+    font-weight: 700;
+    padding: 9px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
   }
 
-
-  .modal-box p{
-    font-size:16px;
-    font-weight:700;
-    color:var(--green-dark);
-    margin-bottom:22px;
-    line-height:1.4;
+  .btn-primary:hover:not(:disabled) {
+    background: var(--green-dark);
+    transform: translateY(-1px);
   }
 
-
-  .modal-confirm-btn{
-    border:none;
-    background:var(--green);
-    color:#fff;
-    font-size:13.5px;
-    font-weight:700;
-    padding:9px 24px;
-    border-radius:var(--radius-sm);
-    cursor:pointer;
-    transition:all 0.2s ease;
+  .btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
+  .btn-outline-report {
+    appearance: none;
+    border: 1.5px solid var(--border);
+    background: #FFFFFF;
+    color: var(--ink);
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 9px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
 
-  .modal-confirm-btn:hover{ background:var(--green-dark); }
+  .btn-outline-report:hover:not(:disabled) {
+    background: var(--cream);
+    border-color: var(--green);
+  }
 
+  .flag-btn.active { background: #C83232; border-color: #C83232; color: #fff; }
+  .approve-btn.active { background: var(--green-dark); border-color: var(--green-dark); color: #fff; }
 
-  .clickable-row{ cursor:pointer; }
-  .clickable-row:hover td{ background:#EDE7D9; }
+  .detail-actions-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 22px;
+  }
 
+  /* ============================================================
+     NOTES / TEXTAREA
+  ============================================================ */
+  .notes-row {
+    display: flex;
+    gap: 24px;
+    align-items: flex-end;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
 
-  .text-section-title { font-size: 14.5px; font-weight: 800; color: var(--green-dark); text-transform: uppercase; letter-spacing: 0.04em; }
-  .hidden-element{ display:none; }
-  .notes-row-clean{ border-top:none; padding-top:0; }
-  .textarea-notes { width:100%; height:90px; padding:10px 14px; font-size:13.5px; font-family:inherit; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:#FFFFFF; color:var(--ink); outline:none; resize:vertical; transition: all 0.2s ease; }
-  .textarea-notes:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15); }
+  .notes-field { flex: 1; }
+
+  .notes-field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .textarea-notes {
+    width: 100%;
+    height: 90px;
+    padding: 12px;
+    font-size: 13.5px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    color: var(--ink);
+    outline: none;
+    resize: vertical;
+    transition: all 0.2s ease;
+  }
+
+  .textarea-notes:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(91, 107, 79, 0.15);
+  }
+
+  .notes-row-clean { border-top: none; padding-top: 0; }
+
+  /* ============================================================
+     MAP
+  ============================================================ */
+  #map {
+    width: 100%;
+    height: 400px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+  }
+
+  .map-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  /* ============================================================
+     MODALS
+  ============================================================ */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(30, 35, 28, 0.6);
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal-box {
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 32px 38px;
+    text-align: center;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.2);
+    max-width: 440px;
+    width: 90%;
+  }
+
+  .modal-box p {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--green-dark);
+    margin-bottom: 22px;
+    line-height: 1.4;
+  }
+
+  .modal-confirm-btn {
+    border: none;
+    background: var(--green);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .modal-confirm-btn:hover { background: var(--green-dark); }
+
+  /* ============================================================
+     HELPERS
+  ============================================================ */
+  .hidden-element { display: none !important; }
+
+  .text-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 8px;
+    background: var(--green);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .count-badge.muted {
+    background: var(--muted);
+  }
 </style>
 </head>
 <body>
 
-
+  <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
         <span></span><span></span><span></span>
       </button>
 
-
       <div class="logos">
-        <a href="../home.html" style="display: flex; align-items: center; text-decoration: none;">
-          <img src="../images/esakalogo.png" alt="eSaka Logo" style="height: 40px; width: auto; display: block;">
-        </a>
+        <img src="../images/esakalogo.png" alt="eSaka Logo" class="brand-logo-img">
+        <img src="../images/esakaname.png" alt="eSaka" class="brand-name-img">
       </div>
     </div>
 
-
     <div class="topbar-right">
-      <div class="user-info">
-        <div class="avatar">
-          <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
+      <div class="bell-wrap" id="notificationBell" aria-label="Notifications">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/>
+        </svg>
+        <span class="bell-dot"></span>
+
+        <div class="notification-dropdown" id="notificationDropdown">
+          <div class="notification-header"><strong>Notifications</strong></div>
+          <div class="notification-list">
+            <div class="notification-empty">No new notifications.</div>
+          </div>
         </div>
+      </div>
+
+      <div class="user-info">
+        <div class="avatar" id="userDisplayInitials">--</div>
         <div class="user-text">
-          <div class="user-name">Juan Dela Cruz</div>
-          <div class="user-role">Municipal Coordinator</div>
+          <div class="user-name" id="userDisplayName">Loading...</div>
+          <div class="user-role" id="userDisplayRole">Loading...</div>
         </div>
       </div>
     </div>
   </div>
 
-
+  <!-- LAYOUT -->
   <div class="layout">
-
-
     <nav class="sidebar" id="sidebar">
       <div class="nav-list">
         <button class="nav-item active" type="button" data-view="reports">
-          <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
           View Reports
         </button>
         <button class="nav-item" type="button" data-view="map">
@@ -490,928 +680,299 @@
         </button>
       </div>
 
-
       <a class="signout" href="../index.html">
         <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
         Sign Out
       </a>
     </nav>
 
-
     <main class="main">
 
-
-      <!-- ===================== VIEW 1: View Reports ===================== -->
+      <!-- ===================== VIEW: Reports ===================== -->
       <section class="view active-view" id="view-reports">
+        <div class="main-header" id="reportsMainHeader">
+          <div class="header-left">
+            <h1>Reports</h1>
+            <p>Review AEW reports and forward approved ones to Provincial.</p>
+          </div>
 
-
-        <!-- REPORTS HEADER -->
-        <div class="main-header">
-          <h1>Reports</h1>
-
-
-          <div class="search-row">
+          <div class="header-actions">
             <div class="search-box">
               <svg viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="7"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
-
-
-              <input
-                type="text"
-                id="reportSearchInput"
-                placeholder="Search reports..."
-                autocomplete="off"
-              >
+              <input type="text" id="reportSearchInput" placeholder="Search pending reports..." autocomplete="off">
             </div>
           </div>
         </div>
 
-
-        <!-- ===================== PENDING REPORTS ===================== -->
+        <!-- PENDING REPORTS -->
         <div id="pendingReportsView">
           <div class="card">
-            <div class="text-section-title" style="margin-bottom:16px;">
-              Pending Reports
-            </div>
-
-
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Report ID</th>
-                    <th>Title</th>
-                    <th>Commodity</th>
-                    <th>Planting Date</th>
-                    <th>Estimated Yield (kg)</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-
-
-                <tbody id="pendingReportsBody">
-                  <tr>
-                    <td colspan="6">
-                      Loading reports...
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-
-        <!-- ===================== REPORT DETAIL ===================== -->
-        <div
-          id="individualDetailView"
-          class="hidden-element"
-        >
-          <div class="card">
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Commodity</th>
-                    <th>Planting Date</th>
-                    <th>Harvest Date</th>
-                    <th>Estimated Yield (kg)</th>
-                    <th>Encoded By</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-
-
-                <tbody id="reportDetailBody">
-                </tbody>
-              </table>
-            </div>
-
-
-            <!-- NOTES -->
-            <div class="notes-row">
-              <div class="notes-field">
-                <label>Notes</label>
-                <textarea
-                  id="reportNotesTextarea"
-                  class="textarea-notes"
-                  readonly
-                ></textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+              <div class="text-section-title" style="margin-bottom:0;">
+                Pending Reports
+                <span class="count-badge" id="pendingCountBadge">0</span>
               </div>
 
-
-              <div>
-                <button
-                  class="btn-outline-report"
-                  id="viewAttachmentsBtn"
-                  type="button"
-                >
-                  View Attachments
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn-outline-report" id="selectAllPendingBtn" type="button">
+                  Select All
+                </button>
+                <button class="btn-primary" id="bulkApproveBtn" type="button" disabled>
+                  Approve Selected &amp; Send to Provincial
                 </button>
               </div>
             </div>
 
+            <div style="overflow-x:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:40px;">
+                      <input type="checkbox" id="selectAllCheckbox" aria-label="Select all pending reports">
+                    </th>
+                    <th class="center-col">Report ID</th>
+                    <th>Title</th>
+                    <th>Commodity</th>
+                    <th>Municipality</th>
+                    <th class="center-col">Planting Date</th>
+                    <th class="center-col">Est. Yield</th>
+                    <th class="center-col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingReportsBody">
+                  <tr><td colspan="8" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
-            <!-- REMARKS -->
-            <div class="notes-row notes-row-clean">
-              <div class="notes-field">
-                <label>Remarks</label>
-                <textarea
-                  id="remarksTextarea"
-                  class="textarea-notes"
-                  placeholder="Enter remarks..."
-                ></textarea>
+       <!-- AWAITING REVISION (filtered by user's level) -->
+      <div id="awaitingRevisionView">
+        <div class="card">
+          <div class="text-section-title">
+            Awaiting AEW Revision
+            <span class="count-badge muted" id="awaitingRevisionCountBadge">0</span>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th class="center-col">Report ID</th>
+                  <th>Title</th>
+                  <th>Commodity</th>
+                  <th>Municipality</th>
+                  <th class="center-col">Flagged At</th>
+                  <th class="center-col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="awaitingRevisionBody">
+                <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+        <!-- SENT TO PROVINCIAL -->
+        <div id="sentToProvincialView">
+          <div class="card">
+            <div class="text-section-title">
+              Sent to Provincial
+              <span class="count-badge muted" id="sentCountBadge">0</span>
+            </div>
+
+            <div style="overflow-x:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="center-col">Report ID</th>
+                    <th>Title</th>
+                    <th>Commodity</th>
+                    <th>Municipality</th>
+                    <th class="center-col">Submitted</th>
+                    <th class="center-col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="sentToProvincialBody">
+                  <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- REPORT DETAIL (for individual view) -->
+        <div id="individualDetailView" class="hidden-element">
+          <div class="main-header">
+            <div class="header-left">
+              <h1 id="detailReportTitle">Report Details</h1>
+              <p id="detailReportSubtitle">—</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <!-- ==================== REPORT INFO — COMPACT ==================== -->
+            <div style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+              gap: 20px 28px;
+              padding: 18px 20px;
+              background: #F6F3EB;
+              border-radius: 10px;
+              margin-bottom: 24px;
+            ">
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Report ID</div>
+                <div id="detailReportId" style="font-size: 14px; font-weight: 700; color: var(--ink);">—</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Municipality</div>
+                <div id="detailReportMunicipality" style="font-size: 14px; font-weight: 600; color: var(--ink);">—</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Status</div>
+                <div id="detailReportStatus" style="font-size: 14px; color: var(--ink);">—</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Submitted Date</div>
+                <div id="detailReportDate" style="font-size: 14px; font-weight: 600; color: var(--ink);">—</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Encoded By</div>
+                <div id="detailReportEncodedBy" style="font-size: 14px; font-weight: 600; color: var(--ink);">—</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Est. Yield</div>
+                <div id="detailReportYield" style="font-size: 14px; font-weight: 600; color: var(--ink);">—</div>
+              </div>
+              <div style="grid-column: 1 / -1;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;">Notes / Remarks</div>
+                <div id="detailReportNotes" style="font-size: 14px; color: var(--ink); line-height: 1.5;">—</div>
               </div>
             </div>
 
+            <!-- ==================== ATTACHMENTS ==================== -->
+            <div style="margin-bottom: 24px;">
+              <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;">Attachments</div>
+              <div id="detailReportAttachments" style="font-size: 14px; color: var(--muted);">No attachments</div>
+            </div>
 
+            <!-- ==================== REVISION REMARKS (kung may flag history) ==================== -->
+            <div id="detailRevisionRemarksWrapper" style="
+              display: none;
+              margin-top: 28px;
+              margin-bottom: 24px;
+              padding: 16px 20px;
+              background: #FEE2E2;
+              border-left: 4px solid #C0392B;
+              border-radius: 0 8px 8px 0;
+            ">
+              <div style="
+                font-size: 11px;
+                font-weight: 700;
+                color: #C0392B;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 12px;
+              ">
+                Revision Remarks (Flagged by Municipal)
+              </div>
+              <div id="detailRevisionRemarks" style="font-size: 14px; color: #333; line-height: 1.6;">—</div>
+            </div>
+
+            <!-- ==================== INCLUDED PLANTING INTENTS ==================== -->
+            <div style="margin-top: 8px;">
+              <div style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;">Included Planting Intents</div>
+              <div style="overflow-x: auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="center-col">Intent ID</th>
+                      <th>Farmer</th>
+                      <th>Commodity</th>
+                      <th class="center-col">Volume</th>
+                      <th class="center-col">Planting Date</th>
+                      <th class="center-col">Harvest Date</th>
+                      <th class="center-col">Harvest Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="detailReportIntentsBody">
+                    <tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- ==================== REMARKS (for flagging) ==================== -->
+            <div class="notes-row notes-row-clean" style="margin-top: 28px;">
+              <div class="notes-field">
+                <label>Remarks</label>
+                <textarea id="remarksTextarea" class="textarea-notes" placeholder="Enter remarks (required if flagging for revision)..."></textarea>
+              </div>
+            </div>
           </div>
 
+                    <!-- ==================== ACTION BUTTONS ==================== -->
+                    <div class="detail-actions-row">
+                      <button class="btn-outline-report" id="backToPendingBtn" type="button">Return</button>
+                      <button class="btn-outline-report" id="editReportBtn" type="button" style="display: none;">
+                        Edit
+                      </button>
+                      <button class="btn-outline-report flag-btn" id="flagBtn" type="button">Flag for Revision</button>
+                      <button class="btn-primary approve-btn" id="approveBtn" type="button" style="background:#2E7D32;">
+                        Approve &amp; Send to Provincial
+                      </button>
+                      <button class="btn-primary" id="resubmitReportBtn" type="button" style="background: #2E7D32; display: none;">
+                        Resubmit to Provincial
+                      </button>
+                    </div>
+                  </div>        
+                </section>    
 
-          <!-- ACTION BUTTONS -->
-          <div class="detail-actions-row">
-            <button
-              class="btn-outline-report"
-              id="backToPendingBtn"
-              type="button"
-            >
-              Return
-            </button>
+                <!-- ===================== VIEW: Map ===================== -->
+                      <section class="view" id="view-map">
+                        <div class="main-header">
+                          <div class="header-left">
+                            <h1>Regional Field Map</h1>
+                            <p>Geospatial tracking of crop production clusters in Pampanga.</p>
+                          </div>
+                        </div>
 
+                        <div class="card">
+                          <div class="map-title">Field Monitoring &amp; Geographic Clusters</div>
+                          <div id="map"></div>
+                        </div>
+                      </section>
 
-            <button
-              class="btn-outline-report flag-btn"
-              id="flagBtn"
-              type="button"
-            >
-              Flag for Revision
-            </button>
-
-
-            <button
-              class="btn-outline-report approve-btn"
-              id="approveBtn"
-              type="button"
-            >
-              Approve
-            </button>
-          </div>
-
-
+          </main>
         </div>
 
-
-      </section>
-
-
-     <!-- ===================== VIEW 2: Map ===================== -->
-<section class="view" id="view-map">
-  <div class="main-header">
-    <h1>Map</h1>
-  </div>
-
-
-  <div class="card">
-   
-    <div class="map-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
-      <span style="font-size: 14.5px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 0.02em;">
-        Field Monitoring & Geographic Clusters
-      </span>
-     
-      <!-- Map Legend -->
-      <div style="display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; align-items: center;">
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #C0392B; display: inline-block;"></span> Surplus
-        </span>
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #2E7D32; display: inline-block;"></span> Balanced
-        </span>
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Deficit
-        </span>
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <span style="width: 10px; height: 10px; border-radius: 50%; background: #6c757d; display: inline-block;"></span> No Data
-        </span>
-      </div>
-    </div>
-
-
-    <!-- MAP FILTERS -->
-    <div class="map-filters-container" style="display: flex; gap: 12px; margin-bottom: 14px; padding: 0;">
-      <select id="filterCommodity" style="padding: 8px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; background: #fff; cursor: pointer;">
-        <option value="all">All Commodities</option>
-        <option value="Tomato">Tomato</option>
-        <option value="Squash">Squash</option>
-        <option value="Red Onion">Red Onion</option>
-        <option value="White Onion">White Onion</option>
-      </select>
-    </div>
-
-
-    <div id="map"></div>
-  </div>
-</section>
-
-
-    </main>
-  </div>
-
-
-  <!-- CONFIRMATION MODAL -->
-  <div class="modal-overlay" id="reportModal">
-    <div class="modal-box">
-      <p id="reportModalText">Report Submitted to Provincial Level</p>
-      <button class="modal-confirm-btn" id="reportModalConfirmBtn" type="button">Confirm</button>
-    </div>
-  </div>
-
-
-<!-- Leaflet-->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-
-
-<script>
-  // ============================================================
-  // SIDEBAR
-  // ============================================================
-
-
-  const hamburgerBtn = document.getElementById("hamburgerBtn");
-  const sidebar = document.getElementById("sidebar");
-
-
-  if (hamburgerBtn && sidebar) {
-    let hoverTimer = null;
-
-
-    hamburgerBtn.addEventListener("mouseenter", function () {
-      if (hoverTimer) {
-        clearTimeout(hoverTimer);
-        hoverTimer = null;
-      }
-      sidebar.classList.add("open");
-      setTimeout(function () {
-        if (window.leafletMap) {
-          window.leafletMap.invalidateSize();
-        }
-      }, 300);
-    });
-
-
-    sidebar.addEventListener("mouseenter", function () {
-      if (hoverTimer) {
-        clearTimeout(hoverTimer);
-        hoverTimer = null;
-      }
-    });
-
-
-    sidebar.addEventListener("mouseleave", function () {
-      hoverTimer = setTimeout(function () {
-        sidebar.classList.remove("open");
-      }, 200);
-    });
-
-
-    document.addEventListener("click", function (event) {
-      const isInsideSidebar = sidebar.contains(event.target);
-      const isHamburger = hamburgerBtn.contains(event.target);
-      if (!isInsideSidebar && !isHamburger) {
-        sidebar.classList.remove("open");
-      }
-    });
-
-
-    sidebar.querySelectorAll(".nav-item").forEach(function (item) {
-      item.addEventListener("click", function () {
-        sidebar.classList.remove("open");
-      });
-    });
-
-
-    document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") {
-        sidebar.classList.remove("open");
-      }
-    });
-
-
-    const signoutBtn = sidebar.querySelector(".signout");
-    if (signoutBtn) {
-      signoutBtn.addEventListener("click", function () {
-        sidebar.classList.remove("open");
-      });
-    }
-  }
-
-
-  // ============================================================
-  // VIEW SWITCHING
-  // ============================================================
-
-
-  const navButtons = document.querySelectorAll(".nav-item[data-view]");
-  const views = document.querySelectorAll(".view");
-
-
-  function switchView(viewKey) {
-    views.forEach(function (view) {
-      view.classList.remove("active-view");
-    });
-
-
-    const targetView = document.getElementById("view-" + viewKey);
-    if (targetView) {
-      targetView.classList.add("active-view");
-    }
-
-
-    navButtons.forEach(function (btn) {
-      btn.classList.toggle(
-        "active",
-        btn.dataset.view === viewKey
-      );
-    });
-
-
-    if (viewKey === "map" && window.leafletMap) {
-      setTimeout(function () {
-        window.leafletMap.invalidateSize();
-      }, 50);
-    }
-  }
-
-
-  navButtons.forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      switchView(btn.dataset.view);
-    });
-  });
-
-
-  // ============================================================
-  // API CONFIG & MAP INITIALIZATION
-  // ============================================================
-  const API_BASE_URL = "http://127.0.0.1:8000";
-
-
-  const pampangaBounds = L.latLngBounds([14.85, 120.35], [15.35, 120.95]);
-
-
-  const map = L.map('map', {
-    maxBounds: pampangaBounds,
-    maxBoundsViscosity: 1.0,
-    minZoom: 10
-  }).setView([15.0794, 120.6200], 10);
-
-
-  window.leafletMap = map;
-
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 18
-  }).addTo(map);
-
-
-  const municipalityCoordinates = {
-    "Angeles": [15.1450, 120.5887],
-    "Apalit": [14.9470, 120.7700],
-    "Arayat": [15.1500, 120.7690],
-    "Bacolor": [15.0000, 120.6520],
-    "Candaba": [15.0950, 120.8260],
-    "Floridablanca": [14.9770, 120.5280],
-    "Guagua": [14.9650, 120.6350],
-    "Lubao": [14.9400, 120.6000],
-    "Mabalacat": [15.2230, 120.5740],
-    "Macabebe": [14.9080, 120.7150],
-    "Magalang": [15.2160, 120.6630],
-    "Masantol": [14.8960, 120.7100],
-    "Mexico": [15.0640, 120.7190],
-    "Minalin": [14.9670, 120.6840],
-    "Porac": [15.0710, 120.5420],
-    "San Fernando": [15.0343, 120.6840],
-    "San Luis": [15.0400, 120.7870],
-    "San Simon": [14.9990, 120.7800],
-    "Santa Ana": [15.0950, 120.7720],
-    "Santa Rita": [15.0190, 120.6110],
-    "Santo Tomas": [14.9950, 120.7090]
-  };
-
-
-  let MUNICIPALITY_MAP_RAW_DATA = [];
-  let mapMarkersLayer = null;
-
-
-  async function loadMunicipalityMapData() {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/planting-intents/municipality-map`,
-        {
-          method: "GET",
-          headers: { "Accept": "application/json" }
-        }
-      );
-
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-
-      const result = await response.json();
-      if (!result.data || !Array.isArray(result.data)) return;
-
-
-      MUNICIPALITY_MAP_RAW_DATA = result.data;
-      renderFilteredMapMarkers();
-
-
-      document.getElementById('filterCommodity')?.addEventListener('change', renderFilteredMapMarkers);
-      document.getElementById('filterStatus')?.addEventListener('change', renderFilteredMapMarkers);
-
-
-    } catch (error) {
-      console.error("Failed to load municipality map data:", error);
-    }
-  }
-
-
-  function renderFilteredMapMarkers() {
-    if (!map) return;
-
-
-    if (mapMarkersLayer) {
-      map.removeLayer(mapMarkersLayer);
-    }
-
-
-    mapMarkersLayer = L.layerGroup().addTo(map);
-
-
-    const selectedCommodity = document.getElementById('filterCommodity')?.value || 'all';
-    const selectedStatus = document.getElementById('filterStatus')?.value || 'all';
-
-
-    MUNICIPALITY_MAP_RAW_DATA.forEach(municipalityData => {
-      const municipality = municipalityData.municipality;
-      const baseCoordinates = municipalityCoordinates[municipality];
-
-
-      if (!baseCoordinates || !municipalityData.commodities) return;
-
-
-      const filteredCommodities = municipalityData.commodities.filter(item => {
-        const commodityMatch = selectedCommodity === 'all' || item.commodity.toLowerCase() === selectedCommodity.toLowerCase();
-        const statusVal = (item.status || "").toUpperCase();
-        let statusMatch = true;
-        if (selectedStatus !== 'all') {
-          statusMatch = statusVal.includes(selectedStatus);
-        }
-        return commodityMatch && statusMatch;
-      });
-
-
-      const totalFiltered = filteredCommodities.length;
-
-
-      filteredCommodities.forEach((item, index) => {
-        const commodity = item.commodity;
-        const status = (item.status || "").toUpperCase();
-
-
-        const offsetLat = baseCoordinates[0] + (index - (totalFiltered / 2)) * 0.0025;
-        const offsetLng = baseCoordinates[1] + (index - (totalFiltered / 2)) * 0.0025;
-        const markerCoordinates = [offsetLat, offsetLng];
-
-
-        let markerColor = "#6c757d";
-        if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
-          markerColor = "#C0392B";
-        } else if (status.includes("BALANCED")) {
-          markerColor = "#2E7D32";
-        } else if (status.includes("DEFICIT")) {
-          markerColor = "#D97706";
-        }
-
-
-        const customIcon = L.divIcon({
-          className: 'custom-map-marker',
-          html: `<div style="
-            background-color: ${markerColor};
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-          "></div>`,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8]
-        });
-
-
-        const popupContent = `
-          <div style="min-width:180px;">
-            <strong>Municipality:</strong> ${municipality}
-            <br><br>
-            <strong>Commodity:</strong> ${commodity}
-            <br>
-            <strong>Status:</strong>
-            <span style="font-weight:700; color:${markerColor};">
-              ${status || 'NO DATA'}
-            </span>
+        <!-- CONFIRMATION MODAL -->
+        <div class="modal-overlay" id="reportModal">
+          <div class="modal-box">
+            <p id="reportModalText">Report Submitted to Provincial Level</p>
+            <button class="modal-confirm-btn" id="reportModalConfirmBtn" type="button">Confirm</button>
           </div>
-        `;
-
-
-        L.marker(markerCoordinates, { icon: customIcon })
-          .addTo(mapMarkersLayer)
-          .bindPopup(popupContent);
-      });
-    });
-  }
-
-
-  loadMunicipalityMapData();
-
-
-  // ============================================================
-  // MUNICIPAL REPORTS
-  // ============================================================
-  const MUNICIPAL_REPORTS_ENDPOINT = `${API_BASE_URL}/api/report-submissions/for-municipal-validation`;
-
-
-  const pendingReportsBody = document.getElementById("pendingReportsBody");
-  const pendingReportsView = document.getElementById("pendingReportsView");
-  const individualDetailView = document.getElementById("individualDetailView");
-  const reportSearchInput = document.getElementById("reportSearchInput");
-  const reportDetailBody = document.getElementById("reportDetailBody");
-  const reportNotesTextarea = document.getElementById("reportNotesTextarea");
-  const remarksTextarea = document.getElementById("remarksTextarea");
-  const backToPendingBtn = document.getElementById("backToPendingBtn");
-  const flagBtn = document.getElementById("flagBtn");
-  const approveBtn = document.getElementById("approveBtn");
-
-
-  let municipalReports = [];
-  let selectedReport = null;
-
-
-  async function loadMunicipalReports() {
-    if (!pendingReportsBody) return;
-
-
-    pendingReportsBody.innerHTML = `
-      <tr>
-        <td colspan="6">
-          Loading reports...
-        </td>
-      </tr>
-    `;
-
-
-    try {
-      const response = await fetch(MUNICIPAL_REPORTS_ENDPOINT, {
-        method: "GET",
-        headers: { "Accept": "application/json" }
-      });
-
-
-      if (!response.ok) {
-        throw new Error(`Failed to load reports. Status: ${response.status}`);
-      }
-
-
-      municipalReports = await response.json();
-      renderMunicipalReports(municipalReports);
-    } catch (error) {
-      console.error("Error loading municipal reports:", error);
-      pendingReportsBody.innerHTML = `
-        <tr>
-          <td colspan="6">
-            Failed to load reports.
-          </td>
-        </tr>
-      `;
-    }
-  }
-
-
-  function renderMunicipalReports(reports = municipalReports) {
-    if (!pendingReportsBody) return;
-
-
-    pendingReportsBody.innerHTML = "";
-
-
-    if (!reports || reports.length === 0) {
-      pendingReportsBody.innerHTML = `
-        <tr>
-          <td colspan="6">
-            No reports waiting for municipal validation.
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-
-    reports.forEach(report => {
-      const row = document.createElement("tr");
-      row.classList.add("clickable-row");
-      row.dataset.id = report.report_id;
-
-
-      row.innerHTML = `
-        <td><span class="pill">${report.report_id ?? "—"}</span></td>
-        <td><span class="pill">${report.title || "Crop Harvest Report"}</span></td>
-        <td><span class="pill">${report.commodity || "—"}</span></td>
-        <td><span class="pill">${formatDate(report.planting_date)}</span></td>
-        <td><span class="pill">${report.estimated_yield ?? "—"}</span></td>
-        <td><span class="status-pill pending">For Municipal Validation</span></td>
-      `;
-
-
-      row.addEventListener("click", () => openReportDetail(report));
-      pendingReportsBody.appendChild(row);
-    });
-  }
-
-
-  if (reportSearchInput) {
-    reportSearchInput.addEventListener("input", () => {
-      const searchTerm = reportSearchInput.value.trim().toLowerCase();
-
-
-      if (!searchTerm) {
-        renderMunicipalReports(municipalReports);
-        return;
-      }
-
-
-      const filteredReports = municipalReports.filter(report => {
-        const reportId = String(report.report_id ?? "").toLowerCase();
-        const title = String(report.title ?? "").toLowerCase();
-        const commodity = String(report.commodity ?? "").toLowerCase();
-        const plantingDate = String(report.planting_date ?? "").toLowerCase();
-        const yieldValue = String(report.estimated_yield ?? "").toLowerCase();
-
-
-        return (
-          reportId.includes(searchTerm) ||
-          title.includes(searchTerm) ||
-          commodity.includes(searchTerm) ||
-          plantingDate.includes(searchTerm) ||
-          yieldValue.includes(searchTerm)
-        );
-      });
-
-
-      renderMunicipalReports(filteredReports);
-    });
-  }
-
-
-  function formatDate(dateString) {
-    if (!dateString) return "—";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    });
-  }
-
-
-  function openReportDetail(report) {
-    selectedReport = report;
-
-
-    pendingReportsView.style.display = "none";
-    individualDetailView.style.display = "block";
-
-
-    flagBtn.classList.remove("active");
-    flagBtn.textContent = "Flag for Revision";
-
-
-    approveBtn.classList.remove("active");
-    approveBtn.textContent = "Approve";
-
-
-    reportDetailBody.innerHTML = `
-      <tr>
-        <td><span class="pill">${report.commodity || "—"}</span></td>
-        <td><span class="pill">${formatDate(report.planting_date)}</span></td>
-        <td><span class="pill">${formatDate(report.harvest_date)}</span></td>
-        <td><span class="pill">${report.estimated_yield ?? "—"}</span></td>
-        <td><span class="pill">${report.encoded_by_name || "—"}</span></td>
-        <td><span class="status-pill pending">For Municipal Validation</span></td>
-      </tr>
-    `;
-
-
-    reportNotesTextarea.value = report.notes || report.narrative || "";
-    remarksTextarea.value = report.revision_remarks || "";
-
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
-  }
-
-
-  backToPendingBtn.addEventListener("click", () => {
-    selectedReport = null;
-    individualDetailView.style.display = "none";
-    pendingReportsView.style.display = "block";
-
-
-    flagBtn.classList.remove("active");
-    flagBtn.textContent = "Flag for Revision";
-
-
-    approveBtn.classList.remove("active");
-    approveBtn.textContent = "Approve";
-  });
-
-
-  flagBtn.addEventListener("click", async () => {
-    if (!selectedReport) return;
-
-
-    flagBtn.disabled = true;
-    flagBtn.textContent = "Processing...";
-
-
-    try {
-      const validatorId = localStorage.getItem("user_id");
-      const accessToken = localStorage.getItem("access_token");
-      const tokenType = localStorage.getItem("token_type") || "bearer";
-      const userRole = localStorage.getItem("role");
-
-
-      if (!validatorId) throw new Error("No logged-in user found. Please log in again.");
-      if (!accessToken) throw new Error("No access token found. Please log in again.");
-
-
-      if (userRole !== "Municipal Coordinator" && userRole !== "Municipal") {
-        throw new Error("Only a Municipal Coordinator can request revision.");
-      }
-
-
-      const reportId = selectedReport.report_id;
-      const remarks = remarksTextarea.value.trim();
-
-
-      if (!remarks) throw new Error("Revision remarks are required.");
-
-
-      const revisionUrl = `${API_BASE_URL}/api/report-submissions/${reportId}/revision` +
-        `?validator_id=${encodeURIComponent(validatorId)}` +
-        `&validator_role=municipal_coordinator` +
-        `&remarks=${encodeURIComponent(remarks)}`;
-
-
-      const response = await fetch(revisionUrl, {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `${tokenType} ${accessToken}`
-        }
-      });
-
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Failed to request revision. Status: ${response.status}`);
-      }
-
-
-      selectedReport.status = "REVISION_REQUIRED";
-      selectedReport.revision_remarks = remarks;
-
-
-      flagBtn.classList.add("active");
-      flagBtn.textContent = "Flagged ✓";
-
-
-      const statusCell = document.querySelector("#reportDetailBody td:last-child .status-pill");
-      if (statusCell) {
-        statusCell.className = "status-pill pending";
-        statusCell.textContent = "Revision Required";
-      }
-
-
-      openModal("Report Flagged for Revision");
-      await loadMunicipalReports();
-    } catch (error) {
-      console.error("Error requesting revision:", error);
-      openModal(`Error: ${error.message}`);
-      flagBtn.classList.remove("active");
-      flagBtn.textContent = "Flag for Revision";
-    } finally {
-      flagBtn.disabled = false;
-    }
-  });
-
-
-  approveBtn.addEventListener("click", async () => {
-    if (!selectedReport) return;
-
-
-    approveBtn.disabled = true;
-    approveBtn.textContent = "Processing...";
-
-
-    try {
-      const validatorId = localStorage.getItem("user_id");
-      const accessToken = localStorage.getItem("access_token");
-      const tokenType = localStorage.getItem("token_type") || "bearer";
-
-
-      if (!validatorId) throw new Error("No logged-in user found. Please log in again.");
-      if (!accessToken) throw new Error("No access token found. Please log in again.");
-
-
-      const reportId = selectedReport.report_id;
-      const remarks = remarksTextarea.value.trim() || "Approved by Municipal Coordinator";
-
-
-      const approveUrl = `${API_BASE_URL}/api/report-submissions/${reportId}/approve` +
-        `?validator_id=${encodeURIComponent(validatorId)}` +
-        `&validator_role=municipal_coordinator` +
-        `&remarks=${encodeURIComponent(remarks)}`;
-
-
-      const response = await fetch(approveUrl, {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `${tokenType} ${accessToken}`
-        }
-      });
-
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Failed to approve report. Status: ${response.status}`);
-      }
-
-
-      selectedReport.status = "FOR_PROVINCIAL_VALIDATION";
-      selectedReport.revision_remarks = remarks;
-
-
-      approveBtn.classList.add("active");
-      approveBtn.textContent = "Approved ✓";
-
-
-      const statusCell = document.querySelector("#reportDetailBody td:last-child .status-pill");
-      if (statusCell) {
-        statusCell.className = "status-pill approved";
-        statusCell.textContent = "For Provincial Validation";
-      }
-
-
-      openModal("Report Approved Successfully");
-      await loadMunicipalReports();
-    } catch (error) {
-      console.error("Error approving report:", error);
-      openModal(`Error: ${error.message}`);
-      approveBtn.classList.remove("active");
-      approveBtn.textContent = "Approve";
-    } finally {
-      approveBtn.disabled = false;
-    }
-  });
-
-
-  const reportModal = document.getElementById("reportModal");
-  const reportModalText = document.getElementById("reportModalText");
-  const reportModalConfirmBtn = document.getElementById("reportModalConfirmBtn");
-
-
-  function openModal(message) {
-    reportModalText.textContent = message;
-    reportModal.classList.add("show");
-  }
-
-
-  reportModalConfirmBtn.addEventListener("click", () => {
-    reportModal.classList.remove("show");
-  });
-
-
-  loadMunicipalReports();
-</script>
-
-
-  <script src="../assets/js/logout.js"></script>
-</body>
-</html>
-
+        </div>
+
+        <!-- BULK CONFIRM MODAL -->
+        <div class="modal-overlay" id="bulkApproveModal">
+          <div class="modal-box">
+            <p id="bulkApproveText">Approve selected reports?</p>
+            <div style="display:flex; justify-content:center; gap:12px;">
+              <button class="btn-outline-report" id="bulkApproveCancelBtn" type="button">Cancel</button>
+              <button class="modal-confirm-btn" id="bulkApproveConfirmBtn" type="button">Confirm</button>
+            </div>
+          </div>
+        </div>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+        <script src="../assets/js/municipal.js"></script>
+        <script src="../assets/js/logout.js"></script>
+      </body>
+      </html>

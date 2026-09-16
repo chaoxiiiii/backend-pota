@@ -155,12 +155,6 @@ app.include_router(
 )
 
 app.include_router(
-    raw_plant_reports.router, 
-    prefix="/api/raw-plant-reports", 
-    tags=["Raw Plant Reports"]
-)
-
-app.include_router(
     alert_thresholds_router,
     prefix="/api/alert-thresholds",
     tags=["Alert Thresholds"]

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
+from pydantic import BaseModel
 import os
 import uuid
 from datetime import datetime
@@ -114,18 +115,22 @@ def get_planting_intents(
         farmer = db.query(Farmer).filter(Farmer.farmer_id == intent.farmer_id).first()
         if farmer:
             result.append({
-                "planting_intent_id": intent.planting_intent_id,
-                "farmer_id": intent.farmer_id,
-                "farmer_name": f"{farmer.first_name} {farmer.last_name}",
-                "commodity": intent.commodity,
-                "volume": intent.volume,
-                "location": f"{farmer.barangay}, {farmer.municipality}" if farmer else "Unknown",
-                "planting_date": intent.planting_date,
-                "harvest_date": intent.harvest_date,
-                "status": intent.status or "Draft",
-                "created_at": intent.created_at,
-                "remarks": intent.remarks,
-            })
+            "planting_intent_id": intent.planting_intent_id,
+            "farmer_id": intent.farmer_id,
+            "farmer_name": f"{farmer.first_name} {farmer.last_name}",
+            "commodity": intent.commodity,
+            "volume": intent.volume,
+            "location": f"{farmer.barangay}, {farmer.municipality}",
+            "barangay": farmer.barangay,         
+            "municipality": farmer.municipality, 
+            "planting_date": intent.planting_date,
+            "harvest_date": intent.harvest_date,
+            "status": intent.status or "Draft",
+            "finalized_status": intent.finalized_status or "NOT PLANTED",  
+            "is_in_report": intent.is_in_report or False,
+            "created_at": intent.created_at,
+            "remarks": intent.remarks,
+        })
     
     return {
         "data": result,
@@ -732,4 +737,54 @@ def pull_planting_intent(
         "message": "Planting intent pulled back to DRAFT",
         "planting_intent_id": db_planting.planting_intent_id,
         "status": db_planting.status
+    }
+
+
+# Endpoint for Finalized Intents
+
+class FinalizedStatusUpdate(BaseModel):
+    finalized_status: str
+
+
+@router.patch("/{planting_intent_id}/finalized-status")
+def update_finalized_status(
+    planting_intent_id: int,
+    payload: FinalizedStatusUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update finalized_status of a planting intent.
+    Allowed: NOT PLANTED, PLANTED, HARVESTED, MEDIATING
+    """
+    ALLOWED = {"NOT PLANTED", "PLANTED", "HARVESTED", "MEDIATING"}
+    new_status = payload.finalized_status.upper().strip()
+    
+    if new_status not in ALLOWED:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid status. Allowed: {', '.join(sorted(ALLOWED))}"
+        )
+    
+    db_planting = (
+        db.query(PlantingIntent)
+        .join(Farmer, PlantingIntent.farmer_id == Farmer.farmer_id)
+        .filter(
+            PlantingIntent.planting_intent_id == planting_intent_id,
+            Farmer.aew_id == current_user.user_id
+        )
+        .first()
+    )
+    
+    if not db_planting:
+        raise HTTPException(status_code=404, detail="Planting intent not found")
+    
+    db_planting.finalized_status = new_status
+    db.commit()
+    db.refresh(db_planting)
+    
+    return {
+        "message": "Finalized status updated successfully",
+        "planting_intent_id": db_planting.planting_intent_id,
+        "finalized_status": db_planting.finalized_status,
     }
