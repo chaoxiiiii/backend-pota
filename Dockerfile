@@ -2,6 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Prophet/cmdstanpy need a C toolchain and shared libs at runtime;
+# the slim image doesn't ship them.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
