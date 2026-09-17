@@ -1,0 +1,20 @@
+# VCS / local env
+.git
+.gitignore
+.env
+.venv
+.venv-1
+
+# Python caches
+**/__pycache__
+*.pyc
+
+# Frontend is deployed as its own service
+frontend/
+
+# Stray nested folder
+backend-pota/
+
+# Local test helpers
+test_*.py
+uvicorn.txt

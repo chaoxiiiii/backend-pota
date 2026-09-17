@@ -81,13 +81,23 @@ def seed_planting_intents():
         existing_count = db.query(PlantingIntent).count()
         if existing_count > 0:
             print(f"\n⚠️ Found {existing_count} existing planting intents.")
-            confirm = input("Delete existing planting intents? (yes/no): ")
-            if confirm.lower() == "yes":
+            if os.environ.get("SEED_RESET_INTENTS", "").lower() == "yes":
                 db.query(PlantingIntent).delete()
                 db.commit()
-                print("✅ Existing planting intents deleted.")
+                print("✅ Existing planting intents deleted (SEED_RESET_INTENTS=yes).")
+            elif sys.stdin.isatty():
+                confirm = input("Delete existing planting intents? (yes/no): ")
+                if confirm.lower() == "yes":
+                    db.query(PlantingIntent).delete()
+                    db.commit()
+                    print("✅ Existing planting intents deleted.")
+                else:
+                    print("❌ Cancelled. Please run again.")
+                    return
             else:
-                print("❌ Cancelled. Please run again.")
+                # Non-interactive (Docker/Railway) — never block on input()
+                print("⏭️ Non-interactive run, keeping existing data. "
+                      "Set SEED_RESET_INTENTS=yes to force a re-seed.")
                 return
         
         # Insert planting intents

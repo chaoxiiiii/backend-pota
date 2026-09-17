@@ -1,0 +1,5 @@
+# Keep deployment-only files out of the served web root
+Dockerfile
+.dockerignore
+nginx.conf
+start.sh

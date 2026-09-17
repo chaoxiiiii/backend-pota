@@ -6,10 +6,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
-COPY seed_*.py init_db.py start.sh ./
+COPY migrate_db.py init_db.py assign_aew.py start.sh ./
+COPY seed_*.py ./
 COPY uploads ./uploads
 
-RUN chmod +x start.sh
+# Normalize Windows line endings (CRLF breaks /bin/sh) and make executable
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 EXPOSE 8000
 
