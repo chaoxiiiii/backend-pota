@@ -8,7 +8,11 @@ class Settings(BaseSettings):
     db_name: str
     db_user: str
     db_password: str
-    database_url: str
+    # Optional: the engine is built from the components above (see
+    # database.py). DATABASE_URL is accepted so Railway's
+    # ${{Postgres.DATABASE_URL}} reference can be set without breaking
+    # validation, but it is not used for the connection.
+    database_url: str = ""
 
     # Authentication
     secret_key: str
