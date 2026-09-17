@@ -22,6 +22,7 @@ let pendingReports = [];
 let sentReports = [];
 let selectedReportIds = new Set();
 let selectedReport = null;
+let currentSentToProvincialFilter = "all";
 
 
 /* ============================================================
@@ -1032,6 +1033,39 @@ async function loadSentToProvincial() {
     }
 }
 
+/* ============================================================
+   SENT TO PROVINCIAL — FILTER PILLS
+============================================================ */
+
+function initSentToProvincialFilter() {
+    const pills = document.querySelectorAll("#sentToProvincialFilterPills .filter-pill");
+    console.log("🔍 Found pills:", pills.length);   // ⬅️ DEBUG
+
+    if (!pills.length) {
+        console.warn("Sent to Provincial filter pills not found.");
+        return;
+    }
+
+    pills.forEach((pill, index) => {
+        console.log("🔍 Attaching listener to pill:", index, pill.dataset.filter);   // ⬅️ DEBUG
+
+        pill.addEventListener("click", () => {
+            console.log("🔍 Pill clicked:", pill.dataset.filter);   // ⬅️ DEBUG
+
+            pills.forEach(p => p.classList.remove("active"));
+            pill.classList.add("active");
+
+            currentSentToProvincialFilter = pill.dataset.filter || "all";
+            console.log("🔍 Filter set to:", currentSentToProvincialFilter);   // ⬅️ DEBUG
+
+            renderSentReports();
+            console.log("🔍 renderSentReports called");   // ⬅️ DEBUG
+        });
+    });
+
+    console.log("✅ Sent to Provincial filter pills initialized");
+}
+
 
 /* ============================================================
    RENDER SENT TO PROVINCIAL
@@ -1041,23 +1075,59 @@ function renderSentReports() {
     const tbody = document.getElementById("sentToProvincialBody");
     if (!tbody) return;
 
-    const badge = document.getElementById("sentCountBadge");
-    if (badge) badge.textContent = sentReports.length;
+    // ✅ DYNAMIC COLUMN HEADER
+    const dateHeader = document.getElementById("sentDateColumnHeader");
+    if (dateHeader) {
+        if (currentSentToProvincialFilter === "approved") {
+            dateHeader.textContent = "Approved At";
+        } else {
+            dateHeader.textContent = "Submitted";
+        }
+    }
 
+    // ✅ FILTER
+    let filteredReports = sentReports;
+    
+    if (currentSentToProvincialFilter === "pending") {
+        filteredReports = sentReports.filter(function(report) {
+            const status = String(report.status || "").toUpperCase();
+            return status === "SUBMITTED_PROVINCIAL_PENDING" ||
+                   status === "SUBMITTED_PROVINCIAL_FLAGGED" ||
+                   status === "SUBMITTED_REGIONAL_PENDING" ||
+                   status === "SUBMITTED_REGIONAL_FLAGGED";
+        });
+    } else if (currentSentToProvincialFilter === "approved") {
+        filteredReports = sentReports.filter(function(report) {
+            const status = String(report.status || "").toUpperCase();
+            return status === "SUBMITTED_REGIONAL_APPROVED" ||
+                   status === "FINAL_APPROVED";
+        });
+    }
+
+    // ✅ BADGE
+    const badge = document.getElementById("sentCountBadge");
+    if (badge) badge.textContent = filteredReports.length;
+
+    // ✅ CLEAR + EMPTY STATE
     tbody.innerHTML = "";
 
-    if (sentReports.length === 0) {
+    if (filteredReports.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="6" style="padding:30px; text-align:center; color:#999;">
-                    No reports sent to Provincial yet.
+                    ${currentSentToProvincialFilter === "all"
+                        ? "No reports sent to Provincial yet."
+                        : currentSentToProvincialFilter === "approved"
+                            ? "No approved reports yet."
+                            : "No pending reports."}
                 </td>
             </tr>
         `;
         return;
     }
 
-    sentReports.forEach(report => {
+    // ✅ RENDER — dynamic date value
+    filteredReports.forEach(report => {
         const sl = statusLabelAndClass(report.status);
         const isFlagged = sl.cls === "flagged";
 
@@ -1069,6 +1139,14 @@ function renderSentReports() {
             tr.style.background = "#FFF5F5";
         }
 
+        // ✅ DYNAMIC DATE VALUE — Approved At kapag "approved" filter
+        let dateValue = "—";
+        if (currentSentToProvincialFilter === "approved") {
+            dateValue = formatDate(report.approved_at || report.updated_at || report.submitted_at);
+        } else {
+            dateValue = formatDate(report.submitted_at);
+        }
+
         tr.innerHTML = `
             <td class="center-col" style="font-weight: 600;">
                 #${escapeHtml(report.report_id)}
@@ -1076,7 +1154,7 @@ function renderSentReports() {
             <td>${escapeHtml(report.title || "—")}</td>
             <td>${escapeHtml(report.commodity || "—")}</td>
             <td>${escapeHtml(report.municipality || "—")}</td>
-            <td class="center-col">${formatDate(report.submitted_at)}</td>
+            <td class="center-col">${dateValue}</td>
             <td class="center-col">
                 <span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>
             </td>
@@ -2433,25 +2511,16 @@ document.addEventListener(
 
 
         initSidebar();
-
         initViewNavigation();
-
         initMap();
-
         loadMunicipalityMapData();
-
         setupUserProfile();
-
         initSearch();
-
         initBulkActions();
-
         initFlagButton();
-
         initApproveButton();
-
-
-
+        initSentToProvincialFilter();
+        
         // edit report button
 
         const editReportBtn = document.getElementById("editReportBtn");

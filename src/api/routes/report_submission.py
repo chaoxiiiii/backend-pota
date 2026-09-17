@@ -114,6 +114,10 @@ def submit_report(
 # APPROVE REPORT
 # ============================================================
 
+# ============================================================
+# APPROVE REPORT
+# ============================================================
+
 @router.post("/{report_id}/approve")
 def approve_report(
     report_id: int,
@@ -136,37 +140,95 @@ def approve_report(
         raise HTTPException(status_code=404, detail="Report submission not found.")
 
     if current_user.user_id != validator_id:
-        raise HTTPException(status_code=403, detail="You are not authorized to approve this report.")
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to approve this report."
+        )
 
+    # ============================================================
+    # MUNICIPAL COORDINATOR
+    # Accepts both PENDING (new) and PROVINCIAL_FLAGGED (resubmit case)
+    # ============================================================
     if validator_role == "municipal_coordinator":
-        if submission.status != SUBMITTED_MUNICIPAL_PENDING:
-            raise HTTPException(...)
+
+        allowed_statuses = [
+            SUBMITTED_MUNICIPAL_PENDING,
+            SUBMITTED_PROVINCIAL_FLAGGED,   # ← resubmit to provincial
+        ]
+
+        if submission.status not in allowed_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Report is not awaiting municipal validation. "
+                    f"Current status: {submission.status}. "
+                    f"Expected one of: {allowed_statuses}"
+                )
+            )
+
         submission.status = SUBMITTED_PROVINCIAL_PENDING
         submission.current_validator_id = None
         submission.current_validator_role = "provincial_coordinator"
-        submission.submitted_at = datetime.utcnow()   
+        submission.revision_remarks = None       # ← clear revision remarks
+        submission.flagged_at = None             # ← clear flagged timestamp
+        submission.submitted_at = datetime.utcnow()
 
+    # ============================================================
+    # PROVINCIAL COORDINATOR
+    # Accepts both PENDING (new) and REGIONAL_FLAGGED (resubmit case)
+    # ============================================================
     elif validator_role == "provincial_coordinator":
-        if submission.status != SUBMITTED_PROVINCIAL_PENDING:
-            raise HTTPException(...)
+        allowed_statuses = [
+            SUBMITTED_PROVINCIAL_PENDING,
+            SUBMITTED_REGIONAL_FLAGGED,   # ← DA-RFO sent back for revision
+        ]
+        if submission.status not in allowed_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Report is not awaiting provincial validation. "
+                    f"Current: {submission.status}. "
+                    f"Expected: {allowed_statuses}"
+                )
+            )
         submission.status = SUBMITTED_REGIONAL_PENDING
         submission.current_validator_id = None
         submission.current_validator_role = "darfo"
-        submission.submitted_at = datetime.utcnow()     
+        submission.revision_remarks = None    # ← clear DA-RFO flag remarks
+        submission.flagged_at = None          # ← clear flag timestamp
+        submission.submitted_at = datetime.utcnow()
 
+
+    # ============================================================
+    # DA-RFO OFFICER — Final approval
+    # ============================================================
     elif validator_role == "darfo":
+
         if submission.status != SUBMITTED_REGIONAL_PENDING:
-            raise HTTPException(...)
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Report is not awaiting DA-RFO validation. "
+                    f"Current status: {submission.status}. "
+                    f"Expected: {SUBMITTED_REGIONAL_PENDING}"
+                )
+            )
+
         submission.status = SUBMITTED_REGIONAL_APPROVED
         submission.current_validator_id = None
         submission.current_validator_role = None
         submission.approved_at = datetime.utcnow()
-        submission.submitted_at = datetime.utcnow()   
-
+        submission.submitted_at = datetime.utcnow()
 
     else:
-        raise HTTPException(status_code=400, detail="Invalid validator role.")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid validator role: '{validator_role}'"
+        )
 
+    # ============================================================
+    # RECORD HISTORY
+    # ============================================================
     history = ReportValidationHistory(
         submission_id=submission.submission_id,
         action="APPROVED",
@@ -184,7 +246,6 @@ def approve_report(
         "report_id": report_id,
         "status": submission.status,
     }
-
 
 # ============================================================
 # REQUEST REVISION
@@ -250,6 +311,7 @@ def request_revision(
     submission.current_validator_role = "aew"
     submission.revision_remarks = remarks.strip()
     submission.revision_count = (submission.revision_count or 0) + 1
+    submission.flagged_at = datetime.utcnow()
 
     # ✅ Sync yung RawPlantReport.status
     report = db.query(RawPlantReport).filter(
@@ -410,7 +472,7 @@ def get_all_submitted_reports(
         {
             "submission_id": submission.submission_id,
             "report_id": submission.report_id,
-            "title": f"{report.commodity or 'Crop'} Harvest Report",
+            "title": report.title,
             "commodity": report.commodity,
             "municipality": report.municipality,
             "planting_date": report.planting_date,
@@ -566,8 +628,9 @@ def get_reports_for_provincial_validation(
         {
             "submission_id": submission.submission_id,
             "report_id": submission.report_id,
-            "title": f"{report.commodity or 'Crop'} Harvest Report",
+            "title": report.title,
             "commodity": report.commodity,
+            "municipality": report.municipality,
             "planting_date": report.planting_date,
             "harvest_date": planting_intent.harvest_date,
             "estimated_yield": report.estimated_yield,
@@ -610,8 +673,9 @@ def get_reports_for_da_rfo_validation(
         {
             "submission_id": submission.submission_id,
             "report_id": submission.report_id,
-            "title": f"{report.commodity or 'Crop'} Harvest Report",
+            "title": report.title,
             "commodity": report.commodity,
+            "municipality": report.municipality,
             "planting_date": report.planting_date,
             "harvest_date": planting_intent.harvest_date,
             "estimated_yield": report.estimated_yield,
@@ -635,9 +699,12 @@ def bulk_approve_reports(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if current_user.role != "Municipal Coordinator":
-        raise HTTPException(status_code=403, detail="Only Municipal Coordinators can bulk approve.")
-
+    """
+    Bulk approve reports.
+    - Municipal Coordinator → SUBMITTED_MUNICIPAL_PENDING → SUBMITTED_PROVINCIAL_PENDING
+    - Provincial Coordinator → SUBMITTED_PROVINCIAL_PENDING → SUBMITTED_REGIONAL_PENDING
+    - DA-RFO Officer       → SUBMITTED_REGIONAL_PENDING → SUBMITTED_REGIONAL_APPROVED (FINAL)
+    """
     report_ids = payload.get("report_ids", [])
     if not report_ids:
         raise HTTPException(status_code=400, detail="No report IDs provided.")
@@ -645,66 +712,176 @@ def bulk_approve_reports(
     approved = []
     failed = []
 
-    for report_id in report_ids:
-        submission = (
-            db.query(ReportSubmission)
-            .filter(ReportSubmission.report_id == report_id)
-            .first()
+    # ============================================================
+    # MUNICIPAL COORDINATOR
+    # ============================================================
+    if current_user.role == "Municipal Coordinator":
+        for report_id in report_ids:
+            submission = (
+                db.query(ReportSubmission)
+                .filter(ReportSubmission.report_id == report_id)
+                .first()
+            )
+
+            if not submission:
+                failed.append({"report_id": report_id, "reason": "Submission not found."})
+                continue
+
+            if submission.status != SUBMITTED_MUNICIPAL_PENDING:
+                failed.append({
+                    "report_id": report_id,
+                    "reason": f"Status is '{submission.status}', expected 'SUBMITTED_MUNICIPAL_PENDING'."
+                })
+                continue
+
+            report = (
+                db.query(RawPlantReport)
+                .filter(RawPlantReport.report_id == report_id)
+                .first()
+            )
+
+            if not report:
+                failed.append({"report_id": report_id, "reason": "Report not found."})
+                continue
+
+            if report.municipality != current_user.municipality:
+                failed.append({
+                    "report_id": report_id,
+                    "reason": f"Report belongs to '{report.municipality}', not your municipality."
+                })
+                continue
+
+            submission.status = SUBMITTED_PROVINCIAL_PENDING
+            submission.current_validator_id = None
+            submission.current_validator_role = "provincial_coordinator"
+
+            history = ReportValidationHistory(
+                submission_id=submission.submission_id,
+                action="APPROVED",
+                performed_by=current_user.user_id,
+                role="municipal_coordinator",
+                remarks="Bulk approved and forwarded to Provincial.",
+            )
+            db.add(history)
+            approved.append(report_id)
+
+        db.commit()
+
+        return {
+            "message": f"{len(approved)} report(s) approved and forwarded to Provincial.",
+            "approved": approved,
+            "failed": failed,
+            "approved_count": len(approved),
+            "failed_count": len(failed),
+        }
+
+    # ============================================================
+    # PROVINCIAL COORDINATOR
+    # ============================================================
+    elif current_user.role in ("Provincial Coordinator", "Provincial"):
+        for report_id in report_ids:
+            submission = (
+                db.query(ReportSubmission)
+                .filter(ReportSubmission.report_id == report_id)
+                .first()
+            )
+
+            if not submission:
+                failed.append({"report_id": report_id, "reason": "Submission not found."})
+                continue
+
+            if submission.status != SUBMITTED_PROVINCIAL_PENDING:
+                failed.append({
+                    "report_id": report_id,
+                    "reason": f"Status is '{submission.status}', expected 'SUBMITTED_PROVINCIAL_PENDING'."
+                })
+                continue
+
+            submission.status = SUBMITTED_REGIONAL_PENDING
+            submission.current_validator_id = None
+            submission.current_validator_role = "darfo"
+            submission.submitted_at = datetime.utcnow()
+
+            history = ReportValidationHistory(
+                submission_id=submission.submission_id,
+                action="APPROVED",
+                performed_by=current_user.user_id,
+                role="provincial_coordinator",
+                remarks="Bulk approved and forwarded to Regional.",
+            )
+            db.add(history)
+            approved.append(report_id)
+
+        db.commit()
+
+        return {
+            "message": f"{len(approved)} report(s) approved and forwarded to Regional.",
+            "approved": approved,
+            "failed": failed,
+            "approved_count": len(approved),
+            "failed_count": len(failed),
+        }
+
+    # ============================================================
+    # ✅ NEW: DA-RFO OFFICER — FINAL APPROVAL
+    # ============================================================
+    elif current_user.role in ("DA-RFO Officer", "Regional Coordinator", "DA-RFO"):
+        for report_id in report_ids:
+            submission = (
+                db.query(ReportSubmission)
+                .filter(ReportSubmission.report_id == report_id)
+                .first()
+            )
+
+            if not submission:
+                failed.append({"report_id": report_id, "reason": "Submission not found."})
+                continue
+
+            if submission.status != SUBMITTED_REGIONAL_PENDING:
+                failed.append({
+                    "report_id": report_id,
+                    "reason": f"Status is '{submission.status}', expected 'SUBMITTED_REGIONAL_PENDING'."
+                })
+                continue
+
+            # ✅ Final approval — no higher up
+            submission.status = SUBMITTED_REGIONAL_APPROVED
+            submission.current_validator_id = None
+            submission.current_validator_role = None
+            submission.approved_at = datetime.utcnow()
+            submission.submitted_at = datetime.utcnow()
+
+            history = ReportValidationHistory(
+                submission_id=submission.submission_id,
+                action="APPROVED",
+                performed_by=current_user.user_id,
+                role="darfo",
+                remarks="Bulk approved by DA-RFO (final).",
+            )
+            db.add(history)
+            approved.append(report_id)
+
+        db.commit()
+
+        return {
+            "message": f"{len(approved)} report(s) approved (final).",
+            "approved": approved,
+            "failed": failed,
+            "approved_count": len(approved),
+            "failed_count": len(failed),
+        }
+
+    # ============================================================
+    # UNAUTHORIZED
+    # ============================================================
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Bulk approve is not allowed for role '{current_user.role}'."
         )
 
-        if not submission:
-            failed.append({"report_id": report_id, "reason": "Submission not found."})
-            continue
 
-        if submission.status != SUBMITTED_MUNICIPAL_PENDING:
-            failed.append({
-                "report_id": report_id,
-                "reason": f"Status is '{submission.status}', expected 'SUBMITTED_MUNICIPAL_PENDING'."
-            })
-            continue
-
-        report = (
-            db.query(RawPlantReport)
-            .filter(RawPlantReport.report_id == report_id)
-            .first()
-        )
-
-        if not report:
-            failed.append({"report_id": report_id, "reason": "Report not found."})
-            continue
-
-        if report.municipality != current_user.municipality:
-            failed.append({
-                "report_id": report_id,
-                "reason": f"Report belongs to '{report.municipality}', not your municipality."
-            })
-            continue
-
-        submission.status = SUBMITTED_PROVINCIAL_PENDING
-        submission.current_validator_id = None
-        submission.current_validator_role = "provincial_coordinator"
-
-        history = ReportValidationHistory(
-            submission_id=submission.submission_id,
-            action="APPROVED",
-            performed_by=current_user.user_id,
-            role="municipal_coordinator",
-            remarks="Bulk approved and forwarded to Provincial.",
-        )
-        db.add(history)
-        approved.append(report_id)
-
-    db.commit()
-
-    return {
-        "message": f"{len(approved)} report(s) approved and forwarded to Provincial.",
-        "approved": approved,
-        "failed": failed,
-        "approved_count": len(approved),
-        "failed_count": len(failed),
-    }
-
-
+    
 
 # ============================================================
 # GET REPORTS SENT TO PROVINCIAL (by this Municipal)
@@ -749,6 +926,8 @@ def get_sent_to_provincial(
             "encoded_by_name": f"{u.first_name} {u.last_name}" if u else None,
             "status": s.status,
             "submitted_at": s.submitted_at,
+            "approved_at": s.approved_at,     
+            "flagged_at": s.flagged_at,      
             "revision_remarks": s.revision_remarks,
             "revision_count": s.revision_count,
         }
@@ -812,11 +991,257 @@ def get_awaiting_aew_revision(
             "encoded_by_name": f"{u.first_name} {u.last_name}" if u else None,
             "status": s.status,
             "submitted_at": s.submitted_at,
+            "approved_at": s.approved_at,   
+            "flagged_at": s.flagged_at,       
             "revision_remarks": s.revision_remarks,
             "revision_count": s.revision_count,
         }
         for s, r, u in reports
     ]
+
+
+# ============================================================
+# GET RETURNED TO MUNICIPAL (Provincial-flagged)
+# ============================================================
+
+@router.get("/returned-to-municipal")
+def get_returned_to_municipal(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Reports na ni-flag ng Provincial pabalik sa Municipal.
+    View-only — para sa tracking ng Provincial.
+    """
+    if current_user.role not in ("Provincial Coordinator", "Provincial"):
+        raise HTTPException(status_code=403, detail="Unauthorized.")
+
+    reports = (
+        db.query(ReportSubmission, RawPlantReport, User)
+        .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
+        .outerjoin(User, User.user_id == RawPlantReport.encoded_by)
+        .filter(
+            ReportSubmission.status == SUBMITTED_PROVINCIAL_FLAGGED,
+        )
+        .order_by(ReportSubmission.submitted_at.desc())
+        .all()
+    )
+
+    return [
+        {
+            "submission_id": s.submission_id,
+            "report_id": s.report_id,
+            "title": r.title or f"{r.commodity or 'Crop'} Harvest Report",
+            "commodity": r.commodity,
+            "municipality": r.municipality,
+            "planting_date": r.planting_date,
+            "estimated_yield": r.estimated_yield,
+            "encoded_by": r.encoded_by,
+            "encoded_by_name": f"{u.first_name} {u.last_name}" if u else None,
+            "status": s.status,
+            "submitted_at": s.submitted_at,
+            "approved_at": s.approved_at,
+            "flagged_at": s.flagged_at,
+            "revision_remarks": s.revision_remarks,
+            "revision_count": s.revision_count,
+        }
+        for s, r, u in reports
+    ]
+
+
+# ============================================================
+# GET REPORTS SENT TO REGIONAL (by this Provincial)
+# ============================================================
+
+@router.get("/sent-to-regional")
+def get_sent_to_regional(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role not in ("Provincial Coordinator", "Provincial"):
+        raise HTTPException(status_code=403, detail="Unauthorized.")
+
+    PAMPANGA_MUNICIPALITIES = [
+        "Angeles", "Apalit", "Arayat", "Bacolor", "Candaba",
+        "Floridablanca", "Guagua", "Lubao", "Mabalacat", "Macabebe",
+        "Magalang", "Masantol", "Mexico", "Minalin", "Porac",
+        "San Fernando", "San Luis", "San Simon", "Santa Ana",
+        "Santa Rita", "Santo Tomas",
+    ]
+
+    reports = (
+        db.query(ReportSubmission, RawPlantReport, User)
+        .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
+        .outerjoin(User, User.user_id == RawPlantReport.encoded_by)
+        .filter(
+            ReportSubmission.status.in_([
+                SUBMITTED_REGIONAL_PENDING,
+                SUBMITTED_REGIONAL_FLAGGED,
+                SUBMITTED_REGIONAL_APPROVED,
+            ]),
+            RawPlantReport.municipality.in_(PAMPANGA_MUNICIPALITIES),
+        )
+        .order_by(ReportSubmission.submitted_at.desc())
+        .all()
+    )
+
+    return [
+        {
+            "submission_id": s.submission_id,
+            "report_id": s.report_id,
+            "title": r.title or f"{r.commodity or 'Crop'} Harvest Report",
+            "commodity": r.commodity,
+            "municipality": r.municipality,
+            "planting_date": r.planting_date,
+            "estimated_yield": r.estimated_yield,
+            "encoded_by": r.encoded_by,
+            "encoded_by_name": f"{u.first_name} {u.last_name}" if u else None,
+            "status": s.status,
+            "submitted_at": s.submitted_at,
+            "approved_at": s.approved_at,
+            "flagged_at": s.flagged_at,
+            "revision_remarks": s.revision_remarks,
+            "revision_count": s.revision_count,
+        }
+        for s, r, u in reports
+    ]
+
+
+# ============================================================
+# GET REPORTS RETURNED TO PROVINCIAL (DA-RFO flagged)
+# ============================================================
+
+@router.get("/returned-to-provincial")
+def get_returned_to_provincial(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Reports na ni-flag ng DA-RFO pabalik sa Provincial.
+    View-only for DA-RFO tracking.
+    """
+    if current_user.role not in ("DA-RFO Officer", "Regional Coordinator", "DA-RFO"):
+        raise HTTPException(status_code=403, detail="Unauthorized.")
+
+    reports = (
+        db.query(ReportSubmission, RawPlantReport, User)
+        .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
+        .outerjoin(User, User.user_id == RawPlantReport.encoded_by)
+        .filter(ReportSubmission.status == SUBMITTED_REGIONAL_FLAGGED)
+        .order_by(ReportSubmission.flagged_at.desc())
+        .all()
+    )
+
+    return [
+        {
+            "submission_id": s.submission_id,
+            "report_id": s.report_id,
+            "title": r.title or f"{r.commodity or 'Crop'} Harvest Report",
+            "commodity": r.commodity,
+            "municipality": r.municipality,
+            "planting_date": r.planting_date,
+            "estimated_yield": r.estimated_yield,
+            "encoded_by": r.encoded_by,
+            "encoded_by_name": f"{u.first_name} {u.last_name}" if u else None,
+            "status": s.status,
+            "submitted_at": s.submitted_at,
+            "approved_at": s.approved_at,
+            "flagged_at": s.flagged_at,
+            "revision_remarks": s.revision_remarks,
+            "revision_count": s.revision_count,
+        }
+        for s, r, u in reports
+    ]
+
+
+# ============================================================
+# GET REPORTS APPROVED BY REGIONAL (DA-RFO approved — final)
+# ============================================================
+
+@router.get("/approved-by-regional")
+def get_approved_by_regional(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Reports na na-approve na ng DA-RFO (final status).
+    """
+    if current_user.role not in ("DA-RFO Officer", "Regional Coordinator", "DA-RFO"):
+        raise HTTPException(status_code=403, detail="Unauthorized.")
+
+    reports = (
+        db.query(ReportSubmission, RawPlantReport, User)
+        .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
+        .outerjoin(User, User.user_id == RawPlantReport.encoded_by)
+        .filter(ReportSubmission.status == SUBMITTED_REGIONAL_APPROVED)
+        .order_by(ReportSubmission.approved_at.desc())
+        .all()
+    )
+
+    return [
+        {
+            "submission_id": s.submission_id,
+            "report_id": s.report_id,
+            "title": r.title or f"{r.commodity or 'Crop'} Harvest Report",
+            "commodity": r.commodity,
+            "municipality": r.municipality,
+            "planting_date": r.planting_date,
+            "estimated_yield": r.estimated_yield,
+            "encoded_by": r.encoded_by,
+            "encoded_by_name": f"{u.first_name} {u.last_name}" if u else None,
+            "status": s.status,
+            "submitted_at": s.submitted_at,
+            "approved_at": s.approved_at,
+            "flagged_at": s.flagged_at,
+            "revision_remarks": s.revision_remarks,
+            "revision_count": s.revision_count,
+        }
+        for s, r, u in reports
+    ]
+
+
+# ============================================================
+# GET REPORTS RETURNED TO PROVINCIAL (from DA-RFO)
+# ============================================================
+
+@router.get("/returned-from-regional")
+def get_returned_from_regional(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role not in ("Provincial Coordinator", "Provincial"):
+        raise HTTPException(status_code=403, detail="Unauthorized.")
+
+    reports = (
+        db.query(ReportSubmission, RawPlantReport, User)
+        .join(RawPlantReport, RawPlantReport.report_id == ReportSubmission.report_id)
+        .outerjoin(User, User.user_id == RawPlantReport.encoded_by)
+        .filter(ReportSubmission.status == SUBMITTED_REGIONAL_FLAGGED)
+        .order_by(ReportSubmission.flagged_at.desc())
+        .all()
+    )
+
+    return [
+        {
+            "submission_id": s.submission_id,
+            "report_id": s.report_id,
+            "title": r.title or f"{r.commodity or 'Crop'} Harvest Report",
+            "commodity": r.commodity,
+            "municipality": r.municipality,
+            "planting_date": r.planting_date,
+            "estimated_yield": r.estimated_yield,
+            "encoded_by": r.encoded_by,
+            "encoded_by_name": f"{u.first_name} {u.last_name}" if u else None,
+            "status": s.status,
+            "submitted_at": s.submitted_at,
+            "flagged_at": s.flagged_at,
+            "revision_remarks": s.revision_remarks,
+            "revision_count": s.revision_count,
+        }
+        for s, r, u in reports
+    ]
+
+
 
 # ============================================================
 # GET REPORT SUBMISSION

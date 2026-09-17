@@ -624,6 +624,49 @@
   .count-badge.muted {
     background: var(--muted);
   }
+
+  /* ============================================================
+     FILTER PILLS
+  ============================================================ */
+  .filter-pill {
+    appearance: none;
+    padding: 6px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    background: #FFFFFF;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.02em;
+  }
+
+  .filter-pill:hover {
+    background: var(--cream);
+    border-color: var(--green);
+    color: var(--ink);
+  }
+
+  .filter-pill.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: #FFFFFF;
+  }
+
+  /* Pending = orange */
+  .filter-pill[data-filter="pending"].active {
+    background: #D97706;
+    border-color: #D97706;
+  }
+
+  /* Approved = green */
+  .filter-pill[data-filter="approved"].active {
+    background: #2E7D32;
+    border-color: #2E7D32;
+  }
+
 </style>
 </head>
 <body>
@@ -781,22 +824,31 @@
         <!-- SENT TO PROVINCIAL -->
         <div id="sentToProvincialView">
           <div class="card">
-            <div class="text-section-title">
-              Sent to Provincial
-              <span class="count-badge muted" id="sentCountBadge">0</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+              <div class="text-section-title" style="margin-bottom:0;">
+                Sent to Provincial
+                <span class="count-badge muted" id="sentCountBadge">0</span>
+              </div>
+
+              <!-- ✅ FILTER PILLS — 3 lang -->
+              <div id="sentToProvincialFilterPills" style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="filter-pill active" data-filter="all" type="button">All</button>
+                <button class="filter-pill" data-filter="pending" type="button">Pending</button>
+                <button class="filter-pill" data-filter="approved" type="button">Approved</button>
+              </div>
             </div>
 
             <div style="overflow-x:auto;">
               <table>
                 <thead>
-                  <tr>
-                    <th class="center-col">Report ID</th>
-                    <th>Title</th>
-                    <th>Commodity</th>
-                    <th>Municipality</th>
-                    <th class="center-col">Submitted</th>
-                    <th class="center-col">Status</th>
-                  </tr>
+                    <tr>
+                        <th class="center-col">Report ID</th>
+                        <th>Title</th>
+                        <th>Commodity</th>
+                        <th>Municipality</th>
+                        <th class="center-col" id="sentDateColumnHeader">Submitted</th>  
+                        <th class="center-col">Status</th>
+                    </tr>
                 </thead>
                 <tbody id="sentToProvincialBody">
                   <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>

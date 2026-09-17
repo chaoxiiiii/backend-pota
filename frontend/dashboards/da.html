@@ -4,20 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DA-RFO Officer — eSaka</title>
- 
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-
-
-
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
   <link rel="stylesheet" href="../assets/css/base.css">
-
-
-
 
   <style>
     :root{
@@ -26,8 +20,10 @@
       --ink:#2E2A22;
       --muted:#6b6656;
       --border:#DFD8C6;
+      --border-light:#ECE5D4;
       --green:#5B6B4F;
       --green-dark:#495a3f;
+      --green-light:#E7EDDF;
       --brown:#C08A4E;
       --gold:#C9A15A;
       --status-confirmed:#3d8b40;
@@ -39,9 +35,6 @@
       --radius-md:8px;
     }
 
-
-
-
     *{ margin:0; padding:0; box-sizing:border-box; }
     html,body{
       width:100%;
@@ -52,9 +45,6 @@
     }
     a{ color:inherit; }
     button, input, select, textarea{ font-family:'Inter', sans-serif; }
-
-
-
 
     .topbar{
       display:flex;
@@ -130,11 +120,11 @@
       display:flex;
       align-items:center;
       justify-content:center;
+      color:#fff;
+      font-weight:700;
+      font-size:13px;
     }
     .avatar svg{ width:20px; height:20px; fill:#fff; }
-
-
-
 
     .layout{ display:flex; min-height:calc(100vh - 73px); }
     .sidebar{
@@ -190,9 +180,6 @@
     .signout svg{ width:18px; height:18px; fill:#fff; }
     .signout:hover{ opacity:0.8; }
 
-
-
-
     .main{ flex:1; padding:36px 40px; min-width:0; }
     .view{ display:none; }
     .view.active-view{ display:block; }
@@ -219,9 +206,6 @@
       padding:24px 28px;
     }
 
-
-
-
     .section-heading{
       font-family:'Oswald', sans-serif;
       font-size:32px;
@@ -230,9 +214,6 @@
       margin:28px 0 16px;
     }
     .section-heading.first{ margin-top:0; }
-
-
-
 
     .search-row{ display:flex; gap:10px; align-items:center; }
     .search-box{
@@ -259,9 +240,6 @@
       cursor:pointer;
     }
     .filter-btn svg{ width:18px; height:18px; fill:var(--ink); }
-
-
-
 
     table{ width:100%; border-collapse:separate; border-spacing:0; margin-bottom:20px; }
     thead tr{ background:#DEDDDC; }
@@ -296,9 +274,6 @@
     }
     .clickable-row{ cursor:pointer; }
     .clickable-row:hover td{ background:#F6F3EB; }
-
-
-
 
     .review-details-card{
       background:#fff;
@@ -357,13 +332,7 @@
       margin-top:24px;
     }
 
-
-
-
     #map{ width:100%; height:360px; border-radius:8px; border:1px solid var(--border); }
-
-
-
 
     .threshold-card{
       background:#fff;
@@ -414,15 +383,9 @@
     }
     .btn-save-config:hover{ background:#43574A; }
 
-
-
-
-    /* --- FIXED ALERT LOGS CSS STYLES --- */
+    /* --- ALERT LOGS --- */
     .alert-container-card { padding: 24px; }
     .alert-list { display: flex; flex-direction: column; gap: 16px; }
-
-
-
 
     .alert-card {
       background: #F6F3EB;
@@ -432,34 +395,19 @@
       cursor: pointer;
       transition: 0.2s ease;
     }
-
-
-
-
     .alert-card:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(0,0,0,0.08);
       border-color: var(--green);
     }
-
-
-
-
     .alert-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 8px;
     }
-
-
-
-
     .alert-title-group { display: flex; align-items: center; gap: 12px; }
     .alert-title { font-size: 15px; font-weight: 700; color: var(--ink); }
-
-
-
 
     .sev-pill {
       display: inline-block;
@@ -470,16 +418,9 @@
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
-
-
-
-
     .sev-pill.high { background: #C0392B; color: #FFFFFF; }
     .sev-pill.medium { background: #D97706; color: #FFFFFF; }
     .sev-pill.low { background: var(--status-confirmed); color: #FFFFFF; }
-
-
-
 
     .status-pill-btn {
       border: none;
@@ -489,14 +430,7 @@
       border-radius: 999px;
       cursor: pointer;
     }
-
-
-
-
     .status-pill-btn.acknowledged { background: #E7EDDF; color: var(--green-dark); }
-
-
-
 
     .alert-desc {
       font-size: 13.5px;
@@ -504,10 +438,6 @@
       line-height: 1.5;
       margin: 0 0 12px;
     }
-
-
-
-
     .alert-stats {
       display: flex;
       align-items: center;
@@ -515,25 +445,13 @@
       font-size: 13px;
       color: var(--muted);
     }
-
-
-
-
     .alert-stats span b { color: var(--ink); font-weight: 700; }
     .alert-date { margin-left: auto; font-size: 12.5px; color: var(--muted); }
 
-
-
-
-    /* --- FIXED MODAL ALIGNMENT FOR ALERTS --- */
     .alert-detail-box {
       max-width: 480px;
       text-align: left !important;
     }
-
-
-
-
     .alert-modal-header {
       display: flex;
       align-items: center;
@@ -541,10 +459,6 @@
       margin-bottom: 16px;
       width: 100%;
     }
-
-
-
-
     .alert-modal-header h2 {
       font-size: 18px;
       font-weight: 800;
@@ -552,18 +466,10 @@
       margin: 0;
       text-align: left;
     }
-
-
-
-
     .alert-detail-box .alert-desc {
       text-align: left !important;
       margin-bottom: 20px;
     }
-
-
-
-
     .modal-stats-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -575,84 +481,11 @@
       margin-bottom: 24px;
       font-size: 13px;
     }
-
-
-
-
     .modal-stats-grid div { color: var(--muted); }
     .modal-stats-grid div b { color: var(--ink); display: block; font-size: 14px; margin-top: 2px; }
-
-
-
-
     .modal-actions-row { display: flex; justify-content: flex-end; gap: 12px; }
 
-
-
-
-    .crop-reports-banner{
-      background:#C4986C;
-      color:#fff;
-      font-weight:700;
-      font-size:15px;
-      text-align:center;
-      padding:12px;
-      border-radius:10px;
-      margin-bottom:20px;
-    }
-    .report-item-list{
-      display:flex;
-      flex-direction:column;
-      border:1px solid #E0E0E0;
-      border-radius:8px;
-      overflow:hidden;
-    }
-    .report-item{
-      display:block;
-      width:100%;
-      text-align:left;
-      background:#fff;
-      border:none;
-      border-bottom:1px solid #E0E0E0;
-      padding:18px 24px;
-      font-size:14px;
-      color:var(--ink);
-      cursor:pointer;
-    }
-    .report-item:last-child{ border-bottom:none; }
-    .report-item:hover{ background:#F6F3EB; }
-
-
-
-
-    .status-pill.approved{ background:#118308; }
-    .notes-row{
-      display:flex;
-      gap:24px;
-      align-items:flex-end;
-      margin-top:24px;
-      padding-top:16px;
-      border-top:1px solid #E0E0E0;
-    }
-    .notes-field{ flex:1; }
-    .notes-field label{ display:block; font-size:14px; font-weight:700; margin-bottom:8px; color:var(--ink); }
-    .notes-field textarea{
-      width:100%;
-      height:90px;
-      padding:12px;
-      font-size:14px;
-      border:1.5px solid #666;
-      border-radius:4px;
-      background:#fff;
-      color:var(--ink);
-      outline:none;
-      resize:vertical;
-    }
-    .flag-btn.active{ background:#C83232; border-color:#C83232; color:#fff; }
-
-
-
-
+    /* --- MODALS --- */
     .modal-overlay{
       display:none;
       position:fixed;
@@ -664,7 +497,7 @@
     }
     .modal-overlay.show{ display:flex; }
     .modal-box{
-    background:#fff9ec;
+      background:#fff9ec;
       border-radius:8px;
       padding:36px 48px;
       text-align:center;
@@ -691,239 +524,270 @@
       border-radius:6px;
       cursor:pointer;
     }
+    .modal-btn-confirm:disabled{ opacity:0.5; cursor:not-allowed; }
     .actions-right{ display:flex; justify-content:flex-end; margin-top:20px; }
     .spacing-top-sm{ margin-top:16px; }
     .hidden-element{ display:none; }
 
+    /* ============================================================
+       REPORTS SECTION — consistent with DA dashboard fonts
+    ============================================================ */
 
+    .header-left h1 {
+      font-family:'Oswald', sans-serif;
+      font-size:32px;
+      font-weight:700;
+      color:var(--green);
+      letter-spacing:0.02em;
+      margin:0;
+    }
+    .header-left p {
+      font-family:'Inter', sans-serif;
+      font-size:13px;
+      font-weight:400;
+      color:var(--muted);
+      margin-top:4px;
+    }
+    .header-actions { display:flex; align-items:center; gap:12px; }
 
-
-    /* =========================================
-       REPORT DETAILS - NOTES / REMARKS
-    ========================================= */
-
-
-
-
-    .report-desc-subtitle {
-      font-size: 14px;
-      color: var(--muted);
-      margin: -10px 0 22px;
+    /* Search box — match existing style */
+    #view-reports .search-box {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      background:#fff;
+      border:1.5px solid var(--ink);
+      border-radius:8px;
+      padding:8px 14px;
+      min-width:260px;
+    }
+    #view-reports .search-box svg {
+      width:16px; height:16px;
+      fill:none; stroke:var(--ink); stroke-width:2;
+    }
+    #view-reports .search-box input {
+      border:none;
+      outline:none;
+      font-family:'Inter', sans-serif;
+      font-size:14px;
+      width:100%;
+      background:transparent;
+      color:var(--ink);
     }
 
+    /* Section title */
+    .text-section-title {
+      font-family:'Inter', sans-serif;
+      font-size:15px;
+      font-weight:700;
+      color:var(--ink);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:0;
+    }
+    .count-badge {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:22px;
+      height:22px;
+      padding:0 8px;
+      background:var(--green);
+      color:#fff;
+      border-radius:999px;
+      font-family:'Inter', sans-serif;
+      font-size:11px;
+      font-weight:700;
+    }
+    .count-badge.muted { background: var(--muted); }
 
+    /* Report tables — clean & even */
+    #view-reports table {
+      width:100%;
+      background: transparent;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-bottom:0;
+    }
+    #view-reports thead tr {
+      background: transparent;
+    }
+    #view-reports thead th {
+      text-align:left;
+      font-family:'Inter', sans-serif;
+      font-size:12px;
+      font-weight:700;
+      color:#6b6656;
+      padding:12px 14px;
+      letter-spacing:0.04em;
+      text-transform:uppercase;
+      border-bottom:1.5px solid #DFD8C6;
+      background:transparent;
+    }
+    #view-reports thead th:first-child,
+    #view-reports thead th:last-child {
+      border-radius:0;
+    }
+    #view-reports thead th.center-col,
+    #view-reports tbody td.center-col { text-align:center; }
 
+    #view-reports tbody td {
+      padding:14px 14px;
+      font-family:'Inter', sans-serif;
+      font-size:13.5px;
+      font-weight:400;
+      vertical-align:middle;
+      border-bottom:1px solid #ECE5D4;
+      color:var(--ink);
+      text-align:left;
+    }
+    #view-reports tbody tr:hover td { background:#F3EEE4; }
+    #view-reports tbody tr.selected td { background:#EAF1E3; }
+    #view-reports tbody tr:last-child td { border-bottom:none; }
 
-    /* NOTES + REMARKS CONTAINER */
-    .report-field-group {
-      margin-top: 28px;
-      width: 100%;
+    #view-reports .clickable-row { cursor:pointer; }
+
+    /* Status pill */
+    .status-pill {
+      display:inline-block;
+      padding:5px 14px;
+      border-radius:999px;
+      font-family:'Inter', sans-serif;
+      font-size:11.5px;
+      font-weight:700;
+      color:#FFFFFF !important;
+      text-align:center;
+      white-space:nowrap;
+      letter-spacing:0.02em;
+    }
+    .status-pill.pending    { background-color:#D97706 !important; }
+    .status-pill.provincial { background-color:#D97706 !important; }
+    .status-pill.submitted,
+    .status-pill.approved   { background-color:#2E7D32 !important; }
+    .status-pill.revision,
+    .status-pill.flagged    { background-color:#C0392B !important; }
+    .status-pill.rfo        { background-color:#2980B9 !important; }
+    .status-pill.draft      { background-color:#8a8a8a !important; }
+
+    /* Checkbox */
+    #view-reports input[type="checkbox"].row-check,
+    #view-reports input[type="checkbox"]#selectAllCheckbox {
+      width:16px;
+      height:16px;
+      cursor:pointer;
+      accent-color:var(--green);
     }
 
-
-
-
-    .report-field-label {
-      display: block;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--ink);
-      margin-bottom: 10px;
+    /* Primary button */
+    .btn-primary {
+      appearance:none;
+      background:var(--green);
+      color:#FFF;
+      border:none;
+      font-family:'Inter', sans-serif;
+      font-size:13.5px;
+      font-weight:600;
+      padding:10px 20px;
+      border-radius:8px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      transition:background 0.2s ease;
+    }
+    .btn-primary:hover:not(:disabled) { background:var(--green-dark); }
+    .btn-primary:disabled {
+      opacity:0.4;
+      cursor:not-allowed;
     }
 
-
-
-
-    /* NOTES */
-    .notes-flex-container {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      width: 100%;
+    /* Detail info grid */
+    .detail-info-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+      gap:18px 28px;
+      padding:20px 22px;
+      background:#F6F3EB;
+      border-radius:10px;
+      margin-bottom:24px;
+    }
+    .detail-info-label {
+      font-family:'Inter', sans-serif;
+      font-size:11px;
+      font-weight:700;
+      color:#6b6656;
+      text-transform:uppercase;
+      letter-spacing:0.06em;
+      margin-bottom:5px;
+    }
+    .detail-info-value {
+      font-family:'Inter', sans-serif;
+      font-size:14px;
+      font-weight:600;
+      color:var(--ink);
+      line-height:1.4;
     }
 
+    /* Remarks */
+    .notes-row {
+      display:flex;
+      gap:24px;
+      align-items:flex-end;
+      margin-top:24px;
+      padding-top:16px;
+      border-top:1px solid var(--border);
+    }
+    .notes-field { flex:1; }
+    .notes-field label {
+      display:block;
+      font-family:'Inter', sans-serif;
+      font-size:12px;
+      font-weight:700;
+      margin-bottom:8px;
+      color:var(--ink);
+      text-transform:uppercase;
+      letter-spacing:0.04em;
+    }
+    .textarea-notes {
+      width:100%;
+      min-height:90px;
+      padding:12px 14px;
+      font-family:'Inter', sans-serif;
+      font-size:13.5px;
+      border:1.5px solid #CCC;
+      border-radius:8px;
+      background:#fff;
+      color:var(--ink);
+      outline:none;
+      resize:vertical;
+      transition:border-color 0.2s ease;
+    }
+    .textarea-notes:focus { border-color:var(--green); }
+    .notes-row-clean { border-top:none; padding-top:0; }
 
-
-
-    .textarea-notes-readonly {
-      flex: 1;
-      width: 100%;
-      min-height: 90px;
-      padding: 12px 14px;
-      border: 1.5px solid #CCC;
-      border-radius: 6px;
-      background: #F8F8F8;
-      color: var(--ink);
-      font-size: 13.5px;
-      outline: none;
-      resize: vertical;
+    /* Detail actions */
+    .detail-actions-row {
+      display:flex;
+      justify-content:flex-end;
+      gap:12px;
+      margin-top:22px;
+    }
+    .flag-btn.active {
+      background:#C83232;
+      border-color:#C83232;
+      color:#fff;
+    }
+    .approve-btn.active {
+      background:var(--green-dark);
+      border-color:var(--green-dark);
+      color:#fff;
     }
 
-
-
-
-    /* VIEW ATTACHMENTS */
-    .btn-view-attachments {
-      flex-shrink: 0;
-      min-height: 42px;
-      padding: 10px 18px;
-      border: 1.5px solid var(--green);
-      border-radius: 6px;
-      background: #EFEAE0;
-      color: var(--ink);
-      font-size: 13.5px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-
-
-
-    .btn-view-attachments:hover {
-      background: #DEDDDC;
-    }
-
-
-
-
-    /* REMARKS */
-    .remarks-group {
-      margin-top: 30px;
-    }
-
-
-
-
-    .textarea-remarks-input {
-      display: block;
-      width: 100%;
-      min-height: 100px;
-      padding: 12px 14px;
-      border: 1.5px solid #666;
-      border-radius: 6px;
-      background: #fff;
-      color: var(--ink);
-      font-size: 13.5px;
-      outline: none;
-      resize: vertical;
-    }
-
-
-
-
-    .textarea-remarks-input:focus {
-      border-color: var(--green);
-    }
-
-
-
-
-    /* =========================================
-       REPORT ACTION BUTTONS
-    ========================================= */
-
-
-
-
-    .matched-actions-row {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 12px;
-      margin-top: 24px;
-      margin-bottom: 20px;
-    }
-
-
-
-
-    .matched-actions-row button {
-      min-height: 42px;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-size: 13.5px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-
-
-
-    /* RETURN */
-    .btn-action-return {
-      border: 1.5px solid #999;
-      background: #fff;
-      color: var(--ink);
-    }
-
-
-
-
-    .btn-action-return:hover {
-      background: #F0F0F0;
-    }
-
-
-
-
-    /* FLAG FOR REVISION */
-    .btn-action-flag {
-      border: 1.5px solid #C83232;
-      background: #fff;
-      color: #C83232;
-    }
-
-
-
-
-    .btn-action-flag:hover {
-      background: #FCEAEA;
-    }
-
-
-
-
-    /* APPROVE & ESCALATE */
-    .btn-action-approve {
-      border: 1.5px solid var(--green);
-      background: var(--green);
-      color: #fff;
-    }
-
-
-
-
-    .btn-action-approve:hover {
-      background: var(--green-dark);
-    }
-
-
-
-
-    /* MOBILE */
-    @media (max-width: 768px) {
-      .notes-flex-container {
-        flex-direction: column;
-      }
-      .btn-view-attachments {
-        width: 100%;
-      }
-      .matched-actions-row {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .matched-actions-row button {
-        width: 100%;
-      }
-    }
+    
   </style>
 </head>
 <body>
-
-
-
 
   <!-- TOPBAR -->
   <div class="topbar">
@@ -931,9 +795,6 @@
       <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation" type="button">
         <span></span><span></span><span></span>
       </button>
-
-
-
 
       <div class="logos">
         <svg class="seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -956,32 +817,21 @@
       </div>
     </div>
 
-
-
-
     <div class="topbar-right">
       <div class="bell-wrap" aria-label="Notifications">
         <svg viewBox="0 0 24 24"><path d="M12 2a6 6 0 00-6 6v3.09c0 .58-.2 1.14-.57 1.59L4 15h16l-1.43-2.32a2.5 2.5 0 01-.57-1.59V8a6 6 0 00-6-6zm0 20a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22z"/></svg>
         <span class="bell-dot"></span>
       </div>
 
-
-
-
       <div class="user-info">
         <div class="user-text">
           <div class="user-name" id="userDisplayName">Juan Dela Cruz</div>
           <div class="user-role" id="userDisplayRole">DA-RFO Officer</div>
         </div>
-        <div class="avatar">
-          <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></svg>
-        </div>
+        <div class="avatar" id="userDisplayInitials">JD</div>
       </div>
     </div>
   </div>
-
-
-
 
   <div class="layout">
     <!-- SIDEBAR -->
@@ -1009,25 +859,16 @@
         </button>
       </div>
 
-
-
-
       <button class="signout" id="signoutBtn" type="button">
         <svg viewBox="0 0 24 24"><path d="M10 17l1.41-1.41L8.83 13H20v-2H8.83l2.58-2.59L10 7l-5 5zM4 5h8V3H4a2 2 0 00-2 2v14a2 2 0 002 2h8v-2H4V5z"/></svg>
         Sign Out
       </button>
     </nav>
 
-
-
-
     <!-- MAIN CONTENT -->
     <main class="main">
 
-
-
-
-      <!-- VIEW 1: Buyer Registry -->
+      <!-- VIEW 1: Buyer Registry (UNCHANGED) -->
       <section class="view active-view" id="view-buyer-registry">
         <div id="buyerRegistryList">
           <h2 class="section-heading first">Pending Requests</h2>
@@ -1039,23 +880,9 @@
               </tr>
             </thead>
             <tbody id="pendingBuyersBody">
-              <tr class="clickable-row" data-org="LGU Public Market San Jose City" data-contact="Engr. Lito Dizon" data-email="lgupublicmarket@sanjose.gov.ph" data-commodities="Tomato, Cabbage">
-                <td><span class="pill">LGU Public Market San Jose City</span></td>
-                <td><span class="pill">Engr. Lito Dizon</span></td>
-              </tr>
-              <tr class="clickable-row" data-org="Kadiwa ng Pangulo Nueva Ecija Hub" data-contact="Ms. Carmen Flores" data-email="kadiwa.ne@gov.ph" data-commodities="Onion, Tomato">
-                <td><span class="pill">Kadiwa ng Pangulo Nueva Ecija Hub</span></td>
-                <td><span class="pill">Ms. Carmen Flores</span></td>
-              </tr>
-              <tr class="clickable-row" data-org="Verde Foods Trading Inc." data-contact="Mr. Ramon Castro" data-email="rcastro@verdefoods.com" data-commodities="Cabbage">
-                <td><span class="pill">Verde Foods Trading Inc.</span></td>
-                <td><span class="pill">Mr. Ramon Castro</span></td>
-              </tr>
+              <tr><td colspan="2">Loading pending buyer applications...</td></tr>
             </tbody>
           </table>
-
-
-
 
           <h2 class="section-heading">All Verified Buyers</h2>
           <table>
@@ -1068,26 +895,10 @@
               </tr>
             </thead>
             <tbody id="verifiedBuyersBody">
-              <tr>
-                <td><span class="pill">Verde Farms Inc.</span></td>
-                <td><span class="pill">Ms. Mariem Fabiao</span></td>
-                <td><span class="pill">berde@farm.ph</span></td>
-                <td><span class="pill">Tomato</span></td>
-                <td><span class="status-text-verified">verified</span></td>
-              </tr>
-              <tr>
-                <td><span class="pill">Sun Harvest Co.</span></td>
-                <td><span class="pill">Mr. Edgardo Malrilao</span></td>
-                <td><span class="pill">sunharvest@co.ph</span></td>
-                <td><span class="pill">Onion</span></td>
-                <td><span class="status-text-verified">verified</span></td>
-              </tr>
+              <tr><td colspan="4">Loading verified buyers...</td></tr>
             </tbody>
           </table>
         </div>
-
-
-
 
         <!-- Review Details Subview -->
         <div id="buyerReviewDetails" class="hidden-element">
@@ -1095,469 +906,350 @@
           <div class="review-details-card">
             <div class="detail-field-row">
               <div class="detail-field-label">Organization Name:</div>
-              <span class="pill" id="reviewOrg">LGU Public Market San Jose City</span>
+              <span class="pill" id="reviewOrg">—</span>
             </div>
             <div class="detail-field-row">
               <div class="detail-field-label">Contact Person:</div>
-              <span class="pill" id="reviewContact">Engr. Lito Dizon</span>
+              <span class="pill" id="reviewContact">—</span>
             </div>
             <div class="detail-field-row">
               <div class="detail-field-label">Email:</div>
-              <span class="pill" id="reviewEmail">lgupublicmarket@sanjose.gov.ph</span>
+              <span class="pill" id="reviewEmail">—</span>
             </div>
             <div class="detail-field-row">
               <div class="detail-field-label">Commodities:</div>
-              <div class="detail-pills-wrap" id="reviewCommodities">
-                <span class="pill">Tomato</span>
-                <span class="pill">Cabbage</span>
-              </div>
+              <div class="detail-pills-wrap" id="reviewCommodities"></div>
             </div>
-
-
-
 
             <div class="message-field-wrap">
               <label>Message:</label>
               <textarea readonly placeholder="No message provided."></textarea>
             </div>
 
-
-
-
             <div class="spacing-top-sm">
-                <button
-                  class="btn-outline-report"
-                  id="viewBuyerAttachmentBtn"
-                  type="button"
-                >
-                  View Attachments
-                </button>
-            </div>
-
-
-
-
-          <div class="actions-row">
-            <button class="btn-outline-report" id="returnBuyerListBtn" type="button">Return</button>
-            <button class="btn-outline-report" id="rejectBuyerBtn" type="button">Reject</button>
-            <button class="btn-outline-report" id="approveBuyerBtn" type="button">Approve</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-
-
-
-    <!-- VIEW 2: View Map -->
-    <section class="view" id="view-map">
-      <div class="main-header"><h1>Map</h1></div>
-      <div class="card">
-        <div id="map"></div>
-      </div>
-    </section>
-
-
-
-
-    <!-- VIEW 3: Alert Threshold -->
-    <section class="view" id="view-threshold">
-      <div class="main-header"><h1>Oversupply Threshold</h1></div>
-      <div class="threshold-card">
-        <div class="threshold-card-title">Alert Threshold</div>
-
-
-
-
-        <div class="form-group">
-          <label for="commoditySelect">Select Commodity</label>
-          <select id="commoditySelect" class="form-select">
-            <option value="White Onion">White Onion</option>
-            <option value="Red Onion">Red Onion</option>
-            <option value="Tomato">Tomato</option>
-            <option value="Squash">Squash</option>
-          </select>
-        </div>
-
-
-
-
-        <div class="form-group">
-          <label for="baseDemandInput">Target Demand</label>
-          <input type="number" id="baseDemandInput" class="form-input" placeholder="e.g. 50000">
-        </div>
-
-
-
-
-        <div class="form-group">
-          <label for="thresholdRange">Oversupply Threshold (%)</label>
-          <div class="help-text">Trigger oversupply alert when supply exceeds this % of projected demand.</div>
-          <div class="slider-row">
-            <input type="range" id="thresholdRange" min="100" max="200" step="5" value="110">
-            <span class="slider-value" id="thresholdValue">110%</span>
-          </div>
-          <div class="threshold-chips">
-            <button class="threshold-chip active" data-val="110" type="button">110%</button>
-            <button class="threshold-chip" data-val="120" type="button">120%</button>
-            <button class="threshold-chip" data-val="130" type="button">130%</button>
-            <button class="threshold-chip" data-val="150" type="button">150%</button>
-          </div>
-        </div>
-
-
-
-
-        <button class="btn-save-config" id="saveConfigBtn" type="button">Save Configuration</button>
-      </div>
-    </section>
-
-
-
-
-    <!-- VIEW: Alert Log -->
-    <section class="view" id="view-alerts">
-      <div class="main-header">
-        <h1>System Alert Logs</h1>
-        <div class="search-row">
-          <div class="search-box">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="searchAlerts" placeholder="Search alerts...">
-          </div>
-        </div>
-      </div>
-
-
-
-
-      <div class="card alert-container-card">
-        <div class="alert-list" id="alertList">
-          <div class="alert-card" data-severity="high">
-            <div class="alert-top">
-              <div class="card alert-container-card">
-    <div class="alert-list" id="alertList">
-        <!-- Alerts will be loaded dynamically -->
-    </div>
-</div>
-             
-
-
-
-
-          <div class="alert-card" data-severity="medium">
-            <div class="alert-top">
-              <div class="alert-title-group">
-                <span class="alert-title">Tomato Oversupply Risk — CALABARZON</span>
-                <span class="sev-pill medium">Medium</span>
-              </div>
-            </div>
-          </div> <!-- Close the alert-card -->
-        </div> <!-- Close the alert-list -->
-      </div> <!-- Close the alert-container-card -->
-    </section> <!-- Close the view-alerts section -->
-   
-
-
-
-
-    <!-- VIEW 4: View Reports -->
-    <section class="view" id="view-reports">
-
-
-
-
-      <!-- REPORT LIST SUBVIEW -->
-      <div id="reportListSubview">
-
-
-
-
-        <div class="main-header">
-          <h1>Reports</h1>
-
-
-
-
-          <div class="search-row">
-            <div class="search-box">
-              <svg viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="7"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-
-
-
-
-              <input
-                type="text"
-                id="reportSearchInput"
-                placeholder="Search reports..."
-              >
-            </div>
-          </div>
-        </div>
-
-
-
-
-        <div class="card">
-
-
-
-
-          <div
-            style="
-              font-size:16px;
-              font-weight:700;
-              margin-bottom:16px;
-              color:var(--ink);
-            "
-          >
-            Pending Reports
-          </div>
-
-
-
-
-          <table>
-            <thead>
-              <tr>
-                <th>Report ID</th>
-                <th>Title</th>
-                <th>Commodity</th>
-                <th>Planting Date</th>
-                <th>Estimated Yield (kg)</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-
-
-
-
-            <tbody id="pendingReportsBody">
-              <tr>
-                <td colspan="6" style="text-align:center;">
-                  Loading reports...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-
-
-
-        </div>
-      </div>
-
-
-
-
-      <!-- REPORT DETAIL SUBVIEW -->
-      <div id="reportDetailSubview" class="hidden-element">
-
-
-
-
-        <div class="main-header">
-          <h1>Report Details</h1>
-        </div>
-
-
-
-
-        <p class="report-desc-subtitle">
-          Inspect production data and provide provincial feedback.
-        </p>
-
-
-
-
-        <!-- REPORT INFORMATION -->
-        <div class="card">
-
-
-
-
-          <table class="report-detail-table">
-
-
-
-
-            <thead>
-              <tr>
-                <th>Report ID</th>
-                <th>Commodity</th>
-                <th>Planting Date</th>
-                <th>Harvest Date</th>
-                <th>Estimated Yield (kg)</th>
-                <th>Encoded By</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-
-
-
-
-            <tbody id="reportDetailBody">
-              <!-- JavaScript will insert the report details here -->
-            </tbody>
-
-
-
-
-          </table>
-
-
-
-
-          <!-- NOTES -->
-          <div class="report-field-group">
-
-
-
-
-            <label
-              for="reportNotesTextarea"
-              class="report-field-label"
-            >
-              NOTES
-            </label>
-
-
-
-
-            <div class="notes-flex-container">
-
-
-
-
-              <textarea
-                id="reportNotesTextarea"
-                class="textarea-notes-readonly"
-                readonly
-                placeholder="No notes provided."
-              ></textarea>
-
-
-
-
-              <button
-                class="btn-view-attachments"
-                id="viewAttachmentsBtn"
-                type="button"
-              >
+              <button class="btn-outline-report" id="viewBuyerAttachmentBtn" type="button">
                 View Attachments
               </button>
-
-
-
-
             </div>
 
+            <div class="actions-row">
+              <button class="btn-outline-report" id="returnBuyerListBtn" type="button">Return</button>
+              <button class="btn-outline-report" id="rejectBuyerBtn" type="button">Reject</button>
+              <button class="btn-outline-report" id="approveBuyerBtn" type="button">Approve</button>
+            </div>
+          </div>
+        </div>
+      </section>
 
+      <!-- VIEW 2: View Map (UNCHANGED) -->
+      <section class="view" id="view-map">
+        <div class="main-header"><h1>Map</h1></div>
+        <div class="card">
+          <div id="map"></div>
+        </div>
+      </section>
 
+      <!-- VIEW 3: Alert Threshold (UNCHANGED) -->
+      <section class="view" id="view-threshold">
+        <div class="main-header"><h1>Oversupply Threshold</h1></div>
+        <div class="threshold-card">
+          <div class="threshold-card-title">Alert Threshold</div>
 
+          <div class="form-group">
+            <label for="commoditySelect">Select Commodity</label>
+            <select id="commoditySelect" class="form-select">
+              <option value="White Onion">White Onion</option>
+              <option value="Red Onion">Red Onion</option>
+              <option value="Tomato">Tomato</option>
+              <option value="Squash">Squash</option>
+            </select>
           </div>
 
-
-
-
-          <!-- REMARKS -->
-          <div class="report-field-group remarks-group">
-
-
-
-
-            <label
-              for="remarksTextarea"
-              class="report-field-label"
-            >
-              REMARKS
-            </label>
-
-
-
-
-            <textarea
-              id="remarksTextarea"
-              class="textarea-remarks-input"
-              placeholder="Enter provincial feedback or revision notes..."
-            ></textarea>
-
-
-
-
+          <div class="form-group">
+            <label for="baseDemandInput">Target Demand</label>
+            <input type="number" id="baseDemandInput" class="form-input" placeholder="e.g. 50000">
           </div>
 
+          <div class="form-group">
+            <label for="thresholdRange">Oversupply Threshold (%)</label>
+            <div class="help-text">Trigger oversupply alert when supply exceeds this % of projected demand.</div>
+            <div class="slider-row">
+              <input type="range" id="thresholdRange" min="100" max="200" step="5" value="110">
+              <span class="slider-value" id="thresholdValue">110%</span>
+            </div>
+            <div class="threshold-chips">
+              <button class="threshold-chip active" data-val="110" type="button">110%</button>
+              <button class="threshold-chip" data-val="120" type="button">120%</button>
+              <button class="threshold-chip" data-val="130" type="button">130%</button>
+              <button class="threshold-chip" data-val="150" type="button">150%</button>
+            </div>
+          </div>
 
+          <button class="btn-save-config" id="saveConfigBtn" type="button">Save Configuration</button>
+        </div>
+      </section>
 
-
+      <!-- VIEW 4: Alert Log (UNCHANGED) -->
+      <section class="view" id="view-alerts">
+        <div class="main-header">
+          <h1>System Alert Logs</h1>
+          <div class="search-row">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="searchAlerts" placeholder="Search alerts...">
+            </div>
+          </div>
         </div>
 
+        <div class="card alert-container-card">
+          <div class="alert-list" id="alertList">
+            <!-- Alerts will be loaded dynamically -->
+          </div>
+        </div>
+      </section>
 
+      <!-- ======================================================
+           VIEW 5: REPORTS — RESTRUCTURED (matches provincial)
+      ====================================================== -->
+      <section class="view" id="view-reports">
 
+        <!-- LIST SUBVIEW -->
+        <div id="reportsListView">
 
-        <!-- ACTION BUTTONS -->
-        <div class="matched-actions-row">
+          <div class="main-header" id="reportsMainHeader">
+            <div class="header-left">
+              <h1>Reports</h1>
+              <p>Review reports from Provincial validation and issue final approval.</p>
+            </div>
 
+            <div class="header-actions">
+              <div class="search-box">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="reportSearchInput" placeholder="Search pending reports..." autocomplete="off">
+              </div>
+            </div>
+          </div>
 
+          <!-- PENDING REPORTS -->
+          <div id="pendingReportsView">
+            <div class="card" style="margin-bottom:24px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                <div class="text-section-title">
+                  Pending Reports
+                  <span class="count-badge" id="pendingCountBadge">0</span>
+                </div>
 
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <button class="btn-outline-report" id="selectAllPendingBtn" type="button">
+                    Select All
+                  </button>
+                  <button class="btn-primary" id="bulkApproveBtn" type="button" disabled>
+                    Approve Selected
+                  </button>
+                </div>
+              </div>
 
-          <button
-            class="btn-action-return"
-            id="backToPendingBtn"
-            type="button"
-          >
-            Return
-          </button>
+              <div style="overflow-x:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width:40px;">
+                        <input type="checkbox" id="selectAllCheckbox" aria-label="Select all pending reports">
+                      </th>
+                      <th class="center-col">Report ID</th>
+                      <th>Title</th>
+                      <th>Commodity</th>
+                      <th>Municipality</th>
+                      <th class="center-col">Planting Date</th>
+                      <th class="center-col">Est. Yield</th>
+                      <th class="center-col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pendingReportsBody">
+                    <tr><td colspan="8" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
 
+          <!-- RETURNED TO PROVINCIAL -->
+          <div id="returnedToProvincialView">
+            <div class="card" style="margin-bottom:24px;">
+              <div class="text-section-title" style="margin-bottom:16px;">
+                Returned to Provincial
+                <span class="count-badge muted" id="returnedToProvincialCountBadge">0</span>
+              </div>
 
+              <div style="overflow-x:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="center-col">Report ID</th>
+                      <th>Title</th>
+                      <th>Commodity</th>
+                      <th>Municipality</th>
+                      <th class="center-col">Returned At</th>
+                      <th class="center-col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="returnedToProvincialBody">
+                    <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
 
+          <!-- APPROVED REPORTS -->
+          <div id="approvedReportsView">
+            <div class="card" style="margin-bottom:24px;">
+              <div class="text-section-title" style="margin-bottom:16px;">
+                Approved Reports
+                <span class="count-badge muted" id="approvedCountBadge">0</span>
+              </div>
 
-          <button
-            class="btn-action-flag"
-            id="flagReportBtn"
-            type="button"
-          >
-            Flag for Revision
-          </button>
-
-
-
-
-          <button
-            class="btn-action-approve"
-            id="approveReportBtn"
-            type="button"
-          >
-            Approve &amp; Escalate
-          </button>
-
-
-
-
+              <div style="overflow-x:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="center-col">Report ID</th>
+                      <th>Title</th>
+                      <th>Commodity</th>
+                      <th>Municipality</th>
+                      <th class="center-col" id="approvedDateColumnHeader">Approved At</th>
+                      <th class="center-col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="approvedReportsBody">
+                    <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
 
+        <!-- DETAIL SUBVIEW -->
+        <div id="individualDetailView" class="hidden-element">
+          <div class="main-header">
+            <div class="header-left">
+              <h1 id="detailReportTitle">Report Details</h1>
+              <p id="detailReportSubtitle">—</p>
+            </div>
+          </div>
 
+          <div class="card">
+            <!-- COMPACT INFO GRID -->
+            <div class="detail-info-grid">
+              <div>
+                <div class="detail-info-label">Report ID</div>
+                <div class="detail-info-value" id="detailReportId">—</div>
+              </div>
+              <div>
+                <div class="detail-info-label">Municipality</div>
+                <div class="detail-info-value" id="detailReportMunicipality">—</div>
+              </div>
+              <div>
+                <div class="detail-info-label">Status</div>
+                <div class="detail-info-value" id="detailReportStatus">—</div>
+              </div>
+              <div>
+                <div class="detail-info-label">Submitted Date</div>
+                <div class="detail-info-value" id="detailReportDate">—</div>
+              </div>
+              <div>
+                <div class="detail-info-label">Encoded By</div>
+                <div class="detail-info-value" id="detailReportEncodedBy">—</div>
+              </div>
+              <div>
+                <div class="detail-info-label">Est. Yield</div>
+                <div class="detail-info-value" id="detailReportYield">—</div>
+              </div>
+              <div style="grid-column: 1 / -1;">
+                <div class="detail-info-label">Notes / Remarks</div>
+                <div class="detail-info-value" id="detailReportNotes" style="font-weight:500; line-height:1.5;">—</div>
+              </div>
+            </div>
 
+            <!-- ATTACHMENTS -->
+            <div style="margin-bottom: 24px;">
+              <div class="detail-info-label" style="margin-bottom:6px;">Attachments</div>
+              <div id="detailReportAttachments" style="font-size:14px; color:var(--muted);">No attachments</div>
+            </div>
 
-      </div>
+            <!-- REVISION REMARKS -->
+            <div id="detailRevisionRemarksWrapper" style="
+              display:none;
+              margin-top: 28px;
+              margin-bottom: 24px;
+              padding: 16px 20px;
+              background: #FEE2E2;
+              border-left: 4px solid #C0392B;
+              border-radius: 0 8px 8px 0;
+            ">
+              <div style="
+                font-size: 11px;
+                font-weight: 700;
+                color: #C0392B;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 12px;
+              ">
+                Revision Remarks (Flagged)
+              </div>
+              <div id="detailRevisionRemarks" style="font-size:14px; color:#333; line-height:1.6;">—</div>
+            </div>
 
+            <!-- INCLUDED PLANTING INTENTS -->
+            <div style="margin-top: 8px;">
+              <div class="detail-info-label" style="margin-bottom:10px;">Included Planting Intents</div>
+              <div style="overflow-x: auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="center-col">Intent ID</th>
+                      <th>Farmer</th>
+                      <th>Commodity</th>
+                      <th class="center-col">Volume</th>
+                      <th class="center-col">Planting Date</th>
+                      <th class="center-col">Harvest Date</th>
+                      <th class="center-col">Harvest Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="detailReportIntentsBody">
+                    <tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
+            <!-- REMARKS -->
+            <div class="notes-row notes-row-clean" style="margin-top: 28px;">
+              <div class="notes-field">
+                <label>Remarks</label>
+                <textarea id="remarksTextarea" class="textarea-notes" placeholder="Enter remarks (required if flagging for revision)..."></textarea>
+              </div>
+            </div>
+          </div>
 
-
-    </section>
-
-
-
-
-    </main>
-  </div>
-
-
-
+          <!-- ACTION BUTTONS -->
+          <div class="detail-actions-row">
+            <button class="btn-outline-report" id="backToPendingBtn" type="button">Return</button>
+            <button class="btn-outline-report flag-btn" id="flagBtn" type="button">Flag for Revision</button>
+            <button class="btn-primary approve-btn" id="approveBtn" type="button" style="background:#2E7D32;">
+              Approve Report
+            </button>
+          </div>
+        </div>
+      </section>
 
   <!-- MODALS -->
+
+  <!-- Buyer Approve -->
   <div class="modal-overlay" id="confirmApproveModal">
     <div class="modal-box">
       <h2>Confirmation</h2>
@@ -1569,9 +1261,7 @@
     </div>
   </div>
 
-
-
-
+  <!-- Buyer Reject -->
   <div class="modal-overlay" id="confirmRejectModal">
     <div class="modal-box">
       <h2>Confirmation</h2>
@@ -1583,22 +1273,18 @@
     </div>
   </div>
 
-
-
-
-  <div class="modal-overlay" id="reportApprovedModal">
+  <!-- Bulk Approve Reports -->
+  <div class="modal-overlay" id="bulkApproveModal">
     <div class="modal-box">
-      <h2>Report Has Been Approved</h2>
-      <div class="modal-actions">
-        <button class="modal-btn-confirm" id="closeReportApprovedBtn" type="button">Confirm</button>
+      <p id="bulkApproveText">Approve selected reports?</p>
+      <div style="display:flex; justify-content:center; gap:12px;">
+        <button class="btn-outline-report" id="bulkApproveCancelBtn" type="button">Cancel</button>
+        <button class="modal-btn-confirm" id="bulkApproveConfirmBtn" type="button">Confirm</button>
       </div>
     </div>
   </div>
 
-
-
-
-  <!-- ALERT DETAIL MODAL -->
+  <!-- Alert Detail Modal -->
   <div class="modal-overlay" id="alertDetailModal">
     <div class="modal-box alert-detail-box">
       <div class="alert-modal-header">
@@ -1607,9 +1293,6 @@
       </div>
       <p id="modalAlertDesc" class="alert-desc"></p>
 
-
-
-
       <div class="modal-stats-grid">
         <div>Supply: <b id="modalAlertSupply"></b></div>
         <div>Demand: <b id="modalAlertDemand"></b></div>
@@ -1617,17 +1300,11 @@
         <div>Date Logged: <b id="modalAlertDate"></b></div>
       </div>
 
-
-
-
       <div class="modal-actions-row">
         <button class="modal-btn-confirm modal-cancel-btn" type="button" onclick="document.getElementById('alertDetailModal').classList.remove('show')">Close</button>
       </div>
     </div>
   </div>
-
-
-
 
   <!-- Leaflet & App JS -->
   <script src="../assets/js/logout.js"></script>
@@ -1635,4 +1312,3 @@
   <script src="../assets/js/da.js"></script>
 </body>
 </html>
-
