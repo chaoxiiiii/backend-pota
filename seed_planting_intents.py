@@ -1,9 +1,16 @@
 # seed_planting_intents.py
 import sys
 import os
+import importlib
+import pkgutil
 from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Auto-import all models so SQLAlchemy can resolve every relationship string
+import src.models as models_pkg
+for _, module_name, _ in pkgutil.iter_modules(models_pkg.__path__):
+    importlib.import_module(f"src.models.{module_name}")
 
 from src.core.database import SessionLocal
 from src.models.planting_intents import PlantingIntent
