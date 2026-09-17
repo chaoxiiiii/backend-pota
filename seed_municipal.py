@@ -148,6 +148,16 @@ def seed_municipal_coordinators():
             "role": "Municipal Coordinator",
             "is_active": True
         },
+        {
+            "first_name": "Isabel",
+            "last_name": "Reyes",
+            "username": "mcoord_apalit",
+            "email_address": "ireyes@apalit.gov.ph",
+            "phone_number": "09177778888",
+            "password": hash_password("MunicipalCoord@2024"),
+            "role": "Municipal Coordinator",
+            "is_active": True
+        },
         # Tarlac
         {
             "first_name": "Ricardo",

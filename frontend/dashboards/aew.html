@@ -2055,7 +2055,7 @@
                     <th>Title</th>
                     <th>Commodity</th>
                     <th>Municipality</th>
-                    <th class="center-col">Submitted</th>
+                    <th class="center-col">Approved At</th>
                     <th class="center-col">Status</th>
                   </tr>
                 </thead>
@@ -2066,56 +2066,57 @@
             </div>
           </div>
 
-          <!-- ==================== FLAGGED / AWAITING REVISION ==================== -->
+          <!-- ==================== FLAGGED ==================== -->
           <div class="card" style="margin-bottom:24px;">
-            <div class="text-section-title" style="margin-bottom:12px;">
-              Awaiting My Revision
-              <span class="count-badge" id="flaggedReportsCountBadge" style="background: #C0392B;">0</span>
-            </div>
-            <div style="overflow-x:auto;">
-              <table>
-                <thead>
-                  <tr>
-                    <th class="center-col">Report ID</th>
-                    <th>Title</th>
-                    <th>Commodity</th>
-                    <th>Municipality</th>
-                    <th class="center-col">Flagged At</th>
-                    <th class="center-col">Status</th>
-                  </tr>
-                </thead>
-                <tbody id="flaggedReportsTableBody">
-                  <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">No flagged reports.</td></tr>
-                </tbody>
-              </table>
-            </div>
+              <div class="text-section-title" style="margin-bottom:12px;">
+                  Flagged Reports
+                  <span class="count-badge" id="flaggedReportsCountBadge" style="background: #C0392B;">0</span>
+              </div>
+              <div style="overflow-x:auto;">
+                  <table>
+                      <thead>
+                          <tr>
+                              <th class="center-col">Report ID</th>
+                              <th>Title</th>
+                              <th>Commodity</th>
+                              <th>Municipality</th>
+                              <th class="center-col">Flagged At</th>
+                              <th class="center-col">Status</th>
+                          </tr>
+                      </thead>
+                      <tbody id="flaggedReportsTableBody">
+                          <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">No flagged reports.</td></tr>
+                      </tbody>
+                  </table>
+              </div>
           </div>
 
-          <!-- ==================== SUBMITTED (higher levels) ==================== -->
+          <!-- ==================== APPROVED ==================== -->
           <div class="card">
-            <div class="text-section-title" style="margin-bottom:12px;">
-              Submitted Reports
-              <span class="count-badge" id="submittedReportsCountBadge" style="background: #2E7D32;">0</span>
-            </div>
-            <div style="overflow-x:auto;">
-              <table>
-                <thead>
-                  <tr>
-                    <th class="center-col">Report ID</th>
-                    <th>Title</th>
-                    <th>Commodity</th>
-                    <th>Municipality</th>
-                    <th class="center-col">Submitted</th>
-                    <th class="center-col">Status</th>
-                  </tr>
-                </thead>
-                <tbody id="submittedReportsTableBody">
-                  <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">No submitted reports.</td></tr>
-                </tbody>
-              </table>
-            </div>
+              <div class="text-section-title" style="margin-bottom:12px;">
+                  Approved Reports
+                  <span class="count-badge" id="submittedReportsCountBadge" style="background: #2E7D32;">0</span>
+              </div>
+              <div style="overflow-x:auto;">
+                  <table>
+                      <thead>
+                          <tr>
+                              <th class="center-col">Report ID</th>
+                              <th>Title</th>
+                              <th>Commodity</th>
+                              <th>Municipality</th>
+                              <th class="center-col">Approved At</th>
+                              <th class="center-col">Status</th>
+                          </tr>
+                      </thead>
+                      <tbody id="submittedReportsTableBody">
+                          <tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">No approved reports.</td></tr>
+                      </tbody>
+                  </table>
+              </div>
           </div>
         </div>
+
 
           <!-- ============================================================
               CREATE NEW REPORT (Select Planting Intents)

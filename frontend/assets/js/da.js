@@ -1,15 +1,23 @@
 /* ============================================================
    eSAKA — DA-RFO OFFICER DASHBOARD
    Dynamic Buyer Registry + Map + Alert Threshold + Reports + Alerts
+   (Reports section aligned with Provincial UI/Logic)
 
    Backend:
    GET  /api/buyer-status/pending
    GET  /api/buyer-status/verified
    PUT  /api/buyer-status/{buyer_status_id}/verify
    PUT  /api/buyer-status/{buyer_status_id}/reject
-
-   Buyer Attachment:
    GET  /api/buyer-registry/{buyer_registry_id}/attachment
+
+   Reports:
+   GET  /api/report-submissions/for-da-rfo-validation
+   GET  /api/report-submissions/returned-to-provincial
+   GET  /api/report-submissions/approved-by-regional
+   POST /api/report-submissions/bulk-approve
+   POST /api/report-submissions/{report_id}/approve
+   POST /api/report-submissions/{report_id}/revision
+   GET  /api/raw-plant-reports/{report_id}
 ============================================================ */
 
 
@@ -19,17 +27,17 @@
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-const PENDING_BUYERS_ENDPOINT =
-    `${API_BASE_URL}/api/buyer-status/pending`;
+const PENDING_BUYERS_ENDPOINT      = `${API_BASE_URL}/api/buyer-status/pending`;
+const VERIFIED_BUYERS_ENDPOINT     = `${API_BASE_URL}/api/buyer-status/verified`;
+const BUYER_STATUS_ENDPOINT        = `${API_BASE_URL}/api/buyer-status`;
+const BUYER_ATTACHMENT_ENDPOINT    = `${API_BASE_URL}/api/buyer-registry/buyer-registry`;
 
-const VERIFIED_BUYERS_ENDPOINT =
-    `${API_BASE_URL}/api/buyer-status/verified`;
+/* ------------------- REPORT ENDPOINTS ------------------- */
 
-const BUYER_STATUS_ENDPOINT =
-    `${API_BASE_URL}/api/buyer-status`;
-
-const BUYER_ATTACHMENT_ENDPOINT =
-    `${API_BASE_URL}/api/buyer-registry/buyer-registry`;
+const DA_PENDING_ENDPOINT              = `${API_BASE_URL}/api/report-submissions/for-da-rfo-validation`;
+const RETURNED_TO_PROVINCIAL_ENDPOINT  = `${API_BASE_URL}/api/report-submissions/returned-to-provincial`;
+const APPROVED_BY_REGIONAL_ENDPOINT    = `${API_BASE_URL}/api/report-submissions/approved-by-regional`;
+const BULK_APPROVE_ENDPOINT            = `${API_BASE_URL}/api/report-submissions/bulk-approve`;
 
 
 /* ============================================================
@@ -37,37 +45,69 @@ const BUYER_ATTACHMENT_ENDPOINT =
 ============================================================ */
 
 function getAuthToken() {
-
     return (
         localStorage.getItem("access_token") ||
         localStorage.getItem("token")
     );
-
 }
 
-
 function getAuthHeaders(includeContentType = true) {
-
     const token = getAuthToken();
-
     const headers = {};
 
     if (includeContentType) {
-
-        headers["Content-Type"] =
-            "application/json";
-
+        headers["Content-Type"] = "application/json";
     }
 
     if (token) {
-
-        headers["Authorization"] =
-            `Bearer ${token}`;
-
+        headers["Authorization"] = `Bearer ${token}`;
     }
 
     return headers;
+}
 
+
+/* ============================================================
+   FETCH HELPER WITH TIMEOUT
+============================================================ */
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 10000) {
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+        let data = null;
+
+        if (contentType.includes("application/json")) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            data = text ? { detail: text } : null;
+        }
+
+        if (!response.ok) {
+            const detail = data?.detail || data?.message || `HTTP ${response.status}`;
+            throw new Error(detail);
+        }
+
+        return data;
+
+    } catch (err) {
+        if (err.name === "AbortError") {
+            throw new Error(`API request timed out after ${timeoutMs / 1000} seconds.`);
+        }
+        throw err;
+
+    } finally {
+        clearTimeout(timeoutId);
+    }
 }
 
 
@@ -76,42 +116,39 @@ function getAuthHeaders(includeContentType = true) {
 ============================================================ */
 
 let mapInstance = null;
-
 let currentSelectedBuyer = null;
-
 let pendingBuyersCache = [];
-
 let verifiedBuyersCache = [];
-
 let currentActiveAlertCard = null;
+
+/* ---- REPORT STATE ---- */
+let pendingReports = [];
+let returnedToProvincialReports = [];
+let approvedReports = [];
+let selectedReportIds = new Set();
+let selectedReport = null;
+let currentApprovedFilter = "all";
 
 
 /* ============================================================
    PAGE INITIALIZATION
 ============================================================ */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
     initSidebar();
-
     initViewNavigation();
-
     initMap();
-
     initBuyerRegistry();
-
     initAlertThreshold();
-
     initAlertsSection();
-
     initReportsSection();
-
     initSignout();
-
     initModalListeners();
-
     loadUserInformation();
 
+    // Preload reports so switching to Reports view is instant
+    loadReports();
 });
 
 
@@ -126,47 +163,55 @@ function loadUserInformation() {
         localStorage.getItem("name") ||
         localStorage.getItem("full_name");
 
-    const role =
-        localStorage.getItem("role");
+    const role = localStorage.getItem("role");
 
-    const userDisplayName =
-        document.getElementById("userDisplayName");
-
-    const userDisplayRole =
-        document.getElementById("userDisplayRole");
-
+    const userDisplayName = document.getElementById("userDisplayName");
+    const userDisplayRole = document.getElementById("userDisplayRole");
+    const userInitials    = document.getElementById("userDisplayInitials");
 
     if (userName && userDisplayName) {
-
-        userDisplayName.textContent =
-            userName;
-
+        userDisplayName.textContent = userName;
     }
-
 
     if (role && userDisplayRole) {
-
         const roleMap = {
-
             admin: "System Administrator",
-
             darfo: "DA-RFO Officer",
-
             aew: "Agricultural Extension Worker",
-
             farmer: "Farmer",
-
             coop: "Cooperative",
-
             lgu: "LGU"
-
         };
-
-        userDisplayRole.textContent =
-            roleMap[role] || role;
-
+        userDisplayRole.textContent = roleMap[role] || role;
     }
 
+    if (userInitials) {
+        userInitials.textContent = getInitials(userName || role || "");
+    }
+}
+
+function getInitials(name) {
+    if (!name) return "--";
+
+    const cleaned = String(name)
+        .replace(/^(aew|mcoord|admin|user|municipal|provincial|pcoord|da)[_\s-]+/i, "")
+        .replace(/[_\-.]+/g, " ")
+        .trim();
+
+    if (!cleaned) return "--";
+
+    const parts = cleaned.split(/\s+/).filter(Boolean);
+
+    if (parts.length === 1) {
+        return parts[0].substring(0, 2).toUpperCase();
+    }
+
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+function formatRole(role) {
+    if (!role) return "";
+    return String(role).replace(/_/g, " ").toUpperCase();
 }
 
 
@@ -182,43 +227,29 @@ function initSidebar() {
 
     let hoverTimer = null;
 
-    // Open sidebar when hovering hamburger
-    hamburgerBtn.addEventListener("mouseenter", function() {
-        if (hoverTimer) {
-            clearTimeout(hoverTimer);
-            hoverTimer = null;
-        }
+    hamburgerBtn.addEventListener("mouseenter", function () {
+        if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
 
-        setTimeout(function() {
+        setTimeout(function () {
             sidebar.classList.add("open");
 
-            // Fix Leaflet map size after sidebar opens
-            setTimeout(function() {
-                if (mapInstance) {
-                    mapInstance.invalidateSize();
-                }
+            setTimeout(function () {
+                if (mapInstance) mapInstance.invalidateSize();
             }, 300);
-
         }, 100);
     });
 
-    // Close sidebar when mouse leaves
-    sidebar.addEventListener("mouseleave", function() {
-        hoverTimer = setTimeout(function() {
+    sidebar.addEventListener("mouseleave", function () {
+        hoverTimer = setTimeout(function () {
             sidebar.classList.remove("open");
         }, 200);
     });
 
-    // Cancel close timer when mouse goes back to sidebar
-    sidebar.addEventListener("mouseenter", function() {
-        if (hoverTimer) {
-            clearTimeout(hoverTimer);
-            hoverTimer = null;
-        }
+    sidebar.addEventListener("mouseenter", function () {
+        if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
     });
 
-    // Close when clicking outside
-    document.addEventListener("click", function(event) {
+    document.addEventListener("click", function (event) {
         const isClickInsideSidebar = sidebar.contains(event.target);
         const isClickOnHamburger = hamburgerBtn.contains(event.target);
 
@@ -227,30 +258,23 @@ function initSidebar() {
         }
     });
 
-    // Close sidebar after clicking navigation item
-    sidebar.querySelectorAll(".nav-item").forEach(function(item) {
-        item.addEventListener("click", function() {
+    sidebar.querySelectorAll(".nav-item").forEach(function (item) {
+        item.addEventListener("click", function () {
             sidebar.classList.remove("open");
         });
     });
 
-    // Close sidebar using Escape key
-    document.addEventListener("keydown", function(event) {
-        if (event.key === "Escape") {
-            sidebar.classList.remove("open");
-        }
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") sidebar.classList.remove("open");
     });
 
-    // Close sidebar on sign out
     const signoutBtn = sidebar.querySelector(".signout");
-
     if (signoutBtn) {
-        signoutBtn.addEventListener("click", function() {
+        signoutBtn.addEventListener("click", function () {
             sidebar.classList.remove("open");
         });
     }
 }
-
 
 
 /* ============================================================
@@ -259,109 +283,36 @@ function initSidebar() {
 
 function initViewNavigation() {
 
-    const navButtons =
-        document.querySelectorAll(
-            ".nav-item[data-view]"
-        );
-
-    const views =
-        document.querySelectorAll(".view");
-
+    const navButtons = document.querySelectorAll(".nav-item[data-view]");
+    const views = document.querySelectorAll(".view");
 
     navButtons.forEach(button => {
+        button.addEventListener("click", () => {
 
-        button.addEventListener(
-            "click",
-            () => {
+            const targetViewKey = button.dataset.view;
 
-                const targetViewKey =
-                    button.dataset.view;
+            views.forEach(view => view.classList.remove("active-view"));
 
+            const targetView = document.getElementById("view-" + targetViewKey);
+            if (targetView) targetView.classList.add("active-view");
 
-                /* --------------------------------------------
-                   HIDE ALL VIEWS
-                -------------------------------------------- */
+            navButtons.forEach(navButton => {
+                navButton.classList.toggle("active", navButton === button);
+            });
 
-                views.forEach(view => {
-
-                    view.classList.remove(
-                        "active-view"
-                    );
-
-                });
-
-
-                /* --------------------------------------------
-                   SHOW TARGET VIEW
-                -------------------------------------------- */
-
-                const targetView =
-                    document.getElementById(
-                        "view-" + targetViewKey
-                    );
-
-
-                if (targetView) {
-
-                    targetView.classList.add(
-                        "active-view"
-                    );
-
-                }
-
-
-                /* --------------------------------------------
-                   UPDATE ACTIVE NAV BUTTON
-                -------------------------------------------- */
-
-                navButtons.forEach(navButton => {
-
-                    navButton.classList.toggle(
-                        "active",
-                        navButton === button
-                    );
-
-                });
-
-
-                /* --------------------------------------------
-                   FIX MAP SIZE
-                -------------------------------------------- */
-
-                if (
-                    targetViewKey === "map" &&
-                    mapInstance
-                ) {
-
-                    setTimeout(
-                        () => {
-
-                            mapInstance.invalidateSize();
-
-                        },
-                        100
-                    );
-
-                }
-
-
-                /* --------------------------------------------
-                   REFRESH BUYER REGISTRY
-                -------------------------------------------- */
-
-                if (
-                    targetViewKey === "buyer-registry"
-                ) {
-
-                    loadBuyerRegistry();
-
-                }
-
+            if (targetViewKey === "map" && mapInstance) {
+                setTimeout(() => mapInstance.invalidateSize(), 100);
             }
-        );
 
+            if (targetViewKey === "buyer-registry") {
+                loadBuyerRegistry();
+            }
+
+            if (targetViewKey === "reports") {
+                loadReports();
+            }
+        });
     });
-
 }
 
 
@@ -370,31 +321,15 @@ function initViewNavigation() {
 ============================================================ */
 
 function initSignout() {
+    const signoutBtn = document.getElementById("signoutBtn");
+    if (!signoutBtn) return;
 
-    const signoutBtn =
-        document.getElementById("signoutBtn");
-
-
-    if (!signoutBtn) {
-
-        return;
-
-    }
-
-
-    signoutBtn.addEventListener(
-        "click",
-        () => {
-
-            localStorage.clear();
-
-            window.location.href =
-                "../index.html";
-
-        }
-    );
-
+    signoutBtn.addEventListener("click", () => {
+        localStorage.clear();
+        window.location.href = "../index.html";
+    });
 }
+
 
 /* ============================================================
    LEAFLET MAP
@@ -404,10 +339,7 @@ function initMap() {
     const mapEl = document.getElementById("map");
     if (!mapEl || typeof L === "undefined") return;
 
-    const pampangaBounds = L.latLngBounds(
-        [14.85, 120.35],
-        [15.35, 120.95]
-    );
+    const pampangaBounds = L.latLngBounds([14.85, 120.35], [15.35, 120.95]);
 
     mapInstance = L.map("map", {
         maxBounds: pampangaBounds,
@@ -423,7 +355,6 @@ function initMap() {
         }
     ).addTo(mapInstance);
 
-    // Pampanga municipality coordinates (static)
     const municipalityCoordinates = {
         "Angeles": [15.1450, 120.5887],
         "Apalit": [14.9470, 120.7700],
@@ -448,154 +379,54 @@ function initMap() {
         "Santo Tomas": [14.9950, 120.7090]
     };
 
-    // I-store sa global para magamit ng render function
-    window.MUNICIPALITY_COORDINATES = municipalityCoordinates;
-
-    loadMunicipalityMapData();
+    loadMunicipalityMapData(municipalityCoordinates);
 }
 
-/* ============================================================
-   LOAD MUNICIPALITY MAP DATA
-============================================================ */
 
-let MUNICIPALITY_MAP_RAW_DATA = [];
-let mapMarkersLayer = null;
+async function loadMunicipalityMapData(municipalityCoordinates) {
 
 async function loadMunicipalityMapData() {
     try {
         const response = await fetch(
             `${API_BASE_URL}/api/planting-intents/municipality-map`,
-            {
-                method: "GET",
-                headers: { "Accept": "application/json" }
-            }
+            { method: "GET", headers: getAuthHeaders(false) }
         );
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const result = await response.json();
-        console.log("DA-RFO Municipality Map Data:", result);
 
-        if (!result.data || !Array.isArray(result.data)) {
-            console.warn("No municipality map data found.");
-            return;
-        }
+        if (!result.data || !Array.isArray(result.data)) return;
 
-        MUNICIPALITY_MAP_RAW_DATA = result.data;
-        renderFilteredMapMarkers();
+        result.data.forEach(municipalityData => {
+            const municipality = municipalityData.municipality;
+            const coordinates = municipalityCoordinates[municipality];
 
-        // I-attach ang event listeners sa filter dropdowns
-        document.getElementById('filterCommodity')
-            ?.addEventListener('change', renderFilteredMapMarkers);
-        document.getElementById('filterStatus')
-            ?.addEventListener('change', renderFilteredMapMarkers);
+            if (!coordinates) return;
+
+            let popupContent = `
+                <div style="min-width: 180px;">
+                    <strong>Municipality:</strong> ${escapeHtml(municipality)}
+                    <br><br>
+            `;
+
+            (municipalityData.commodities || []).forEach(item => {
+                popupContent += `
+                    <strong>Commodity:</strong> ${escapeHtml(item.commodity)}<br>
+                    <strong>Status:</strong> ${escapeHtml(item.status)}<br><br>
+                `;
+            });
+
+            popupContent += `</div>`;
+
+            L.marker(coordinates).addTo(mapInstance).bindPopup(popupContent);
+        });
 
     } catch (error) {
         console.error("Failed to load municipality map data:", error);
     }
 }
 
-function renderFilteredMapMarkers() {
-    if (!mapInstance) return;
-
-    // Remove existing markers layer
-    if (mapMarkersLayer) {
-        mapInstance.removeLayer(mapMarkersLayer);
-    }
-
-    mapMarkersLayer = L.layerGroup().addTo(mapInstance);
-
-    const municipalityCoordinates = window.MUNICIPALITY_COORDINATES || {};
-    const selectedCommodity =
-        document.getElementById('filterCommodity')?.value || 'all';
-    const selectedStatus =
-        document.getElementById('filterStatus')?.value || 'all';
-
-    MUNICIPALITY_MAP_RAW_DATA.forEach(municipalityData => {
-        const municipality = municipalityData.municipality;
-        const baseCoordinates = municipalityCoordinates[municipality];
-
-        if (!baseCoordinates || !municipalityData.commodities) return;
-
-        // Filter commodities base sa dropdown selections
-        const filteredCommodities = municipalityData.commodities.filter(item => {
-            const commodityMatch =
-                selectedCommodity === 'all' ||
-                item.commodity.toLowerCase() === selectedCommodity.toLowerCase();
-
-            const statusVal = (item.status || "").toUpperCase();
-
-            let statusMatch = true;
-            if (selectedStatus !== 'all') {
-                statusMatch = statusVal.includes(selectedStatus);
-            }
-
-            return commodityMatch && statusMatch;
-        });
-
-        const totalFiltered = filteredCommodities.length;
-
-        filteredCommodities.forEach((item, index) => {
-            const commodity = item.commodity;
-            const status = (item.status || "").toUpperCase();
-
-            // Offset para hindi magpatong ang markers sa iisang munisipyo
-            const offsetLat =
-                baseCoordinates[0] + (index - (totalFiltered / 2)) * 0.0025;
-            const offsetLng =
-                baseCoordinates[1] + (index - (totalFiltered / 2)) * 0.0025;
-            const markerCoordinates = [offsetLat, offsetLng];
-
-            // Color-coding:
-            // Red = Surplus/Oversupply
-            // Green = Balanced
-            // Yellow = Deficit
-            // Gray = No Data
-            let markerColor = "#6c757d"; // Gray default
-
-            if (status.includes("SURPLUS") || status.includes("OVERSUPPLY")) {
-                markerColor = "#C0392B"; // Red
-            } else if (status.includes("BALANCED")) {
-                markerColor = "#2E7D32"; // Green
-            } else if (status.includes("DEFICIT")) {
-                markerColor = "#D97706"; // Yellow / Amber
-            }
-
-            const customIcon = L.divIcon({
-                className: 'custom-map-marker',
-                html: `<div style="
-                    background-color: ${markerColor};
-                    width: 16px;
-                    height: 16px;
-                    border-radius: 50%;
-                    border: 2px solid white;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-                "></div>`,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
-            });
-
-            const popupContent = `
-                <div style="min-width:180px;">
-                    <strong>Municipality:</strong> ${municipality}
-                    <br><br>
-                    <strong>Commodity:</strong> ${commodity}
-                    <br>
-                    <strong>Status:</strong>
-                    <span style="font-weight:700; color:${markerColor};">
-                        ${status || 'NO DATA'}
-                    </span>
-                </div>
-            `;
-
-            L.marker(markerCoordinates, { icon: customIcon })
-                .addTo(mapMarkersLayer)
-                .bindPopup(popupContent);
-        });
-    });
-}
 
 /* ============================================================
    BUYER REGISTRY INITIALIZATION
@@ -603,179 +434,43 @@ function renderFilteredMapMarkers() {
 
 function initBuyerRegistry() {
 
-    /* --------------------------------------------
-       INITIAL LOAD
-    -------------------------------------------- */
-
     loadBuyerRegistry();
 
+    document.getElementById("returnBuyerListBtn")
+        ?.addEventListener("click", showBuyerList);
 
-    /* --------------------------------------------
-       RETURN TO BUYER LIST
-    -------------------------------------------- */
-
-    const returnBuyerListBtn =
-        document.getElementById(
-            "returnBuyerListBtn"
-        );
-
-
-    returnBuyerListBtn?.addEventListener(
-        "click",
-        () => {
-
-            showBuyerList();
-
-        }
-    );
-
-
-    /* --------------------------------------------
-       VIEW BUYER ATTACHMENT
-    -------------------------------------------- */
-
-    const viewBuyerAttachmentBtn =
-        document.getElementById(
-            "viewBuyerAttachmentBtn"
-        );
-
-
-    viewBuyerAttachmentBtn?.addEventListener(
-        "click",
-        async () => {
-
+    document.getElementById("viewBuyerAttachmentBtn")
+        ?.addEventListener("click", async () => {
             if (!currentSelectedBuyer) {
-
-                showError(
-                    "No buyer application selected."
-                );
-
+                showError("No buyer application selected.");
                 return;
-
             }
+            await viewBuyerAttachment(currentSelectedBuyer);
+        });
 
-
-            await viewBuyerAttachment(
-                currentSelectedBuyer
-            );
-
-        }
-    );
-
-
-    /* --------------------------------------------
-       APPROVE BUYER BUTTON
-    -------------------------------------------- */
-
-    const approveBuyerBtn =
-        document.getElementById(
-            "approveBuyerBtn"
-        );
-
-
-    approveBuyerBtn?.addEventListener(
-        "click",
-        () => {
-
+    document.getElementById("approveBuyerBtn")
+        ?.addEventListener("click", () => {
             if (!currentSelectedBuyer) {
-
-                showError(
-                    "No buyer application selected."
-                );
-
+                showError("No buyer application selected.");
                 return;
-
             }
+            document.getElementById("confirmApproveModal")?.classList.add("show");
+        });
 
-
-            const modal =
-                document.getElementById(
-                    "confirmApproveModal"
-                );
-
-
-            modal?.classList.add("show");
-
-        }
-    );
-
-
-    /* --------------------------------------------
-       REJECT BUYER BUTTON
-    -------------------------------------------- */
-
-    const rejectBuyerBtn =
-        document.getElementById(
-            "rejectBuyerBtn"
-        );
-
-
-    rejectBuyerBtn?.addEventListener(
-        "click",
-        () => {
-
+    document.getElementById("rejectBuyerBtn")
+        ?.addEventListener("click", () => {
             if (!currentSelectedBuyer) {
-
-                showError(
-                    "No buyer application selected."
-                );
-
+                showError("No buyer application selected.");
                 return;
-
             }
+            document.getElementById("confirmRejectModal")?.classList.add("show");
+        });
 
+    document.getElementById("confirmApproveBtn")
+        ?.addEventListener("click", approveSelectedBuyer);
 
-            const modal =
-                document.getElementById(
-                    "confirmRejectModal"
-                );
-
-
-            modal?.classList.add("show");
-
-        }
-    );
-
-
-    /* --------------------------------------------
-       CONFIRM APPROVE
-    -------------------------------------------- */
-
-    const confirmApproveBtn =
-        document.getElementById(
-            "confirmApproveBtn"
-        );
-
-
-    confirmApproveBtn?.addEventListener(
-        "click",
-        async () => {
-
-            await approveSelectedBuyer();
-
-        }
-    );
-
-
-    /* --------------------------------------------
-       CONFIRM REJECT
-    -------------------------------------------- */
-
-    const confirmRejectBtn =
-        document.getElementById(
-            "confirmRejectBtn"
-        );
-
-
-    confirmRejectBtn?.addEventListener(
-        "click",
-        async () => {
-
-            await rejectSelectedBuyer();
-
-        }
-    );
-
+    document.getElementById("confirmRejectBtn")
+        ?.addEventListener("click", rejectSelectedBuyer);
 }
 
 
@@ -785,306 +480,91 @@ function initBuyerRegistry() {
 
 async function viewBuyerAttachment(buyer) {
 
-    if (!buyer) {
-
-        showError(
-            "No buyer application selected."
-        );
-
-        return;
-
-    }
-
-
-    /* --------------------------------------------
-       GET BUYER REGISTRY ID
-    -------------------------------------------- */
+    if (!buyer) { showError("No buyer application selected."); return; }
 
     const buyerRegistryId =
-        buyer.buyer_registry_id ||
-        buyer.buyerRegistryId ||
-        buyer.id;
-
+        buyer.buyer_registry_id || buyer.buyerRegistryId || buyer.id;
 
     if (!buyerRegistryId) {
-
-        console.error(
-            "BUYER OBJECT:",
-            buyer
-        );
-
-        showError(
-            "Buyer registry ID is missing."
-        );
-
+        console.error("BUYER OBJECT:", buyer);
+        showError("Buyer registry ID is missing.");
         return;
-
     }
 
-
-    const button =
-        document.getElementById(
-            "viewBuyerAttachmentBtn"
-        );
-
+    const button = document.getElementById("viewBuyerAttachmentBtn");
 
     try {
-
         if (button) {
-
             button.disabled = true;
-
-            button.dataset.originalText =
-                button.textContent;
-
-            button.textContent =
-                "Opening...";
-
+            button.dataset.originalText = button.textContent;
+            button.textContent = "Opening...";
         }
-
-
-        /* --------------------------------------------
-           ATTACHMENT ENDPOINT
-        -------------------------------------------- */
 
         const endpoint =
             `${BUYER_ATTACHMENT_ENDPOINT}/${buyerRegistryId}/attachment`;
 
-
-        console.log(
-            "VIEW BUYER ATTACHMENT:",
-            endpoint
+        const response = await fetch(
+            endpoint,
+            { method: "GET", headers: getAuthHeaders(false) }
         );
-
-
-        const response =
-            await fetch(
-                endpoint,
-                {
-                    method: "GET",
-                    headers: getAuthHeaders(false)
-                }
-            );
-
-
-        /* --------------------------------------------
-           HANDLE API ERROR
-        -------------------------------------------- */
 
         if (!response.ok) {
-
-            const errorText =
-                await response.text();
-
-            let errorMessage =
-                "Unable to load buyer attachment.";
-
+            const errorText = await response.text();
+            let errorMessage = "Unable to load buyer attachment.";
 
             try {
-
-                const errorData =
-                    JSON.parse(errorText);
-
-
-                errorMessage =
-                    errorData.detail ||
-                    errorData.message ||
-                    errorMessage;
-
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.detail || errorData.message || errorMessage;
             } catch {
-
-                if (errorText) {
-
-                    errorMessage =
-                        errorText;
-
-                }
-
+                if (errorText) errorMessage = errorText;
             }
 
-
-            throw new Error(
-                `Status ${response.status}: ${errorMessage}`
-            );
-
+            throw new Error(`Status ${response.status}: ${errorMessage}`);
         }
 
+        const contentType = response.headers.get("content-type") || "";
 
-        /* --------------------------------------------
-           CHECK CONTENT TYPE
-        -------------------------------------------- */
+        if (!contentType.includes("application/json")) {
+            const blob = await response.blob();
+            if (!blob.size) throw new Error("The buyer attachment is empty.");
 
-        const contentType =
-            response.headers.get(
-                "content-type"
-            ) || "";
-
-
-        /* --------------------------------------------
-           IF DIRECT FILE RESPONSE
-        -------------------------------------------- */
-
-        if (
-            !contentType.includes(
-                "application/json"
-            )
-        ) {
-
-            const blob =
-                await response.blob();
-
-
-            if (!blob.size) {
-
-                throw new Error(
-                    "The buyer attachment is empty."
-                );
-
-            }
-
-
-            const blobUrl =
-                URL.createObjectURL(
-                    blob
-                );
-
-
-            window.open(
-                blobUrl,
-                "_blank"
-            );
-
-
-            setTimeout(
-                () => {
-
-                    URL.revokeObjectURL(
-                        blobUrl
-                    );
-
-                },
-                60000
-            );
-
-
+            const blobUrl = URL.createObjectURL(blob);
+            window.open(blobUrl, "_blank");
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
             return;
-
         }
 
-
-        /* --------------------------------------------
-           IF JSON RESPONSE
-        -------------------------------------------- */
-
-        const data =
-            await response.json();
-
-
-        console.log(
-            "BUYER ATTACHMENT DATA:",
-            data
-        );
-
+        const data = await response.json();
 
         const attachmentUrl =
-            data.attachment_url ||
-            data.file_url ||
-            data.document_url ||
-            data.url ||
-            data.attachment_path ||
-            data.file_path ||
-            data.document_path;
+            data.attachment_url || data.file_url || data.document_url ||
+            data.url || data.attachment_path || data.file_path || data.document_path;
 
+        if (!attachmentUrl) throw new Error("No attachment was found for this buyer.");
 
-        if (!attachmentUrl) {
+        let finalUrl = attachmentUrl;
 
-            throw new Error(
-                "No attachment was found for this buyer."
-            );
+        if (!attachmentUrl.startsWith("http://") &&
+            !attachmentUrl.startsWith("https://") &&
+            !attachmentUrl.startsWith("blob:") &&
+            !attachmentUrl.startsWith("data:")) {
 
+            finalUrl = attachmentUrl.startsWith("/")
+                ? `${API_BASE_URL}${attachmentUrl}`
+                : `${API_BASE_URL}/${attachmentUrl}`;
         }
 
-
-        /* --------------------------------------------
-           HANDLE RELATIVE URL
-        -------------------------------------------- */
-
-        let finalUrl =
-            attachmentUrl;
-
-
-        if (
-            !attachmentUrl.startsWith(
-                "http://"
-            ) &&
-            !attachmentUrl.startsWith(
-                "https://"
-            ) &&
-            !attachmentUrl.startsWith(
-                "blob:"
-            ) &&
-            !attachmentUrl.startsWith(
-                "data:"
-            )
-        ) {
-
-            if (
-                attachmentUrl.startsWith("/")
-            ) {
-
-                finalUrl =
-                    `${API_BASE_URL}${attachmentUrl}`;
-
-            } else {
-
-                finalUrl =
-                    `${API_BASE_URL}/${attachmentUrl}`;
-
-            }
-
-        }
-
-
-        console.log(
-            "OPENING ATTACHMENT:",
-            finalUrl
-        );
-
-
-        window.open(
-            finalUrl,
-            "_blank"
-        );
-
+        window.open(finalUrl, "_blank");
 
     } catch (error) {
-
-        console.error(
-            "VIEW BUYER ATTACHMENT ERROR:",
-            error
-        );
-
-
-        alert(
-            error.message ||
-            "Failed to open buyer attachment."
-        );
-
-
+        console.error("VIEW BUYER ATTACHMENT ERROR:", error);
+        alert(error.message || "Failed to open buyer attachment.");
     } finally {
-
         if (button) {
-
             button.disabled = false;
-
-            button.textContent =
-                button.dataset.originalText ||
-                "View Attachment";
-
+            button.textContent = button.dataset.originalText || "View Attachment";
         }
-
     }
-
 }
 
 
@@ -1093,400 +573,131 @@ async function viewBuyerAttachment(buyer) {
 ============================================================ */
 
 async function loadBuyerRegistry() {
-
-    await Promise.all(
-        [
-            loadPendingBuyers(),
-            loadVerifiedBuyers()
-        ]
-    );
-
+    await Promise.all([loadPendingBuyers(), loadVerifiedBuyers()]);
 }
 
-
-/* ============================================================
-   LOAD PENDING BUYERS
-============================================================ */
 
 async function loadPendingBuyers() {
 
-    const tbody =
-        document.getElementById(
-            "pendingBuyersBody"
-        );
+    const tbody = document.getElementById("pendingBuyersBody");
+    if (!tbody) return;
 
-
-    if (!tbody) {
-
-        return;
-
-    }
-
-
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="2">
-                Loading pending buyer applications...
-            </td>
-        </tr>
-    `;
-
+    tbody.innerHTML = `<tr><td colspan="2">Loading pending buyer applications...</td></tr>`;
 
     try {
-
-        const response =
-            await fetch(
-                PENDING_BUYERS_ENDPOINT,
-                {
-                    method: "GET",
-                    headers: getAuthHeaders()
-                }
-            );
-
+        const response = await fetch(
+            PENDING_BUYERS_ENDPOINT,
+            { method: "GET", headers: getAuthHeaders() }
+        );
 
         if (!response.ok) {
-
-            const errorText =
-                await response.text();
-
-            throw new Error(
-                `Failed to fetch pending buyers.
-Status: ${response.status}
-${errorText}`
-            );
-
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch pending buyers.\nStatus: ${response.status}\n${errorText}`);
         }
 
-
-        const data =
-            await response.json();
-
-
-        pendingBuyersCache =
-            Array.isArray(data)
-                ? data
-                : [];
-
-
-        renderPendingBuyers(
-            pendingBuyersCache
-        );
-
+        const data = await response.json();
+        pendingBuyersCache = Array.isArray(data) ? data : [];
+        renderPendingBuyers(pendingBuyersCache);
 
     } catch (error) {
-
-        console.error(
-            "LOAD PENDING BUYERS ERROR:",
-            error
-        );
-
-
+        console.error("LOAD PENDING BUYERS ERROR:", error);
         tbody.innerHTML = `
-            <tr>
-                <td colspan="2">
-
-                    <strong>
-                        Unable to load pending buyers.
-                    </strong>
-
-                    <br>
-
-                    <small>
-                        Check if FastAPI is running
-                        and the endpoint is available.
-                    </small>
-
-                </td>
-            </tr>
+            <tr><td colspan="2">
+                <strong>Unable to load pending buyers.</strong><br>
+                <small>Check if FastAPI is running and the endpoint is available.</small>
+            </td></tr>
         `;
-
     }
-
 }
 
-
-/* ============================================================
-   RENDER PENDING BUYERS
-============================================================ */
 
 function renderPendingBuyers(buyers) {
 
-    const tbody =
-        document.getElementById(
-            "pendingBuyersBody"
-        );
-
-
-    if (!tbody) {
-
-        return;
-
-    }
-
+    const tbody = document.getElementById("pendingBuyersBody");
+    if (!tbody) return;
 
     tbody.innerHTML = "";
 
-
     if (!buyers.length) {
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="2">
-                    No pending buyer applications.
-                </td>
-            </tr>
-        `;
-
+        tbody.innerHTML = `<tr><td colspan="2">No pending buyer applications.</td></tr>`;
         return;
-
     }
 
+    buyers.forEach(buyer => {
+        const row = document.createElement("tr");
+        row.className = "clickable-row";
+        row.dataset.buyerStatusId = buyer.buyer_status_id ?? "";
+        row.dataset.buyerRegistryId = buyer.buyer_registry_id ?? "";
 
-    buyers.forEach(
-        buyer => {
+        row.innerHTML = `
+            <td><span class="pill">${escapeHtml(buyer.organization || "N/A")}</span></td>
+            <td><span class="pill">${escapeHtml(buyer.contact_person || "N/A")}</span></td>
+        `;
 
-            const row =
-                document.createElement("tr");
-
-
-            row.className =
-                "clickable-row";
-
-
-            row.dataset.buyerStatusId =
-                buyer.buyer_status_id ?? "";
-
-
-            row.dataset.buyerRegistryId =
-                buyer.buyer_registry_id ?? "";
-
-
-            row.innerHTML = `
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            buyer.organization || "N/A"
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            buyer.contact_person || "N/A"
-                        )}
-                    </span>
-                </td>
-            `;
-
-
-            row.addEventListener(
-                "click",
-                () => {
-
-                    openBuyerReview(
-                        buyer
-                    );
-
-                }
-            );
-
-
-            tbody.appendChild(row);
-
-        }
-    );
-
+        row.addEventListener("click", () => openBuyerReview(buyer));
+        tbody.appendChild(row);
+    });
 }
 
-
-/* ============================================================
-   LOAD VERIFIED BUYERS
-============================================================ */
 
 async function loadVerifiedBuyers() {
 
-    const tbody =
-        document.getElementById(
-            "verifiedBuyersBody"
-        );
+    const tbody = document.getElementById("verifiedBuyersBody");
+    if (!tbody) return;
 
-
-    if (!tbody) {
-
-        return;
-
-    }
-
-
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="5">
-                Loading verified buyers...
-            </td>
-        </tr>
-    `;
-
+    tbody.innerHTML = `<tr><td colspan="5">Loading verified buyers...</td></tr>`;
 
     try {
-
-        const response =
-            await fetch(
-                VERIFIED_BUYERS_ENDPOINT,
-                {
-                    method: "GET",
-                    headers: getAuthHeaders()
-                }
-            );
-
+        const response = await fetch(
+            VERIFIED_BUYERS_ENDPOINT,
+            { method: "GET", headers: getAuthHeaders() }
+        );
 
         if (!response.ok) {
-
-            const errorText =
-                await response.text();
-
-            throw new Error(
-                `Failed to fetch verified buyers.
-Status: ${response.status}
-${errorText}`
-            );
-
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch verified buyers.\nStatus: ${response.status}\n${errorText}`);
         }
 
-
-        const data =
-            await response.json();
-
-
-        verifiedBuyersCache =
-            Array.isArray(data)
-                ? data
-                : [];
-
-
-        renderVerifiedBuyers(
-            verifiedBuyersCache
-        );
-
+        const data = await response.json();
+        verifiedBuyersCache = Array.isArray(data) ? data : [];
+        renderVerifiedBuyers(verifiedBuyersCache);
 
     } catch (error) {
-
-        console.error(
-            "LOAD VERIFIED BUYERS ERROR:",
-            error
-        );
-
-
+        console.error("LOAD VERIFIED BUYERS ERROR:", error);
         tbody.innerHTML = `
-            <tr>
-                <td colspan="5">
-
-                    <strong>
-                        Unable to load verified buyers.
-                    </strong>
-
-                    <br>
-
-                    <small>
-                        Check if FastAPI is running
-                        and the endpoint is available.
-                    </small>
-
-                </td>
-            </tr>
+            <tr><td colspan="5">
+                <strong>Unable to load verified buyers.</strong><br>
+                <small>Check if FastAPI is running and the endpoint is available.</small>
+            </td></tr>
         `;
-
     }
-
 }
 
 
-/* ============================================================
-   RENDER VERIFIED BUYERS
-============================================================ */
-
 function renderVerifiedBuyers(buyers) {
 
-    const tbody =
-        document.getElementById(
-            "verifiedBuyersBody"
-        );
-
-
-    if (!tbody) {
-
-        return;
-
-    }
-
+    const tbody = document.getElementById("verifiedBuyersBody");
+    if (!tbody) return;
 
     tbody.innerHTML = "";
 
-
     if (!buyers.length) {
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="4">
-                    No verified buyers found.
-                </td>
-            </tr>
-        `;
-
+        tbody.innerHTML = `<tr><td colspan="4">No verified buyers found.</td></tr>`;
         return;
-
     }
 
+    buyers.forEach(buyer => {
+        const row = document.createElement("tr");
 
-    buyers.forEach(
-        buyer => {
+        row.innerHTML = `
+            <td><span class="pill">${escapeHtml(buyer.organization || "N/A")}</span></td>
+            <td><span class="pill">${escapeHtml(buyer.contact_person || "N/A")}</span></td>
+            <td><span class="pill">${escapeHtml(buyer.email_address || "N/A")}</span></td>
+            <td><span class="status-text-verified">Verified</span></td>
+        `;
 
-            const row =
-                document.createElement("tr");
-
-
-            row.innerHTML = `
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            buyer.organization || "N/A"
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            buyer.contact_person || "N/A"
-                        )}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            buyer.email_address || "N/A"
-                        )}
-                    </span>
-                </td>
-
-              
-
-                <td>
-                    <span class="status-text-verified">
-                        Verified
-                    </span>
-                </td>
-
-            `;
-
-
-            tbody.appendChild(row);
-
-        }
-    );
-
+        tbody.appendChild(row);
+    });
 }
 
 
@@ -1496,759 +707,263 @@ function renderVerifiedBuyers(buyers) {
 
 function openBuyerReview(buyer) {
 
-    currentSelectedBuyer =
-        buyer;
+    currentSelectedBuyer = buyer;
 
+    const buyerRegistryList = document.getElementById("buyerRegistryList");
+    const buyerReviewDetails = document.getElementById("buyerReviewDetails");
 
-    const buyerRegistryList =
-        document.getElementById(
-            "buyerRegistryList"
-        );
+    const reviewOrg = document.getElementById("reviewOrg");
+    if (reviewOrg) reviewOrg.textContent = buyer.organization || "N/A";
 
+    const reviewContact = document.getElementById("reviewContact");
+    if (reviewContact) reviewContact.textContent = buyer.contact_person || "N/A";
 
-    const buyerReviewDetails =
-        document.getElementById(
-            "buyerReviewDetails"
-        );
+    const reviewEmail = document.getElementById("reviewEmail");
+    if (reviewEmail) reviewEmail.textContent = buyer.email_address || "N/A";
 
+    renderReviewCommodities(buyer);
 
-    /* --------------------------------------------
-       ORGANIZATION
-    -------------------------------------------- */
-
-    const reviewOrg =
-        document.getElementById(
-            "reviewOrg"
-        );
-
-
-    if (reviewOrg) {
-
-        reviewOrg.textContent =
-            buyer.organization || "N/A";
-
-    }
-
-
-    /* --------------------------------------------
-       CONTACT PERSON
-    -------------------------------------------- */
-
-    const reviewContact =
-        document.getElementById(
-            "reviewContact"
-        );
-
-
-    if (reviewContact) {
-
-        reviewContact.textContent =
-            buyer.contact_person || "N/A";
-
-    }
-
-
-    /* --------------------------------------------
-       EMAIL
-    -------------------------------------------- */
-
-    const reviewEmail =
-        document.getElementById(
-            "reviewEmail"
-        );
-
-
-    if (reviewEmail) {
-
-        reviewEmail.textContent =
-            buyer.email_address || "N/A";
-
-    }
-
-
-    /* --------------------------------------------
-       COMMODITIES
-    -------------------------------------------- */
-
-    renderReviewCommodities(
-        buyer
-    );
-
-
-    /* --------------------------------------------
-       MESSAGE
-    -------------------------------------------- */
-
-    const messageTextarea =
-        document.querySelector(
-            "#buyerReviewDetails textarea"
-        );
-
-
+    const messageTextarea = document.querySelector("#buyerReviewDetails textarea");
     if (messageTextarea) {
-
-        messageTextarea.value =
-            buyer.message ||
-            "No message provided.";
-
+        messageTextarea.value = buyer.message || "No message provided.";
     }
 
-
-    /* --------------------------------------------
-       SHOW REVIEW
-    -------------------------------------------- */
-
-    buyerRegistryList?.classList.add(
-        "hidden-element"
-    );
-
-
-    buyerReviewDetails?.classList.remove(
-        "hidden-element"
-    );
-
+    buyerRegistryList?.classList.add("hidden-element");
+    buyerReviewDetails?.classList.remove("hidden-element");
 }
 
-
-/* ============================================================
-   RENDER REVIEW COMMODITIES
-============================================================ */
 
 function renderReviewCommodities(buyer) {
 
-    const container =
-        document.getElementById(
-            "reviewCommodities"
-        );
-
-
-    if (!container) {
-
-        return;
-
-    }
-
+    const container = document.getElementById("reviewCommodities");
+    if (!container) return;
 
     container.innerHTML = "";
 
-
-    const commodities =
-        getCommodityArray(
-            buyer
-        );
-
+    const commodities = getCommodityArray(buyer);
 
     if (!commodities.length) {
-
-        const span =
-            document.createElement(
-                "span"
-            );
-
-
-        span.className =
-            "pill";
-
-
-        span.textContent =
-            "Not specified";
-
-
-        container.appendChild(
-            span
-        );
-
-
+        const span = document.createElement("span");
+        span.className = "pill";
+        span.textContent = "Not specified";
+        container.appendChild(span);
         return;
-
     }
 
-
-    commodities.forEach(
-        commodity => {
-
-            const span =
-                document.createElement(
-                    "span"
-                );
-
-
-            span.className =
-                "pill";
-
-
-            span.textContent =
-                commodity;
-
-
-            container.appendChild(
-                span
-            );
-
-        }
-    );
-
+    commodities.forEach(commodity => {
+        const span = document.createElement("span");
+        span.className = "pill";
+        span.textContent = commodity;
+        container.appendChild(span);
+    });
 }
 
-
-/* ============================================================
-   GET COMMODITY ARRAY
-============================================================ */
 
 function getCommodityArray(buyer) {
 
-    if (!buyer) {
+    if (!buyer) return [];
 
-        return [];
-
+    if (Array.isArray(buyer.commodities)) {
+        return buyer.commodities.map(i => String(i).trim()).filter(Boolean);
     }
 
-
-    /* --------------------------------------------
-       ARRAY
-    -------------------------------------------- */
-
-    if (
-        Array.isArray(
-            buyer.commodities
-        )
-    ) {
-
-        return buyer.commodities
-            .map(
-                item =>
-                    String(item).trim()
-            )
-            .filter(Boolean);
-
+    if (typeof buyer.commodities === "string") {
+        return buyer.commodities.split(",").map(i => i.trim()).filter(Boolean);
     }
-
-
-    /* --------------------------------------------
-       STRING
-    -------------------------------------------- */
-
-    if (
-        typeof buyer.commodities === "string"
-    ) {
-
-        return buyer.commodities
-            .split(",")
-            .map(
-                item =>
-                    item.trim()
-            )
-            .filter(Boolean);
-
-    }
-
-
-    /* --------------------------------------------
-       SINGLE COMMODITY
-    -------------------------------------------- */
 
     if (buyer.commodity) {
-
-        return [
-            String(
-                buyer.commodity
-            ).trim()
-        ];
-
+        return [String(buyer.commodity).trim()];
     }
-
 
     return [];
-
 }
 
-
-/* ============================================================
-   GET COMMODITIES FOR TABLE
-============================================================ */
-
-function getBuyerCommodities(buyer) {
-
-    const commodities =
-        getCommodityArray(
-            buyer
-        );
-
-
-    if (!commodities.length) {
-
-        return "Not specified";
-
-    }
-
-
-    return commodities.join(
-        ", "
-    );
-
-}
-
-
-/* ============================================================
-   RETURN TO BUYER LIST
-============================================================ */
 
 function showBuyerList() {
 
-    const buyerRegistryList =
-        document.getElementById(
-            "buyerRegistryList"
-        );
+    const buyerRegistryList = document.getElementById("buyerRegistryList");
+    const buyerReviewDetails = document.getElementById("buyerReviewDetails");
 
+    buyerReviewDetails?.classList.add("hidden-element");
+    buyerRegistryList?.classList.remove("hidden-element");
 
-    const buyerReviewDetails =
-        document.getElementById(
-            "buyerReviewDetails"
-        );
-
-
-    buyerReviewDetails?.classList.add(
-        "hidden-element"
-    );
-
-
-    buyerRegistryList?.classList.remove(
-        "hidden-element"
-    );
-
-
-    currentSelectedBuyer =
-        null;
-
+    currentSelectedBuyer = null;
 }
 
 
 /* ============================================================
-   APPROVE SELECTED BUYER
+   APPROVE / REJECT SELECTED BUYER
 ============================================================ */
 
 async function approveSelectedBuyer() {
 
-    if (!currentSelectedBuyer) {
+    if (!currentSelectedBuyer) { showError("No buyer application selected."); return; }
 
-        showError(
-            "No buyer application selected."
-        );
+    const buyerStatusId = currentSelectedBuyer.buyer_status_id;
+    if (!buyerStatusId) { showError("Buyer status ID is missing."); return; }
 
-        return;
-
-    }
-
-
-    const buyerStatusId =
-        currentSelectedBuyer.buyer_status_id;
-
-
-    if (!buyerStatusId) {
-
-        showError(
-            "Buyer status ID is missing."
-        );
-
-        return;
-
-    }
-
-
-    const confirmButton =
-        document.getElementById(
-            "confirmApproveBtn"
-        );
-
+    const confirmButton = document.getElementById("confirmApproveBtn");
 
     try {
+        setButtonLoading(confirmButton, "Approving...");
 
-        setButtonLoading(
-            confirmButton,
-            "Approving..."
+        const response = await fetch(
+            `${BUYER_STATUS_ENDPOINT}/${buyerStatusId}/verify`,
+            { method: "PUT", headers: getAuthHeaders() }
         );
 
-
-        const response =
-            await fetch(
-                `${BUYER_STATUS_ENDPOINT}/${buyerStatusId}/verify`,
-                {
-                    method: "PUT",
-                    headers: getAuthHeaders()
-                }
-            );
-
-
-        const data =
-            await parseResponse(
-                response
-            );
-
+        const data = await parseResponse(response);
 
         if (!response.ok) {
-
-            throw new Error(
-                data.detail ||
-                data.message ||
-                "Unable to approve buyer."
-            );
-
+            throw new Error(data.detail || data.message || "Unable to approve buyer.");
         }
 
+        closeModal("confirmApproveModal");
+        alert("Buyer verified successfully.");
 
-        console.log(
-            "BUYER APPROVED:",
-            data
-        );
-
-
-        closeModal(
-            "confirmApproveModal"
-        );
-
-
-        alert(
-            "Buyer verified successfully."
-        );
-
-
-        currentSelectedBuyer =
-            null;
-
-
+        currentSelectedBuyer = null;
         showBuyerList();
-
-
-        /* --------------------------------------------
-           REFRESH BOTH TABLES
-        -------------------------------------------- */
-
         await loadBuyerRegistry();
 
-
     } catch (error) {
-
-        console.error(
-            "APPROVE BUYER ERROR:",
-            error
-        );
-
-
-        alert(
-            error.message ||
-            "Failed to approve buyer."
-        );
-
+        console.error("APPROVE BUYER ERROR:", error);
+        alert(error.message || "Failed to approve buyer.");
     } finally {
-
-        resetButton(
-            confirmButton,
-            "Yes, Approve"
-        );
-
+        resetButton(confirmButton, "Yes, Approve");
     }
-
 }
 
-
-/* ============================================================
-   REJECT SELECTED BUYER
-============================================================ */
 
 async function rejectSelectedBuyer() {
 
-    if (!currentSelectedBuyer) {
+    if (!currentSelectedBuyer) { showError("No buyer application selected."); return; }
 
-        showError(
-            "No buyer application selected."
-        );
+    const buyerStatusId = currentSelectedBuyer.buyer_status_id;
+    if (!buyerStatusId) { showError("Buyer status ID is missing."); return; }
 
-        return;
-
-    }
-
-
-    const buyerStatusId =
-        currentSelectedBuyer.buyer_status_id;
-
-
-    if (!buyerStatusId) {
-
-        showError(
-            "Buyer status ID is missing."
-        );
-
-        return;
-
-    }
-
-
-    const confirmButton =
-        document.getElementById(
-            "confirmRejectBtn"
-        );
-
+    const confirmButton = document.getElementById("confirmRejectBtn");
 
     try {
+        setButtonLoading(confirmButton, "Rejecting...");
 
-        setButtonLoading(
-            confirmButton,
-            "Rejecting..."
+        const response = await fetch(
+            `${BUYER_STATUS_ENDPOINT}/${buyerStatusId}/reject`,
+            { method: "PUT", headers: getAuthHeaders() }
         );
 
-
-        const response =
-            await fetch(
-                `${BUYER_STATUS_ENDPOINT}/${buyerStatusId}/reject`,
-                {
-                    method: "PUT",
-                    headers: getAuthHeaders()
-                }
-            );
-
-
-        const data =
-            await parseResponse(
-                response
-            );
-
+        const data = await parseResponse(response);
 
         if (!response.ok) {
-
-            throw new Error(
-                data.detail ||
-                data.message ||
-                "Unable to reject buyer."
-            );
-
+            throw new Error(data.detail || data.message || "Unable to reject buyer.");
         }
 
+        closeModal("confirmRejectModal");
+        alert("Buyer application rejected.");
 
-        console.log(
-            "BUYER REJECTED:",
-            data
-        );
-
-
-        closeModal(
-            "confirmRejectModal"
-        );
-
-
-        alert(
-            "Buyer application rejected."
-        );
-
-
-        currentSelectedBuyer =
-            null;
-
-
+        currentSelectedBuyer = null;
         showBuyerList();
-
-
-        /* --------------------------------------------
-           REFRESH BOTH TABLES
-        -------------------------------------------- */
-
         await loadBuyerRegistry();
 
-
     } catch (error) {
-
-        console.error(
-            "REJECT BUYER ERROR:",
-            error
-        );
-
-
-        alert(
-            error.message ||
-            "Failed to reject buyer."
-        );
-
+        console.error("REJECT BUYER ERROR:", error);
+        alert(error.message || "Failed to reject buyer.");
     } finally {
-
-        resetButton(
-            confirmButton,
-            "Yes, Reject"
-        );
-
+        resetButton(confirmButton, "Yes, Reject");
     }
-
 }
 
 
 /* ============================================================
-   PARSE API RESPONSE
+   GENERIC HELPERS
 ============================================================ */
 
 async function parseResponse(response) {
-
-    const text =
-        await response.text();
-
-
-    if (!text) {
-
-        return {};
-
-    }
-
-
-    try {
-
-        return JSON.parse(
-            text
-        );
-
-    } catch {
-
-        return {
-            detail: text
-        };
-
-    }
-
+    const text = await response.text();
+    if (!text) return {};
+    try { return JSON.parse(text); } catch { return { detail: text }; }
 }
 
-
-/* ============================================================
-   BUTTON LOADING
-============================================================ */
-
-function setButtonLoading(
-    button,
-    text
-) {
-
-    if (!button) {
-
-        return;
-
-    }
-
-
-    button.disabled =
-        true;
-
-
-    button.dataset.originalText =
-        button.textContent;
-
-
-    button.textContent =
-        text;
-
+function setButtonLoading(button, text) {
+    if (!button) return;
+    button.disabled = true;
+    button.dataset.originalText = button.textContent;
+    button.textContent = text;
 }
 
-
-/* ============================================================
-   RESET BUTTON
-============================================================ */
-
-function resetButton(
-    button,
-    defaultText
-) {
-
-    if (!button) {
-
-        return;
-
-    }
-
-
-    button.disabled =
-        false;
-
-
-    button.textContent =
-        defaultText;
-
+function resetButton(button, defaultText) {
+    if (!button) return;
+    button.disabled = false;
+    button.textContent = defaultText;
 }
-
-
-/* ============================================================
-   CLOSE MODAL
-============================================================ */
 
 function closeModal(modalId) {
-
-    const modal =
-        document.getElementById(
-            modalId
-        );
-
-
-    modal?.classList.remove(
-        "show"
-    );
-
+    document.getElementById(modalId)?.classList.remove("show");
 }
-
-
-/* ============================================================
-   ERROR MESSAGE
-============================================================ */
 
 function showError(message) {
+    console.error(message);
+    alert(message);
+}
 
-    console.error(
-        message
-    );
+function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
+function formatDate(dateString) {
+    if (!dateString) return "—";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString("en-US", {
+        month: "short", day: "numeric", year: "numeric"
+    });
+}
 
-    alert(
-        message
-    );
-
+function formatKg(value) {
+    return `${Number(value || 0).toLocaleString("en-US", {
+        maximumFractionDigits: 2
+    })} kg`;
 }
 
 
 /* ============================================================
-   ESCAPE HTML
+   STATUS LABEL & CLASS (shared across DA sections)
 ============================================================ */
 
-function escapeHtml(value) {
+function statusLabelAndClass(status) {
+    const s = String(status || "").toUpperCase();
 
-    if (
-        value === null ||
-        value === undefined
-    ) {
-
-        return "";
-
+    if (s === "SUBMITTED_REGIONAL_PENDING" || s === "FOR_DA_RFO_VALIDATION") {
+        return { text: "Regional Pending", cls: "rfo" };
+    }
+    if (s === "SUBMITTED_REGIONAL_FLAGGED") {
+        return { text: "Regional Flagged", cls: "flagged" };
+    }
+    if (s === "SUBMITTED_REGIONAL_APPROVED" || s === "FINAL_APPROVED") {
+        return { text: "Approved", cls: "approved" };
+    }
+    if (s === "SUBMITTED_PROVINCIAL_PENDING" || s === "FOR_PROVINCIAL_VALIDATION") {
+        return { text: "Provincial Pending", cls: "provincial" };
+    }
+    if (s === "SUBMITTED_PROVINCIAL_FLAGGED") {
+        return { text: "Provincial Flagged", cls: "flagged" };
+    }
+    if (s === "SUBMITTED_MUNICIPAL_PENDING") {
+        return { text: "Municipal Pending", cls: "pending" };
+    }
+    if (s === "SUBMITTED_MUNICIPAL_FLAGGED" || s === "REVISION_REQUIRED") {
+        return { text: "Revision Required", cls: "revision" };
+    }
+    if (s === "DRAFT") {
+        return { text: "Draft", cls: "draft" };
     }
 
-
-    return String(value)
-
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
+    return { text: s || "—", cls: "pending" };
 }
 
 
@@ -2258,1024 +973,314 @@ function escapeHtml(value) {
 
 function initAlertThreshold() {
 
-    const thresholdRange =
-        document.getElementById(
-            "thresholdRange"
-        );
-
-
-    const thresholdValue =
-        document.getElementById(
-            "thresholdValue"
-        );
-
-
-    const chips =
-        document.querySelectorAll(
-            ".threshold-chip"
-        );
-
-
-    const saveBtn =
-        document.getElementById(
-            "saveConfigBtn"
-        );
-
-
-    /* --------------------------------------------
-       UPDATE THRESHOLD UI
-    -------------------------------------------- */
+    const thresholdRange = document.getElementById("thresholdRange");
+    const thresholdValue = document.getElementById("thresholdValue");
+    const chips = document.querySelectorAll(".threshold-chip");
+    const saveBtn = document.getElementById("saveConfigBtn");
 
     function updateThreshold(value) {
+        if (thresholdRange) thresholdRange.value = value;
+        if (thresholdValue) thresholdValue.textContent = `${value}%`;
 
-        if (thresholdRange) {
-
-            thresholdRange.value =
-                value;
-
-        }
-
-
-        if (thresholdValue) {
-
-            thresholdValue.textContent =
-                `${value}%`;
-
-        }
-
-
-        chips.forEach(
-            chip => {
-
-                chip.classList.toggle(
-                    "active",
-                    chip.dataset.val ===
-                    String(value)
-                );
-
-            }
-        );
-
+        chips.forEach(chip => {
+            chip.classList.toggle("active", chip.dataset.val === String(value));
+        });
     }
 
+    thresholdRange?.addEventListener("input", e => updateThreshold(e.target.value));
 
-    /* --------------------------------------------
-       RANGE INPUT
-    -------------------------------------------- */
+    chips.forEach(chip => {
+        chip.addEventListener("click", () => updateThreshold(chip.dataset.val));
+    });
 
-    thresholdRange?.addEventListener(
-        "input",
-        event => {
+    saveBtn?.addEventListener("click", async () => {
 
-            updateThreshold(
-                event.target.value
-            );
+        const commodity = document.getElementById("commoditySelect")?.value;
+        const baseDemand = document.getElementById("baseDemandInput")?.value;
+        const oversupplyThreshold = thresholdRange?.value;
 
-        }
-    );
+        if (!commodity) { alert("Please select a commodity."); return; }
+        if (!baseDemand || Number(baseDemand) <= 0) { alert("Please enter a valid target demand."); return; }
 
+        const payload = {
+            commodity: commodity,
+            base_demand: Number(baseDemand),
+            oversupply_threshold: Number(oversupplyThreshold)
+        };
 
-    /* --------------------------------------------
-       THRESHOLD CHIPS
-    -------------------------------------------- */
-
-    chips.forEach(
-        chip => {
-
-            chip.addEventListener(
-                "click",
-                () => {
-
-                    updateThreshold(
-                        chip.dataset.val
-                    );
-
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/api/alert-thresholds`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    },
+                    body: JSON.stringify(payload)
                 }
             );
 
-        }
-    );
-
-
-    /* --------------------------------------------
-       SAVE CONFIGURATION
-    -------------------------------------------- */
-
-    saveBtn?.addEventListener(
-    "click",
-    async () => {
-
-        const commodity =
-            document.getElementById(
-                "commoditySelect"
-            )?.value;
-
-        const baseDemand =
-            document.getElementById(
-                "baseDemandInput"
-            )?.value;
-
-        const oversupplyThreshold =
-            thresholdRange?.value;
-
-
-        // --------------------------------------------
-        // VALIDATION
-        // --------------------------------------------
-
-        if (!commodity) {
-            alert("Please select a commodity.");
-            return;
-        }
-
-        if (!baseDemand || Number(baseDemand) <= 0) {
-            alert("Please enter a valid target demand.");
-            return;
-        }
-
-
-        // --------------------------------------------
-        // PAYLOAD
-        // --------------------------------------------
-
-        const payload = {
-
-            commodity:
-                commodity,
-
-            base_demand:
-                Number(baseDemand),
-
-            oversupply_threshold:
-                Number(oversupplyThreshold)
-
-        };
-
-
-        console.log(
-            "Saving threshold configuration:",
-            payload
-        );
-
-
-        // --------------------------------------------
-        // SAVE TO BACKEND
-        // --------------------------------------------
-
-        try {
-
-            const response =
-                await fetch(
-                    `${API_BASE_URL}/api/alert-thresholds`,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-
-                            "Authorization":
-                                `Bearer ${localStorage.getItem("token")}`
-                        },
-
-                        body:
-                            JSON.stringify(payload)
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            // --------------------------------------------
-            // ERROR
-            // --------------------------------------------
+            const data = await response.json();
 
             if (!response.ok) {
-
-                console.error(
-                    "Save threshold error:",
-                    data
-                );
-
-                alert(
-                    data.detail ||
-                    "Failed to save threshold configuration."
-                );
-
+                alert(data.detail || "Failed to save threshold configuration.");
                 return;
             }
 
-
-            // --------------------------------------------
-            // SUCCESS
-            // --------------------------------------------
-
-            console.log(
-                "Threshold saved successfully:",
-                data
-            );
-
-            alert(
-                "Threshold configuration saved successfully!"
-            );
-
+            alert("Threshold configuration saved successfully!");
 
         } catch (error) {
-
-            console.error(
-                "Error saving threshold:",
-                error
-            );
-
-            alert(
-                "Unable to connect to the server."
-            );
-
+            console.error("Error saving threshold:", error);
+            alert("Unable to connect to the server.");
         }
-
-    }
-);
+    });
 }
 
 
 /* ============================================================
-   ALERTS SECTION LOGIC
-============================================================ */
-
-/* ============================================================
-   ALERTS SECTION LOGIC
+   ALERTS SECTION
 ============================================================ */
 
 function initAlertsSection() {
-
     loadSystemAlertLogs();
-
 }
 
 
-/* ============================================================
-   LOAD SYSTEM ALERT LOGS
-============================================================ */
-
 async function loadSystemAlertLogs() {
 
-    const alertList =
-        document.getElementById("alertList");
-
-    if (!alertList) {
-        return;
-    }
+    const alertList = document.getElementById("alertList");
+    if (!alertList) return;
 
     alertList.innerHTML = `
-        <div style="text-align:center; padding:30px;">
-            Loading system alerts...
-        </div>
+        <div style="text-align:center; padding:30px;">Loading system alerts...</div>
     `;
 
     try {
-
-        /* --------------------------------------------------------
-           GET ALL MUNICIPALITY MAP DATA
-        -------------------------------------------------------- */
-
         const response = await fetch(
             `${API_BASE_URL}/api/planting-intents/municipality-map`,
-            {
-                method: "GET",
-                headers: getAuthHeaders(false)
-            }
+            { method: "GET", headers: getAuthHeaders(false) }
         );
 
         if (!response.ok) {
-
-            throw new Error(
-                `Failed to load municipality map data: ${response.status}`
-            );
-
+            throw new Error(`Failed to load municipality map data: ${response.status}`);
         }
 
         const result = await response.json();
 
-        if (
-            !result.data ||
-            !Array.isArray(result.data)
-        ) {
-
+        if (!result.data || !Array.isArray(result.data)) {
             alertList.innerHTML = `
-                <div style="text-align:center; padding:30px;">
-                    No system alerts found.
-                </div>
+                <div style="text-align:center; padding:30px;">No system alerts found.</div>
             `;
-
             return;
-
         }
-
-
-        /* --------------------------------------------------------
-           CHECK OVERSUPPLY FOR EVERY COMMODITY
-        -------------------------------------------------------- */
 
         const alertResults = [];
 
         for (const municipalityData of result.data) {
 
-            const municipality =
-                municipalityData.municipality;
+            const municipality = municipalityData.municipality;
+            if (!municipality || !Array.isArray(municipalityData.commodities)) continue;
 
-            if (
-                !municipality ||
-                !Array.isArray(
-                    municipalityData.commodities
-                )
-            ) {
-                continue;
-            }
+            for (const item of municipalityData.commodities) {
 
-
-            for (
-                const item
-                of municipalityData.commodities
-            ) {
-
-                const commodity =
-                    item.commodity;
-
-                if (!commodity) {
-                    continue;
-                }
-
+                const commodity = item.commodity;
+                if (!commodity) continue;
 
                 try {
-
-                    const alertResponse =
-                        await fetch(
-                            `${API_BASE_URL}/api/alert-thresholds/oversupply/${encodeURIComponent(commodity)}?municipality=${encodeURIComponent(municipality)}`,
-                            {
-                                method: "GET",
-                                headers: getAuthHeaders(false)
-                            }
-                        );
-
-
-                    if (!alertResponse.ok) {
-
-                        console.warn(
-                            `No oversupply data for ${commodity} - ${municipality}`
-                        );
-
-                        continue;
-
-                    }
-
-
-                    const alertData =
-                        await alertResponse.json();
-
-
-                    console.log(
-                        `Oversupply check: ${commodity} - ${municipality}`,
-                        alertData
+                    const alertResponse = await fetch(
+                        `${API_BASE_URL}/api/alert-thresholds/oversupply/${encodeURIComponent(commodity)}?municipality=${encodeURIComponent(municipality)}`,
+                        { method: "GET", headers: getAuthHeaders(false) }
                     );
 
+                    if (!alertResponse.ok) continue;
 
-                    /* ------------------------------------------------
-                       ONLY ADD ACTUAL OVERSUPPLY ALERTS
-                    ------------------------------------------------ */
+                    const alertData = await alertResponse.json();
 
-                    if (
-                        String(
-                            alertData.status || ""
-                        ).toUpperCase() === "OVERSUPPLY"
-                    ) {
-
+                    if (String(alertData.status || "").toUpperCase() === "OVERSUPPLY") {
                         alertResults.push({
-
-                            commodity:
-                                alertData.commodity ||
-                                commodity,
-
-                            municipality:
-                                alertData.municipality ||
-                                municipality,
-
-                            base_demand:
-                                Number(
-                                    alertData.base_demand || 0
-                                ),
-
-                            projected_supply:
-                                Number(
-                                    alertData.projected_supply || 0
-                                ),
-
-                            excess_supply:
-                                Number(
-                                    alertData.excess_supply || 0
-                                ),
-
-                            supply_percentage:
-                                Number(
-                                    alertData.supply_percentage || 0
-                                ),
-
-                            status:
-                                alertData.status,
-
-                            date:
-                                new Date()
-
+                            commodity: alertData.commodity || commodity,
+                            municipality: alertData.municipality || municipality,
+                            base_demand: Number(alertData.base_demand || 0),
+                            projected_supply: Number(alertData.projected_supply || 0),
+                            excess_supply: Number(alertData.excess_supply || 0),
+                            supply_percentage: Number(alertData.supply_percentage || 0),
+                            status: alertData.status,
+                            date: new Date()
                         });
-
                     }
 
                 } catch (error) {
-
-                    console.error(
-                        `Error checking ${commodity} - ${municipality}:`,
-                        error
-                    );
-
+                    console.error(`Error checking ${commodity} - ${municipality}:`, error);
                 }
-
             }
-
         }
 
-
-        /* --------------------------------------------------------
-           RENDER ALERTS
-        -------------------------------------------------------- */
-
-        renderSystemAlertLogs(
-            alertResults
-        );
-
+        renderSystemAlertLogs(alertResults);
 
     } catch (error) {
-
-        console.error(
-            "LOAD SYSTEM ALERT LOGS ERROR:",
-            error
-        );
-
+        console.error("LOAD SYSTEM ALERT LOGS ERROR:", error);
         alertList.innerHTML = `
             <div style="text-align:center; padding:30px; color:#C0392B;">
                 Unable to load system alerts.
             </div>
         `;
-
     }
-
 }
 
 
-/* ============================================================
-   RENDER SYSTEM ALERT LOGS
-============================================================ */
-
 function renderSystemAlertLogs(alerts) {
 
-    const alertList =
-        document.getElementById("alertList");
-
-    if (!alertList) {
-        return;
-    }
-
+    const alertList = document.getElementById("alertList");
+    if (!alertList) return;
 
     alertList.innerHTML = "";
 
-
-    /* --------------------------------------------------------
-       NO ALERTS
-    -------------------------------------------------------- */
-
     if (!alerts.length) {
-
         alertList.innerHTML = `
-            <div style="text-align:center; padding:30px;">
-                No active oversupply alerts.
-            </div>
+            <div style="text-align:center; padding:30px;">No active oversupply alerts.</div>
         `;
-
         return;
-
     }
-
-
-    /* --------------------------------------------------------
-       RENDER EACH ALERT
-    -------------------------------------------------------- */
 
     alerts.forEach(alert => {
 
-        const card =
-            document.createElement("div");
+        const card = document.createElement("div");
+        card.className = "alert-card";
+        card.dataset.severity = "high";
 
-        card.className =
-            "alert-card";
-
-        card.dataset.severity =
-            "high";
-
-
-        const supply =
-            alert.projected_supply;
-
-        const demand =
-            alert.base_demand;
-
-
-        /* --------------------------------------------------------
-           CALCULATE SURPLUS PERCENTAGE
-        -------------------------------------------------------- */
+        const supply = alert.projected_supply;
+        const demand = alert.base_demand;
 
         let surplusPercentage = 0;
-
         if (demand > 0) {
-
-            surplusPercentage =
-                ((supply - demand) / demand) * 100;
-
+            surplusPercentage = ((supply - demand) / demand) * 100;
         }
 
-
-        /* --------------------------------------------------------
-           DATE
-        -------------------------------------------------------- */
-
-        const alertDate =
-            new Date(
-                alert.date
-            ).toLocaleDateString(
-                "en-CA"
-            );
-
-
-        /* --------------------------------------------------------
-           DESCRIPTION
-        -------------------------------------------------------- */
+        const alertDate = new Date(alert.date).toLocaleDateString("en-CA");
 
         const description =
             `${alert.commodity} supply in ${alert.municipality} is ${Math.round(surplusPercentage)}% above projected demand. Monitor closely and coordinate with buyers.`;
 
-
-        /* --------------------------------------------------------
-           CARD HTML
-        -------------------------------------------------------- */
-
         card.innerHTML = `
-
             <div class="alert-top">
-
                 <div class="alert-title-group">
-
                     <span class="alert-title">
-                        ${escapeHtml(
-                            alert.commodity
-                        )}
-                        Oversupply Risk —
-                        ${escapeHtml(
-                            alert.municipality
-                        )}
+                        ${escapeHtml(alert.commodity)} Oversupply Risk —
+                        ${escapeHtml(alert.municipality)}
                     </span>
-
-                    <span class="sev-pill high">
-                        High
-                    </span>
-
+                    <span class="sev-pill high">High</span>
                 </div>
-
-
-            
-
             </div>
 
-
-            <p class="alert-desc">
-                ${escapeHtml(
-                    description
-                )}
-            </p>
-
+            <p class="alert-desc">${escapeHtml(description)}</p>
 
             <div class="alert-stats">
-
-                <span>
-                    Supply:
-                    <b>
-                        ${formatKg(supply)}
-                    </b>
-                </span>
-
-
-                <span>
-                    Demand:
-                    <b>
-                        ${formatKg(demand)}
-                    </b>
-                </span>
-
-
-                <span>
-                    Surplus:
-                    <b>
-                        +${Math.round(
-                            surplusPercentage
-                        )}%
-                    </b>
-                </span>
-
-
-                <span class="alert-date">
-                    ${alertDate}
-                </span>
-
+                <span>Supply: <b>${formatKg(supply)}</b></span>
+                <span>Demand: <b>${formatKg(demand)}</b></span>
+                <span>Surplus: <b>+${Math.round(surplusPercentage)}%</b></span>
+                <span class="alert-date">${alertDate}</span>
             </div>
-
         `;
 
+        const statusButton = card.querySelector(".status-pill-btn");
+        statusButton?.addEventListener("click", event => {
+            event.stopPropagation();
+            toggleAlertCardStatus(statusButton);
+        });
 
-        /* --------------------------------------------------------
-           STATUS BUTTON
-        -------------------------------------------------------- */
-
-        const statusButton =
-            card.querySelector(
-                ".status-pill-btn"
-            );
-
-
-        statusButton?.addEventListener(
-            "click",
-            event => {
-
-                event.stopPropagation();
-
-                toggleAlertCardStatus(
-                    statusButton
-                );
-
-            }
-        );
-
-
-        /* --------------------------------------------------------
-           OPEN ALERT DETAIL MODAL
-        -------------------------------------------------------- */
-
-        card.addEventListener(
-            "click",
-            () => {
-
-                currentActiveAlertCard =
-                    card;
-
-                openAlertDetailModal(
-                    card
-                );
-
-            }
-        );
-
+        card.addEventListener("click", () => {
+            currentActiveAlertCard = card;
+            openAlertDetailModal(card);
+        });
 
         alertList.appendChild(card);
-
     });
-
 }
 
-
-/* ============================================================
-   FORMAT KG → TONS
-============================================================ */
-
-/* ============================================================
-   FORMAT KG
-============================================================ */
-
-function formatKg(value) {
-
-    return `${Number(value || 0).toLocaleString(
-        "en-US",
-        {
-            maximumFractionDigits: 2
-        }
-    )} kg`;
-
-}
-
-
-/* ============================================================
-   TOGGLE ALERT STATUS
-============================================================ */
 
 function toggleAlertCardStatus(button) {
 
-    const unresolved =
-        button.classList.contains(
-            "unresolved"
-        );
-
+    const unresolved = button.classList.contains("unresolved");
 
     if (unresolved) {
-
-        button.textContent =
-            "Acknowledged";
-
-        button.classList.remove(
-            "unresolved"
-        );
-
-        button.classList.add(
-            "acknowledged"
-        );
-
+        button.textContent = "Acknowledged";
+        button.classList.remove("unresolved");
+        button.classList.add("acknowledged");
     } else {
-
-        button.textContent =
-            "Unresolved";
-
-        button.classList.remove(
-            "acknowledged"
-        );
-
-        button.classList.add(
-            "unresolved"
-        );
-
+        button.textContent = "Unresolved";
+        button.classList.remove("acknowledged");
+        button.classList.add("unresolved");
     }
-
 }
 
-
-/* ============================================================
-   OPEN ALERT DETAIL MODAL
-============================================================ */
 
 function openAlertDetailModal(card) {
 
-    const title =
-        card.querySelector(
-            ".alert-title"
-        )?.textContent || "—";
+    const title = card.querySelector(".alert-title")?.textContent || "—";
+    const desc = card.querySelector(".alert-desc")?.textContent || "—";
+    const severity = card.querySelector(".sev-pill");
+    const stats = card.querySelectorAll(".alert-stats span b");
+    const date = card.querySelector(".alert-date")?.textContent || "—";
+    const alertStatus = card.querySelector(".status-pill-btn");
 
+    const titleElement = document.getElementById("modalAlertTitle");
+    if (titleElement) titleElement.textContent = title;
 
-    const desc =
-        card.querySelector(
-            ".alert-desc"
-        )?.textContent || "—";
+    const descElement = document.getElementById("modalAlertDesc");
+    if (descElement) descElement.textContent = desc;
 
-
-    const severity =
-        card.querySelector(
-            ".sev-pill"
-        );
-
-
-    const stats =
-        card.querySelectorAll(
-            ".alert-stats span b"
-        );
-
-
-    const date =
-        card.querySelector(
-            ".alert-date"
-        )?.textContent || "—";
-
-
-    const alertStatus =
-        card.querySelector(
-            ".status-pill-btn"
-        );
-
-
-    const titleElement =
-        document.getElementById(
-            "modalAlertTitle"
-        );
-
-    if (titleElement) {
-
-        titleElement.textContent =
-            title;
-
+    const modalSeverity = document.getElementById("modalAlertSev");
+    if (modalSeverity && severity) {
+        modalSeverity.textContent = severity.textContent;
+        modalSeverity.className = "sev-pill";
+        modalSeverity.classList.add(severity.classList.contains("high") ? "high" : "medium");
     }
 
+    const supply = document.getElementById("modalAlertSupply");
+    if (supply) supply.textContent = stats[0]?.textContent || "—";
 
-    const descElement =
-        document.getElementById(
-            "modalAlertDesc"
-        );
+    const demand = document.getElementById("modalAlertDemand");
+    if (demand) demand.textContent = stats[1]?.textContent || "—";
 
-    if (descElement) {
+    const surplus = document.getElementById("modalAlertSurplus");
+    if (surplus) surplus.textContent = stats[2]?.textContent || "—";
 
-        descElement.textContent =
-            desc;
+    const dateElement = document.getElementById("modalAlertDate");
+    if (dateElement) dateElement.textContent = date;
 
+    const toggleButton = document.getElementById("toggleAlertStatusBtn");
+    if (toggleButton && alertStatus) {
+        toggleButton.textContent = alertStatus.classList.contains("unresolved")
+            ? "Acknowledge Alert"
+            : "Mark as Unresolved";
     }
 
-
-    const modalSeverity =
-        document.getElementById(
-            "modalAlertSev"
-        );
-
-
-    if (
-        modalSeverity &&
-        severity
-    ) {
-
-        modalSeverity.textContent =
-            severity.textContent;
-
-        modalSeverity.className =
-            "sev-pill";
-
-        modalSeverity.classList.add(
-            severity.classList.contains(
-                "high"
-            )
-                ? "high"
-                : "medium"
-        );
-
-    }
-
-
-    const supply =
-        document.getElementById(
-            "modalAlertSupply"
-        );
-
-    if (supply) {
-
-        supply.textContent =
-            stats[0]?.textContent || "—";
-
-    }
-
-
-    const demand =
-        document.getElementById(
-            "modalAlertDemand"
-        );
-
-    if (demand) {
-
-        demand.textContent =
-            stats[1]?.textContent || "—";
-
-    }
-
-
-    const surplus =
-        document.getElementById(
-            "modalAlertSurplus"
-        );
-
-    if (surplus) {
-
-        surplus.textContent =
-            stats[2]?.textContent || "—";
-
-    }
-
-
-    const dateElement =
-        document.getElementById(
-            "modalAlertDate"
-        );
-
-    if (dateElement) {
-
-        dateElement.textContent =
-            date;
-
-    }
-
-
-    const toggleButton =
-        document.getElementById(
-            "toggleAlertStatusBtn"
-        );
-
-
-    if (
-        toggleButton &&
-        alertStatus
-    ) {
-
-        toggleButton.textContent =
-            alertStatus.classList.contains(
-                "unresolved"
-            )
-                ? "Acknowledge Alert"
-                : "Mark as Unresolved";
-
-    }
-
-
-    document
-        .getElementById(
-            "alertDetailModal"
-        )
-        ?.classList.add("show");
-
+    document.getElementById("alertDetailModal")?.classList.add("show");
 }
 
 
-/* ============================================================
-   SEARCH ALERTS
-============================================================ */
+const searchAlerts = document.getElementById("searchAlerts");
+searchAlerts?.addEventListener("input", () => {
+    const searchTerm = searchAlerts.value.toLowerCase().trim();
 
-const searchAlerts =
-    document.getElementById(
-        "searchAlerts"
-    );
-
-searchAlerts?.addEventListener(
-    "input",
-    () => {
-
-        const searchTerm =
-            searchAlerts.value
-                .toLowerCase()
-                .trim();
+    document.querySelectorAll("#alertList .alert-card").forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(searchTerm) ? "" : "none";
+    });
+});
 
 
-        document
-            .querySelectorAll(
-                "#alertList .alert-card"
-            )
-            .forEach(card => {
+document.getElementById("toggleAlertStatusBtn")
+    ?.addEventListener("click", () => {
 
-                const text =
-                    card.textContent
-                        .toLowerCase();
-
-
-                card.style.display =
-                    text.includes(
-                        searchTerm
-                    )
-                        ? ""
-                        : "none";
-
-            });
-
-    }
-);
-
-
-/* ============================================================
-   ALERT DETAIL MODAL TOGGLE
-============================================================ */
-
-document
-    .getElementById(
-        "toggleAlertStatusBtn"
-    )
-    ?.addEventListener(
-        "click",
-        () => {
-
-            if (
-                currentActiveAlertCard
-            ) {
-
-                const button =
-                    currentActiveAlertCard
-                        .querySelector(
-                            ".status-pill-btn"
-                        );
-
-                if (button) {
-
-                    toggleAlertCardStatus(
-                        button
-                    );
-
-                }
-
-            }
-
-
-            document
-                .getElementById(
-                    "alertDetailModal"
-                )
-                ?.classList.remove(
-                    "show"
-                );
-
+        if (currentActiveAlertCard) {
+            const button = currentActiveAlertCard.querySelector(".status-pill-btn");
+            if (button) toggleAlertCardStatus(button);
         }
-    );
+
+        document.getElementById("alertDetailModal")?.classList.remove("show");
+    });
 
 
 /* ============================================================
@@ -3284,689 +1289,1064 @@ document
 
 function initModalListeners() {
 
-    /* --------------------------------------------
-       CLICK OUTSIDE MODAL TO CLOSE
-    -------------------------------------------- */
-
-    document
-        .querySelectorAll(".modal-overlay")
-        .forEach(modal => {
-
-            modal.addEventListener(
-                "click",
-                event => {
-
-                    if (
-                        event.target === modal
-                    ) {
-
-                        modal.classList.remove(
-                            "show"
-                        );
-
-                    }
-
-                }
-            );
-
+    document.querySelectorAll(".modal-overlay").forEach(modal => {
+        modal.addEventListener("click", event => {
+            if (event.target === modal) modal.classList.remove("show");
         });
+    });
 
-
-    /* --------------------------------------------
-       CANCEL BUTTONS
-    -------------------------------------------- */
-
-    document
-        .querySelectorAll(".modal-cancel-btn")
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    const modal =
-                        button.closest(
-                            ".modal-overlay"
-                        );
-
-                    modal?.classList.remove(
-                        "show"
-                    );
-
-                }
-            );
-
+    document.querySelectorAll(".modal-cancel-btn").forEach(button => {
+        button.addEventListener("click", () => {
+            button.closest(".modal-overlay")?.classList.remove("show");
         });
-
+    });
 }
+
+
 /* ============================================================
-   REPORTS SECTION - COMPLETE WITH APPROVAL WORKFLOW
+   REPORTS SECTION — ALIGNED WITH PROVINCIAL PATTERN
 ============================================================ */
 
 function initReportsSection() {
 
-    const reportListSubview =
-        document.getElementById(
-            "reportListSubview"
-        );
-
-    const reportDetailSubview =
-        document.getElementById(
-            "reportDetailSubview"
-        );
-
-    const reportApprovedModal =
-        document.getElementById(
-            "reportApprovedModal"
-        );
-
-    const flagReportBtn =
-        document.getElementById(
-            "flagReportBtn"
-        );
-
-    const approveReportBtn =
-        document.getElementById(
-            "approveReportBtn"
-        );
-
-    const backToPendingBtn =
-        document.getElementById("backToPendingBtn");
-
-    const closeReportApprovedBtn =
-        document.getElementById(
-            "closeReportApprovedBtn"
-        );
-
-    const searchInput = document.getElementById("reportSearchInput");
-    const searchBtn = document.getElementById("reportSearchBtn");
-
-    // Store all reports for searching
-    let allReportsCache = [];
-    let currentSelectedReport = null;
-
-    // ============================================================
-    // LOAD REPORTS FROM API
-    // ============================================================
-    async function loadReports() {
-        const pendingReportsBody =
-            document.querySelector("#pendingReportsBody");
-
-        if (!pendingReportsBody) {
-            console.error("pendingReportsBody not found.");
-            return;
-        }
-
-        pendingReportsBody.innerHTML = `
-            <tr>
-                <td colspan="6" style="text-align:center;">
-                    Loading reports...
-                </td>
-            </tr>
-        `;
-
-        try {
-            const response = await fetch(
-                `${API_BASE_URL}/api/report-submissions/all-reports`,
-                {
-                    method: "GET",
-                    headers: getAuthHeaders()
-                }
-            );
-
-            const data = await parseResponse(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.detail ||
-                    data.message ||
-                    `Failed to fetch reports: ${response.status}`
-                );
-            }
-
-            const reports = Array.isArray(data) ? data : [];
-
-            // Store all reports for search
-            allReportsCache = reports;
-
-            // Filter for DA validation
-            const daReports = reports.filter(report => {
-                const status =
-                    String(report.status || "")
-                        .trim()
-                        .toUpperCase();
-                return status === "FOR_DA_RFO_VALIDATION";
-            });
-
-            // Render the reports
-            renderReports(daReports);
-
-        } catch (error) {
-            console.error("LOAD DA REPORTS ERROR:", error);
-            pendingReportsBody.innerHTML = `
-                <tr>
-                    <td colspan="6"
-                        style="text-align:center; padding:30px; color:#C0392B;">
-                        Error loading reports:
-                        ${escapeHtml(error.message)}
-                    </td>
-                </tr>
-            `;
-        }
-    }
-
-    // ============================================================
-    // RENDER REPORTS
-    // ============================================================
-    function renderReports(reportsToShow) {
-        const pendingReportsBody =
-            document.querySelector("#pendingReportsBody");
-
-        if (!pendingReportsBody) return;
-
-        if (reportsToShow.length === 0) {
-            pendingReportsBody.innerHTML = `
-                <tr>
-                    <td colspan="6"
-                        style="text-align:center; padding:30px; color:#666;">
-                        No reports awaiting DA-RFO validation.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        pendingReportsBody.innerHTML = "";
-
-        reportsToShow.forEach(report => {
-            const row = document.createElement("tr");
-            row.className = "clickable-row";
-
-            // Format dates
-            const plantingDate = report.planting_date 
-                ? new Date(report.planting_date).toLocaleDateString('en-PH')
-                : 'N/A';
-            const harvestDate = report.harvest_date 
-                ? new Date(report.harvest_date).toLocaleDateString('en-PH')
-                : 'N/A';
-
-            row.innerHTML = `
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            report.report_id ??
-                            report.submission_id ??
-                            "N/A"
-                        )}
-                    </span>
-                </td>
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(
-                            report.commodity || "N/A"
-                        )}
-                    </span>
-                </td>
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(plantingDate)}
-                    </span>
-                </td>
-                <td>
-                    <span class="pill">
-                        ${escapeHtml(harvestDate)}
-                    </span>
-                </td>
-                <td>
-                    <span class="pill">
-                        ${
-                            report.estimated_yield != null
-                                ? escapeHtml(
-                                    String(report.estimated_yield)
-                                ) + " kg"
-                                : "N/A"
-                        }
-                    </span>
-                </td>
-                <td>
-                    <span class="status-pill pending">
-                        ${escapeHtml(
-                            report.status || "PENDING"
-                        )}
-                    </span>
-                </td>
-            `;
-
-            row.addEventListener("click", () => {
-                console.log("Selected DA report:", report);
-                currentSelectedReport = report;
-                showReportDetail(report);
-            });
-
-            pendingReportsBody.appendChild(row);
-        });
-    }
-
-    // ============================================================
-    // SEARCH FUNCTION
-    // ============================================================
-    function performSearch() {
-        if (!searchInput) return;
-
-        const searchTerm = searchInput.value.toLowerCase().trim();
-
-        // Filter only FOR_DA_RFO_VALIDATION reports
-        const daReports = allReportsCache.filter(report => {
-            const status =
-                String(report.status || "")
-                    .trim()
-                    .toUpperCase();
-            return status === "FOR_DA_RFO_VALIDATION";
-        });
-
-        if (!searchTerm) {
-            renderReports(daReports);
-            return;
-        }
-
-        // Search across multiple fields
-        const filtered = daReports.filter(report => {
-            const searchableFields = [
-                report.report_id,
-                report.submission_id,
-                report.commodity,
-                report.planting_date,
-                report.harvest_date,
-                report.status,
-                report.encoded_by_name,
-                String(report.estimated_yield)
-            ];
-
-            return searchableFields.some(field => {
-                if (field === null || field === undefined) return false;
-                return String(field).toLowerCase().includes(searchTerm);
-            });
-        });
-
-        renderReports(filtered);
-    }
-
-    // ============================================================
-    // SHOW REPORT DETAIL
-    // ============================================================
-    function showReportDetail(report) {
-        // Hide list, show detail
-        reportListSubview?.classList.add('hidden-element');
-        reportDetailSubview?.classList.remove('hidden-element');
-
-        // Store report data
-        reportDetailSubview.dataset.reportId = report.report_id;
-        reportDetailSubview.dataset.submissionId = report.submission_id;
-        currentSelectedReport = report;
-
-        // Populate table with report data
-        const tbody = document.querySelector('#reportDetailSubview table tbody');
-
-        if (tbody) {
-            // Format dates
-            const plantingDate = report.planting_date 
-                ? new Date(report.planting_date).toLocaleDateString('en-PH')
-                : 'N/A';
-            const harvestDate = report.harvest_date 
-                ? new Date(report.harvest_date).toLocaleDateString('en-PH')
-                : 'N/A';
-
-            tbody.innerHTML = `
-                <tr>
-                    <td>
-                        <span class="pill">
-                            ${escapeHtml(
-                                report.report_id ??
-                                report.submission_id ??
-                                'N/A'
-                            )}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="pill">
-                            ${escapeHtml(
-                                report.commodity || 'N/A'
-                            )}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="pill">
-                            ${escapeHtml(plantingDate)}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="pill">
-                            ${escapeHtml(harvestDate)}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="pill">
-                            ${
-                                report.estimated_yield != null
-                                    ? escapeHtml(
-                                        String(report.estimated_yield)
-                                    ) + ' kg'
-                                    : 'N/A'
-                            }
-                        </span>
-                    </td>
-                    <td>
-                        <span class="pill">
-                            ${escapeHtml(
-                                report.encoded_by_name || 'N/A'
-                            )}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="status-pill pending">
-                            ${escapeHtml(
-                                report.status || 'Pending'
-                            )}
-                        </span>
-                    </td>
-                </tr>
-            `;
-        }
-
-        // Clear notes/remarks textarea
-        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
-        if (notesTextarea) {
-            notesTextarea.value = '';
-            notesTextarea.placeholder = 'Enter provincial feedback or revision notes...';
-        }
-
-        // Reset flag button
-        if (flagReportBtn) {
-            flagReportBtn.classList.remove('active');
-            flagReportBtn.textContent = 'Flag for Revision';
-            flagReportBtn.disabled = false;
-        }
-
-        // Reset approve button
-        if (approveReportBtn) {
-            approveReportBtn.disabled = false;
-            approveReportBtn.textContent = 'Approve & Escalate';
-        }
-
-        // Show remarks required indicator
-        const remarksRequired = document.querySelector('.remarks-required');
-        if (remarksRequired) {
-            remarksRequired.style.display = 'block';
-        }
-    }
-
-    // ============================================================
-    // GET CURRENT USER ID
-    // ============================================================
-    function getCurrentUserId() {
-        const userId = localStorage.getItem('user_id') || 
-                       localStorage.getItem('userId') ||
-                       localStorage.getItem('id');
-        
-        if (!userId) {
-            console.error('No user_id found in localStorage.');
-            return null;
-        }
-        
-        return userId;
-    }
-
-    // ============================================================
-    // APPROVE & ESCALATE REPORT
-    // ============================================================
-    async function approveReport() {
-        const reportId = reportDetailSubview?.dataset.reportId;
-        
-        if (!reportId) {
-            alert('No report selected.');
-            return;
-        }
-
-        // Get remarks from textarea
-        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
-        const remarks = notesTextarea?.value?.trim();
-
-        // Validate remarks
-        if (!remarks || remarks.length < 10) {
-            alert('Please provide detailed remarks (at least 10 characters) before approving.');
-            if (notesTextarea) {
-                notesTextarea.focus();
-                notesTextarea.style.borderColor = '#C0392B';
-                setTimeout(() => {
-                    notesTextarea.style.borderColor = '';
-                }, 3000);
-            }
-            return;
-        }
-
-        // Get current user ID
-        const userId = getCurrentUserId();
-        
-        if (!userId) {
-            alert('User ID not found. Please login again.');
-            return;
-        }
-
-        const approveBtn = approveReportBtn;
-        const originalText = approveBtn?.textContent;
-
-        try {
-            if (approveBtn) {
-                approveBtn.disabled = true;
-                approveBtn.textContent = '⏳ Approving...';
-            }
-
-            // Build query parameters
-            const params = new URLSearchParams({
-                validator_id: userId,
-                validator_role: "darfo",
-                remarks: remarks
-            });
-
-            const response = await fetch(
-                `${API_BASE_URL}/api/report-submissions/${reportId}/approve?${params.toString()}`,
-                {
-                    method: "POST",
-                    headers: getAuthHeaders(false)
-                }
-            );
-
-            const data = await parseResponse(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.detail || 
-                    data.message || 
-                    'Failed to approve report'
-                );
-            }
-
-            console.log('✅ Report approved and escalated:', data);
-
-            // Show success modal
-            reportApprovedModal?.classList.add('show');
-
-            // Refresh reports list in background
-            await loadReports();
-
-        } catch (error) {
-            console.error('❌ APPROVE REPORT ERROR:', error);
-            alert('❌ ' + (error.message || 'Failed to approve report. Please try again.'));
-        } finally {
-            if (approveBtn) {
-                approveBtn.disabled = false;
-                approveBtn.textContent = originalText || 'Approve & Escalate';
-            }
-        }
-    }
-
-    // ============================================================
-    // FLAG REPORT FOR REVISION
-    // ============================================================
-    async function flagReport() {
-        const reportId = reportDetailSubview?.dataset.reportId;
-
-        if (!reportId) {
-            alert('No report selected.');
-            return;
-        }
-
-        const notesTextarea = document.querySelector('#reportDetailSubview textarea');
-        const remarks = notesTextarea?.value?.trim();
-
-        if (!remarks || remarks.length < 10) {
-            alert('Please provide detailed revision remarks (at least 10 characters).');
-            if (notesTextarea) {
-                notesTextarea.focus();
-                notesTextarea.style.borderColor = '#C0392B';
-                setTimeout(() => {
-                    notesTextarea.style.borderColor = '';
-                }, 3000);
-            }
-            return;
-        }
-
-        const userId = getCurrentUserId();
-
-        if (!userId) {
-            alert('User ID not found. Please login again.');
-            return;
-        }
-
-        const flagBtn = flagReportBtn;
-        const originalText = flagBtn?.textContent;
-
-        try {
-            if (flagBtn) {
-                flagBtn.disabled = true;
-                flagBtn.textContent = '⏳ Flagging...';
-            }
-
-            const params = new URLSearchParams({
-                validator_id: userId,
-                validator_role: "darfo",
-                remarks: remarks
-            });
-
-            const response = await fetch(
-                `${API_BASE_URL}/api/report-submissions/${reportId}/revision?${params.toString()}`,
-                {
-                    method: "POST",
-                    headers: getAuthHeaders(false)
-                }
-            );
-
-            const data = await parseResponse(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.detail ||
-                    data.message ||
-                    'Failed to flag report.'
-                );
-            }
-
-            console.log('📌 Report flagged for revision:', data);
-
-            alert('📌 Report flagged for revision successfully!');
-
-            // Return to report list
-            reportDetailSubview?.classList.add('hidden-element');
-            reportListSubview?.classList.remove('hidden-element');
-
-            // Refresh reports
-            await loadReports();
-
-        } catch (error) {
-            console.error('❌ FLAG REPORT ERROR:', error);
-            alert('❌ ' + (error.message || 'Failed to flag report.'));
-        } finally {
-            if (flagBtn) {
-                flagBtn.disabled = false;
-                flagBtn.textContent = originalText || 'Flag for Revision';
-            }
-        }
-    }
-
-    // ============================================================
-    // RETURN TO REPORT LIST
-    // ============================================================
-    function returnToReportList() {
-        reportDetailSubview?.classList.add('hidden-element');
-        reportListSubview?.classList.remove('hidden-element');
-        currentSelectedReport = null;
-        loadReports();
-    }
-
-    // ============================================================
-    // EVENT LISTENERS
-    // ============================================================
-
-    // Search events
-    searchBtn?.addEventListener("click", performSearch);
-    searchInput?.addEventListener("keyup", (event) => {
-        if (event.key === "Enter") {
-            performSearch();
-        }
-    });
-
-    // Load reports when view is shown
-    const viewReports = document.getElementById('view-reports');
+    // Init sub-features
+    initReportSearch();
+    initBulkActions();
+    initReportDetailButtons();   // ← ✅ ADD THIS LINE
+
+    // Initial load
+    loadReports();
+
+    // Observe view activation
+    const viewReports = document.getElementById("view-reports");
     const observer = new MutationObserver(() => {
-        if (viewReports?.classList.contains('active-view')) {
+        if (viewReports?.classList.contains("active-view")) {
             loadReports();
         }
     });
     if (viewReports) {
-        observer.observe(viewReports, { attributes: true, attributeFilter: ['class'] });
+        observer.observe(viewReports, { attributes: true, attributeFilter: ["class"] });
     }
 
-    // Load reports if view is already active
-    if (viewReports?.classList.contains('active-view')) {
-        loadReports();
+    console.log("✅ DA Reports section initialized.");
+}
+
+
+/* ============================================================
+   LOAD ALL REPORT SECTIONS
+============================================================ */
+
+async function loadReports() {
+    await Promise.allSettled([
+        loadPendingReports(),
+        loadReturnedToProvincial(),
+        loadApprovedReports()
+    ]);
+}
+
+
+/* ============================================================
+   LOAD PENDING REPORTS
+============================================================ */
+
+async function loadPendingReports() {
+
+    const tbody = document.getElementById("pendingReportsBody");
+    if (!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>`;
+
+    try {
+        const data = await fetchJsonWithTimeout(
+            DA_PENDING_ENDPOINT,
+            {
+                method: "GET",
+                headers: getAuthHeaders(false)
+            },
+            10000
+        );
+
+        pendingReports = Array.isArray(data) ? data : [];
+        selectedReportIds = new Set();
+
+        renderPendingReports();
+        updateBulkApproveButton();
+
+    } catch (err) {
+        console.error("Load pending error:", err);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="padding:30px; text-align:center; color:#C0392B;">
+                    Failed to load pending reports.
+                    <br><small>${escapeHtml(err.message || "Unable to load reports.")}</small>
+                </td>
+            </tr>
+        `;
+
+        const badge = document.getElementById("pendingCountBadge");
+        if (badge) badge.textContent = "0";
+
+        pendingReports = [];
+        selectedReportIds = new Set();
+        updateBulkApproveButton();
+    }
+}
+
+
+function renderPendingReports() {
+
+    const tbody = document.getElementById("pendingReportsBody");
+    if (!tbody) return;
+
+    const reports = pendingReports.filter(report => {
+        const s = String(report.status || "").toUpperCase();
+        return s === "SUBMITTED_REGIONAL_PENDING" || s === "FOR_DA_RFO_VALIDATION";
+    });
+
+    const badge = document.getElementById("pendingCountBadge");
+    if (badge) badge.textContent = reports.length;
+
+    tbody.innerHTML = "";
+
+    if (reports.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:30px; text-align:center; color:#999;">No reports awaiting DA-RFO validation.</td></tr>`;
+        return;
     }
 
-    // Back to pending button
-    backToPendingBtn?.addEventListener('click', returnToReportList);
+    reports.forEach(report => {
+        const tr = document.createElement("tr");
+        tr.className = "clickable-row";
+        tr.dataset.reportId = report.report_id;
 
-    // Flag report button
-    flagReportBtn?.addEventListener('click', flagReport);
+        const checked = selectedReportIds.has(report.report_id) ? "checked" : "";
+        if (checked) tr.classList.add("selected");
 
-    // Approve report button
-    approveReportBtn?.addEventListener('click', approveReport);
+        const sl = statusLabelAndClass(report.status);
 
-    // Close approved modal - with proper return to list
-    closeReportApprovedBtn?.addEventListener('click', () => {
-        reportApprovedModal?.classList.remove('show');
-        returnToReportList();
+        tr.innerHTML = `
+            <td class="center-col" onclick="event.stopPropagation()">
+                <input type="checkbox" class="row-check" data-report-id="${escapeHtml(report.report_id)}" ${checked}>
+            </td>
+            <td class="center-col" style="font-weight: 600;">#${escapeHtml(report.report_id)}</td>
+            <td>${escapeHtml(report.title || "—")}</td>
+            <td>${escapeHtml(report.commodity || "—")}</td>
+            <td>${escapeHtml(report.municipality || "—")}</td>
+            <td class="center-col">${formatDate(report.planting_date)}</td>
+            <td class="center-col">${report.estimated_yield ?? "—"}</td>
+            <td class="center-col">
+                <span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>
+            </td>
+        `;
+
+        tr.addEventListener("click", (e) => {
+            if (e.target.closest("input[type=checkbox]")) return;
+            openReportDetail(report);
+        });
+
+        tbody.appendChild(tr);
     });
 
-    // Click outside modal to close
-    reportApprovedModal?.addEventListener('click', (event) => {
-        if (event.target === reportApprovedModal) {
-            reportApprovedModal.classList.remove('show');
-            returnToReportList();
-        }
+    tbody.querySelectorAll(".row-check").forEach(cb => {
+        cb.addEventListener("change", (e) => {
+            const id = Number(e.target.dataset.reportId);
+            const row = e.target.closest("tr");
+
+            if (e.target.checked) {
+                selectedReportIds.add(id);
+                if (row) row.classList.add("selected");
+            } else {
+                selectedReportIds.delete(id);
+                if (row) row.classList.remove("selected");
+            }
+
+            updateSelectAllCheckbox();
+            updateBulkApproveButton();
+        });
     });
 
-    // Real-time validation for remarks textarea
-    const remarksTextarea = document.querySelector('#reportDetailSubview textarea');
-    if (remarksTextarea) {
-        remarksTextarea.addEventListener('input', () => {
-            const length = remarksTextarea.value.trim().length;
-            if (approveReportBtn) {
-                approveReportBtn.disabled = length < 10;
-            }
-            if (flagReportBtn) {
-                flagReportBtn.disabled = length < 10;
-            }
+    updateSelectAllCheckbox();
+}
+
+
+/* ============================================================
+   LOAD RETURNED TO PROVINCIAL
+============================================================ */
+
+async function loadReturnedToProvincial() {
+
+    const tbody = document.getElementById("returnedToProvincialBody");
+    if (!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>`;
+
+    try {
+        const data = await fetchJsonWithTimeout(
+            RETURNED_TO_PROVINCIAL_ENDPOINT,
+            {
+                method: "GET",
+                headers: getAuthHeaders(false)
+            },
+            10000
+        );
+
+        returnedToProvincialReports = Array.isArray(data) ? data : [];
+        renderReturnedToProvincial();
+
+    } catch (err) {
+        console.error("Load returned error:", err);
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">Failed to load reports.</td></tr>`;
+        const badge = document.getElementById("returnedToProvincialCountBadge");
+        if (badge) badge.textContent = "0";
+        returnedToProvincialReports = [];
+    }
+}
+
+
+function renderReturnedToProvincial() {
+
+    const tbody = document.getElementById("returnedToProvincialBody");
+    if (!tbody) return;
+
+    const badge = document.getElementById("returnedToProvincialCountBadge");
+    if (badge) badge.textContent = returnedToProvincialReports.length;
+
+    tbody.innerHTML = "";
+
+    if (returnedToProvincialReports.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">No reports returned to Provincial.</td></tr>`;
+        return;
+    }
+
+    returnedToProvincialReports.forEach(report => {
+        const sl = statusLabelAndClass(report.status);
+        const tr = document.createElement("tr");
+        tr.className = "clickable-row";
+        tr.dataset.reportId = report.report_id;
+
+        tr.innerHTML = `
+            <td class="center-col" style="font-weight: 600;">#${escapeHtml(report.report_id)}</td>
+            <td>${escapeHtml(report.title || "—")}</td>
+            <td>${escapeHtml(report.commodity || "—")}</td>
+            <td>${escapeHtml(report.municipality || "—")}</td>
+            <td class="center-col">${formatDate(report.flagged_at || report.submitted_at)}</td>
+            <td class="center-col">
+                <span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>
+            </td>
+        `;
+
+        tr.addEventListener("click", () => openReportDetail(report));
+        tbody.appendChild(tr);
+    });
+}
+
+
+/* ============================================================
+   LOAD APPROVED REPORTS
+============================================================ */
+
+async function loadApprovedReports() {
+
+    const tbody = document.getElementById("approvedReportsBody");
+    if (!tbody) return;
+
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#999;">Loading reports...</td></tr>`;
+
+    try {
+        const data = await fetchJsonWithTimeout(
+            APPROVED_BY_REGIONAL_ENDPOINT,
+            {
+                method: "GET",
+                headers: getAuthHeaders(false)
+            },
+            10000
+        );
+
+        approvedReports = Array.isArray(data) ? data : [];
+        renderApprovedReports();
+
+    } catch (err) {
+        console.error("Load approved error:", err);
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:30px; text-align:center; color:#C0392B;">Failed to load reports.</td></tr>`;
+        const badge = document.getElementById("approvedCountBadge");
+        if (badge) badge.textContent = "0";
+        approvedReports = [];
+    }
+}
+
+
+function renderApprovedReports() {
+
+    const tbody = document.getElementById("approvedReportsBody");
+    if (!tbody) return;
+
+    const badge = document.getElementById("approvedCountBadge");
+    if (badge) badge.textContent = approvedReports.length;
+
+    tbody.innerHTML = "";
+
+    if (approvedReports.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="padding:30px; text-align:center; color:#999;">
+                    No approved reports yet.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    approvedReports.forEach(report => {
+        const sl = statusLabelAndClass(report.status);
+        const tr = document.createElement("tr");
+        tr.className = "clickable-row";
+        tr.dataset.reportId = report.report_id;
+
+        tr.innerHTML = `
+            <td class="center-col" style="font-weight: 600;">#${escapeHtml(report.report_id)}</td>
+            <td>${escapeHtml(report.title || "—")}</td>
+            <td>${escapeHtml(report.commodity || "—")}</td>
+            <td>${escapeHtml(report.municipality || "—")}</td>
+            <td class="center-col">${formatDate(report.approved_at || report.submitted_at)}</td>
+            <td class="center-col">
+                <span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>
+            </td>
+        `;
+
+        tr.addEventListener("click", () => openReportDetail(report));
+        tbody.appendChild(tr);
+    });
+}
+
+
+/* ============================================================
+   SEARCH (Pending Reports)
+============================================================ */
+
+function initReportSearch() {
+
+    const input = document.getElementById("reportSearchInput");
+    if (!input) return;
+
+    input.addEventListener("input", () => {
+        const term = input.value.trim().toLowerCase();
+        const tbody = document.getElementById("pendingReportsBody");
+        if (!tbody) return;
+
+        const rows = tbody.querySelectorAll("tr[data-report-id]");
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(term) ? "" : "none";
+        });
+
+        updateSelectAllCheckbox();
+    });
+}
+
+
+/* ============================================================
+   SELECT ALL
+============================================================ */
+
+function updateSelectAllCheckbox() {
+
+    const cb = document.getElementById("selectAllCheckbox");
+    if (!cb) return;
+
+    const visibleCheckboxes = document.querySelectorAll(
+        "#pendingReportsBody tr:not([style*='display: none']) .row-check"
+    );
+
+    const totalVisible = visibleCheckboxes.length;
+    const checkedVisible = Array.from(visibleCheckboxes).filter(c => c.checked).length;
+
+    if (totalVisible === 0 || checkedVisible === 0) {
+        cb.checked = false;
+        cb.indeterminate = false;
+    } else if (checkedVisible === totalVisible) {
+        cb.checked = true;
+        cb.indeterminate = false;
+    } else {
+        cb.checked = false;
+        cb.indeterminate = true;
+    }
+}
+
+
+/* ============================================================
+   BULK APPROVE BUTTON STATE
+============================================================ */
+
+function updateBulkApproveButton() {
+
+    const btn = document.getElementById("bulkApproveBtn");
+    if (!btn) return;
+
+    if (selectedReportIds.size > 0) {
+        btn.disabled = false;
+        btn.textContent = `Approve ${selectedReportIds.size} & Finalize`;
+    } else {
+        btn.disabled = true;
+        btn.textContent = "Approve Selected & Finalize";
+    }
+}
+
+
+/* ============================================================
+   BULK ACTIONS
+============================================================ */
+
+function initBulkActions() {
+
+    const selectAllCb = document.getElementById("selectAllCheckbox");
+    const selectAllBtn = document.getElementById("selectAllPendingBtn");
+    const bulkBtn = document.getElementById("bulkApproveBtn");
+
+    if (selectAllCb) {
+        selectAllCb.addEventListener("change", (e) => {
+            const checked = e.target.checked;
+            const checkboxes = document.querySelectorAll(
+                "#pendingReportsBody tr:not([style*='display: none']) .row-check"
+            );
+
+            checkboxes.forEach(cb => {
+                if (cb.checked !== checked) {
+                    cb.checked = checked;
+                    cb.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+            });
         });
     }
 
-    console.log('✅ Reports section initialized with approval workflow');
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener("click", () => {
+            const checkboxes = document.querySelectorAll(
+                "#pendingReportsBody tr:not([style*='display: none']) .row-check"
+            );
+            if (checkboxes.length === 0) return;
+
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+                cb.dispatchEvent(new Event("change", { bubbles: true }));
+            });
+        });
+    }
+
+    if (bulkBtn) {
+        bulkBtn.addEventListener("click", () => {
+            if (selectedReportIds.size === 0) return;
+            openBulkApproveModal();
+        });
+    }
+
+    const cancelBtn = document.getElementById("bulkApproveCancelBtn");
+    const confirmBtn = document.getElementById("bulkApproveConfirmBtn");
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener("click", () => {
+            document.getElementById("bulkApproveModal")?.classList.remove("show");
+        });
+    }
+
+    if (confirmBtn) {
+        confirmBtn.addEventListener("click", bulkApproveSelected);
+    }
 }
+
+
+function openBulkApproveModal() {
+
+    const modal = document.getElementById("bulkApproveModal");
+    const text = document.getElementById("bulkApproveText");
+    if (!modal || !text) return;
+
+    const n = selectedReportIds.size;
+    text.textContent =
+        `Approve ${n} report${n > 1 ? "s" : ""} and finalize?` +
+        ` This action will mark the selected report${n > 1 ? "s" : ""} as APPROVED.`;
+
+    modal.classList.add("show");
+}
+
+
+async function bulkApproveSelected() {
+
+    const confirmBtn = document.getElementById("bulkApproveConfirmBtn");
+    const cancelBtn = document.getElementById("bulkApproveCancelBtn");
+
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = "Processing..."; }
+    if (cancelBtn) cancelBtn.disabled = true;
+
+    try {
+        const response = await fetch(BULK_APPROVE_ENDPOINT, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                report_ids: Array.from(selectedReportIds),
+                validator_role: "darfo"
+            })
+        });
+
+        const data = await parseResponse(response);
+
+        if (!response.ok) {
+            throw new Error(data.detail || "Bulk approve failed.");
+        }
+
+        document.getElementById("bulkApproveModal")?.classList.remove("show");
+
+        alert(`${data.approved_count || 0} report(s) approved.`);
+
+        selectedReportIds.clear();
+
+        await Promise.allSettled([
+            loadPendingReports(),
+            loadReturnedToProvincial(),
+            loadApprovedReports()
+        ]);
+
+    } catch (err) {
+        console.error("Bulk approve error:", err);
+        document.getElementById("bulkApproveModal")?.classList.remove("show");
+        alert(`Error: ${err.message}`);
+    } finally {
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = "Confirm"; }
+        if (cancelBtn) cancelBtn.disabled = false;
+    }
+}
+
+
+/* ============================================================
+   APPROVED FILTER PILLS
+============================================================ */
+
+function initApprovedFilter() {
+
+    const pills = document.querySelectorAll("#approvedFilterPills .filter-pill");
+    if (!pills.length) return;
+
+    pills.forEach(pill => {
+        pill.addEventListener("click", () => {
+            pills.forEach(p => p.classList.remove("active"));
+            pill.classList.add("active");
+            currentApprovedFilter = pill.dataset.filter || "all";
+            renderApprovedReports();
+        });
+    });
+}
+
+
+/* ============================================================
+   OPEN REPORT DETAIL
+============================================================ */
+
+async function openReportDetail(report) {
+
+    if (!report) return;
+    selectedReport = report;
+
+    // Hide subviews
+    const mainHeader = document.getElementById("reportsMainHeader");
+    if (mainHeader) mainHeader.style.display = "none";
+
+    document.getElementById("pendingReportsView")?.style.setProperty("display", "none");
+    document.getElementById("returnedToProvincialView")?.style.setProperty("display", "none");
+    document.getElementById("approvedReportsView")?.style.setProperty("display", "none");
+
+    const detailView = document.getElementById("individualDetailView");
+    if (detailView) {
+        detailView.classList.remove("hidden-element");
+        detailView.style.display = "block";
+    }
+
+    // Reference elements
+    const titleEl        = document.getElementById("detailReportTitle");
+    const subtitleEl     = document.getElementById("detailReportSubtitle");
+    const idEl           = document.getElementById("detailReportId");
+    const municipalityEl = document.getElementById("detailReportMunicipality");
+    const statusEl       = document.getElementById("detailReportStatus");
+    const dateEl         = document.getElementById("detailReportDate");
+    const encodedByEl    = document.getElementById("detailReportEncodedBy");
+    const yieldEl        = document.getElementById("detailReportYield");
+    const notesEl        = document.getElementById("detailReportNotes");
+    const attachmentsEl  = document.getElementById("detailReportAttachments");
+    const intentsBody    = document.getElementById("detailReportIntentsBody");
+    const remarksEl      = document.getElementById("remarksTextarea");
+    const flagBtn        = document.getElementById("flagBtn");
+    const approveBtn     = document.getElementById("approveBtn");
+    const backBtn        = document.getElementById("backToPendingBtn");
+
+    // Populate
+    if (titleEl)        titleEl.textContent = report.title || `Report #${report.report_id}`;
+    if (subtitleEl)     subtitleEl.textContent = `Report #${report.report_id} • ${report.municipality || ""}`;
+    if (idEl)           idEl.textContent = report.report_id ?? "—";
+    if (municipalityEl) municipalityEl.textContent = report.municipality || "—";
+    if (dateEl)         dateEl.textContent = formatDate(report.submitted_at);
+    if (encodedByEl)    encodedByEl.textContent = report.encoded_by_name || "—";
+    if (yieldEl)        yieldEl.textContent = report.estimated_yield ?? "—";
+    if (notesEl)        notesEl.textContent = report.notes || report.narrative || "—";
+
+    const sl = statusLabelAndClass(report.status);
+    if (statusEl) {
+        statusEl.innerHTML = `<span class="status-pill ${sl.cls}">${escapeHtml(sl.text)}</span>`;
+    }
+
+    const statusUpper = String(report.status || "").toUpperCase();
+    const isPending =
+        statusUpper === "SUBMITTED_REGIONAL_PENDING" ||
+        statusUpper === "FOR_DA_RFO_VALIDATION";
+
+    if (backBtn) { backBtn.style.display = "inline-flex"; backBtn.textContent = "Return"; }
+
+    if (isPending) {
+        if (flagBtn) {
+            flagBtn.style.display = "inline-flex";
+            flagBtn.textContent = "Flag for Revision";
+            flagBtn.disabled = false;
+            flagBtn.classList.remove("active");
+        }
+        if (approveBtn) {
+            approveBtn.style.display = "inline-flex";
+            approveBtn.textContent = "Approve & Finalize";
+            approveBtn.disabled = false;
+            approveBtn.classList.remove("active");
+        }
+        if (remarksEl) {
+            remarksEl.readOnly = false;
+            remarksEl.style.background = "";
+            remarksEl.style.color = "";
+            remarksEl.style.cursor = "";
+            remarksEl.placeholder = "Enter remarks (required if flagging for revision)...";
+        }
+    } else {
+        if (flagBtn)    flagBtn.style.display = "none";
+        if (approveBtn) approveBtn.style.display = "none";
+        if (remarksEl) {
+            remarksEl.readOnly = true;
+            remarksEl.style.background = "#F6F3EB";
+            remarksEl.style.color = "var(--muted)";
+            remarksEl.style.cursor = "default";
+        }
+    }
+
+    if (remarksEl) remarksEl.value = report.revision_remarks || "";
+
+    // Fetch full report
+    try {
+        const full = await fetchJsonWithTimeout(
+            `${API_BASE_URL}/api/raw-plant-reports/${report.report_id}`,
+            {
+                method: "GET",
+                headers: getAuthHeaders(false)
+            },
+            10000
+        );
+
+        if (notesEl) notesEl.textContent = full.notes || full.remarks || full.narrative || "—";
+
+        renderAttachments(full.attachments || []);
+        renderDetailIntents(full.planting_intents || []);
+
+    } catch (err) {
+        console.error("Fetch full report error:", err);
+        if (attachmentsEl) {
+            attachmentsEl.textContent = "Unable to load attachments.";
+            attachmentsEl.style.color = "#C0392B";
+        }
+        if (intentsBody) {
+            intentsBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="padding:20px; text-align:center; color:#C0392B;">
+                        Failed to load intents: ${escapeHtml(err.message)}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // Revision remarks box
+    const remarksWrapper = document.getElementById("detailRevisionRemarksWrapper");
+    const remarksContent = document.getElementById("detailRevisionRemarks");
+
+    if (remarksWrapper && remarksContent) {
+        const rawRemarks = report.revision_remarks || "";
+
+        if (rawRemarks && rawRemarks.trim()) {
+            const match = rawRemarks.match(/^\[([^\]]+)\]\s*(.*)$/s);
+
+            if (match) {
+                remarksContent.innerHTML = `
+                    <div style="display: inline-block; font-size: 11px; font-weight: 700; color: #C0392B; background: #FFFFFF; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.02em; margin-bottom: 10px;">
+                        ${escapeHtml(match[1])}
+                    </div>
+                    <div style="color: #333; line-height: 1.6;">
+                        ${escapeHtml(match[2])}
+                    </div>
+                `;
+            } else {
+                remarksContent.textContent = rawRemarks;
+            }
+
+            remarksWrapper.style.display = "block";
+        } else {
+            remarksWrapper.style.display = "none";
+        }
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+
+/* ============================================================
+   RENDER ATTACHMENTS
+============================================================ */
+
+function renderAttachments(attachments) {
+
+    const container = document.getElementById("detailReportAttachments");
+    if (!container) return;
+
+    if (!Array.isArray(attachments) || attachments.length === 0) {
+        container.textContent = "No attachments";
+        container.style.color = "var(--muted)";
+        return;
+    }
+
+    container.style.color = "var(--ink)";
+    container.innerHTML = attachments.map(file => {
+        const name = file.filename || file.file_name || "Attachment";
+        const storedName = file.stored_name || "";
+        const reportId = selectedReport?.report_id;
+
+        const url = storedName && reportId
+            ? `${API_BASE_URL}/api/raw-plant-reports/${reportId}/attachments/${storedName}`
+            : null;
+
+        if (url) {
+            return `
+                <div style="margin-bottom: 8px; padding: 12px 16px; background: #FFFFFF; border: 1.5px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--green-light); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">📎</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <a href="${escapeHtml(url)}" target="_blank" rel="noopener" style="color: var(--green-dark); font-weight: 700; text-decoration: none; font-size: 13.5px;">
+                            ${escapeHtml(name)}
+                        </a>
+                        <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">Click to view attachment</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        return `<div style="margin-bottom: 6px;">📎 ${escapeHtml(name)}</div>`;
+    }).join("");
+}
+
+
+/* ============================================================
+   RENDER DETAIL INTENTS
+============================================================ */
+
+function renderDetailIntents(intents) {
+
+    const tbody = document.getElementById("detailReportIntentsBody");
+    if (!tbody) return;
+
+    if (!Array.isArray(intents) || intents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="padding:20px; text-align:center; color:#999;">No intents included.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = intents.map(intent => {
+        const id = intent.planting_intent_id ?? "—";
+        const farmer = intent.farmer_name || "—";
+        const commodity = intent.commodity || "—";
+        const volume = intent.volume != null ? `${intent.volume} kg` : "—";
+        const plantingDate = formatDate(intent.planting_date);
+        const harvestDate = formatDate(intent.harvest_date);
+
+        const harvestStatus = (intent.finalized_status_at_submission || "NOT PLANTED").toUpperCase();
+
+        let statusText = "Not Planted";
+        let bgColor = "#6c757d";
+
+        if (harvestStatus === "PLANTED")        { statusText = "Planted";    bgColor = "#D97706"; }
+        else if (harvestStatus === "HARVESTED") { statusText = "Harvested";  bgColor = "#2E7D32"; }
+        else if (harvestStatus === "MEDIATING") { statusText = "Mediating";  bgColor = "#2980B9"; }
+
+        return `
+            <tr>
+                <td class="center-col"><strong>#${escapeHtml(String(id))}</strong></td>
+                <td>${escapeHtml(farmer)}</td>
+                <td>${escapeHtml(commodity)}</td>
+                <td class="center-col">${escapeHtml(volume)}</td>
+                <td class="center-col">${escapeHtml(plantingDate)}</td>
+                <td class="center-col">${escapeHtml(harvestDate)}</td>
+                <td class="center-col">
+                    <span class="status-pill" style="background-color:${bgColor};">
+                        ${escapeHtml(statusText)}
+                    </span>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+
+/* ============================================================
+   CLOSE REPORT DETAIL (Return button)
+============================================================ */
+
+function closeReportDetail() {
+
+    console.log("🔙 closeReportDetail() called");
+
+    selectedReport = null;
+
+    // --------------------------------------------------------
+    // HIDE DETAIL VIEW
+    // --------------------------------------------------------
+
+    const detailView = document.getElementById("individualDetailView");
+
+    if (detailView) {
+        detailView.classList.add("hidden-element");
+        detailView.style.display = "none";
+        console.log("   ✔ detailView hidden");
+    }
+
+
+    // --------------------------------------------------------
+    // SHOW LIST WRAPPER + SUBVIEWS
+    // --------------------------------------------------------
+
+    const listView = document.getElementById("reportsListView");
+
+    if (listView) {
+        listView.classList.remove("hidden-element");
+        listView.style.display = "block";
+        console.log("   ✔ reportsListView shown");
+    }
+
+    const pendingView = document.getElementById("pendingReportsView");
+    if (pendingView) {
+        pendingView.style.display = "block";
+    }
+
+    const returnedView = document.getElementById("returnedToProvincialView");
+    if (returnedView) {
+        returnedView.style.display = "block";
+    }
+
+    const approvedView = document.getElementById("approvedReportsView");
+    if (approvedView) {
+        approvedView.style.display = "block";
+    }
+
+
+    // --------------------------------------------------------
+    // RESTORE MAIN HEADER
+    // --------------------------------------------------------
+
+    const mainHeader = document.getElementById("reportsMainHeader");
+    if (mainHeader) {
+        mainHeader.style.display = "flex";
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+
+/* ============================================================
+   REPORT DETAIL BUTTONS
+============================================================ */
+
+function initReportDetailButtons() {
+
+    function safeAttach(id, handler) {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        // Clone to remove all listeners
+        const newEl = el.cloneNode(true);
+        el.parentNode.replaceChild(newEl, el);
+
+        // Attach fresh listener
+        newEl.addEventListener("click", handler);
+    }
+
+    safeAttach("backToPendingBtn", closeReportDetail);
+    safeAttach("flagBtn", flagReport);
+    safeAttach("approveBtn", approveReport);
+}
+
+
+/* ============================================================
+   FLAG REPORT FOR REVISION
+============================================================ */
+
+async function flagReport() {
+
+    if (!selectedReport) return;
+
+    const validatorId = localStorage.getItem("user_id") ||
+                        localStorage.getItem("userId") ||
+                        localStorage.getItem("id");
+    const accessToken = getAuthToken();
+    const tokenType = localStorage.getItem("token_type") || "bearer";
+
+    if (!validatorId || !accessToken) {
+        alert("Please log in again.");
+        return;
+    }
+
+    const userName = localStorage.getItem("full_name")
+        || localStorage.getItem("username")
+        || "Unknown User";
+    const userRole = localStorage.getItem("role") || "DA-RFO Officer";
+
+    const remarksInput = document.getElementById("remarksTextarea")?.value.trim();
+    if (!remarksInput) {
+        alert("Revision remarks are required.");
+        return;
+    }
+
+    const remarks = `[${userRole}: ${userName}] ${remarksInput}`;
+
+    const flagBtn = document.getElementById("flagBtn");
+    const originalText = flagBtn?.textContent;
+
+    if (flagBtn) {
+        flagBtn.disabled = true;
+        flagBtn.textContent = "Processing...";
+    }
+
+    try {
+        const url =
+            `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/revision` +
+            `?validator_id=${encodeURIComponent(validatorId)}` +
+            `&validator_role=darfo` +
+            `&remarks=${encodeURIComponent(remarks)}`;
+
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Accept": "application/json",
+                "Authorization": `${tokenType} ${accessToken}`
+            }
+        });
+
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || `HTTP ${res.status}`);
+        }
+
+        if (flagBtn) {
+            flagBtn.classList.add("active");
+            flagBtn.textContent = "Flagged ✓";
+        }
+
+        alert("Report flagged for revision.");
+
+        setTimeout(async () => {
+            closeReportDetail();
+            await loadReports();
+        }, 400);
+
+    } catch (err) {
+        console.error("Flag error:", err);
+        alert(`Error: ${err.message}`);
+        if (flagBtn) {
+            flagBtn.classList.remove("active");
+            flagBtn.textContent = originalText || "Flag for Revision";
+        }
+    } finally {
+        if (flagBtn) flagBtn.disabled = false;
+    }
+}
+
+
+/* ============================================================
+   APPROVE REPORT (Individual)
+============================================================ */
+
+async function approveReport() {
+
+    if (!selectedReport) return;
+
+    const validatorId = localStorage.getItem("user_id") ||
+                        localStorage.getItem("userId") ||
+                        localStorage.getItem("id");
+    const accessToken = getAuthToken();
+    const tokenType = localStorage.getItem("token_type") || "bearer";
+
+    if (!validatorId || !accessToken) {
+        alert("Please log in again.");
+        return;
+    }
+
+    const userName = localStorage.getItem("full_name")
+        || localStorage.getItem("username")
+        || "Unknown User";
+    const userRole = localStorage.getItem("role") || "DA-RFO Officer";
+
+    const remarksInput = document.getElementById("remarksTextarea")?.value.trim();
+
+    const remarks = remarksInput
+        ? `[${userRole}: ${userName}] ${remarksInput}`
+        : `Approved by ${userName} (${userRole})`;
+
+    const approveBtn = document.getElementById("approveBtn");
+    const originalText = approveBtn?.textContent;
+
+    if (approveBtn) {
+        approveBtn.disabled = true;
+        approveBtn.textContent = "Processing...";
+    }
+
+    try {
+        const url =
+            `${API_BASE_URL}/api/report-submissions/${selectedReport.report_id}/approve` +
+            `?validator_id=${encodeURIComponent(validatorId)}` +
+            `&validator_role=darfo` +
+            `&remarks=${encodeURIComponent(remarks)}`;
+
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Accept": "application/json",
+                "Authorization": `${tokenType} ${accessToken}`
+            }
+        });
+
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || `HTTP ${res.status}`);
+        }
+
+        if (approveBtn) {
+            approveBtn.classList.add("active");
+            approveBtn.textContent = "Approved ✓";
+        }
+
+        alert("Report approved and finalized.");
+
+        setTimeout(async () => {
+            closeReportDetail();
+            await loadReports();
+        }, 400);
+
+    } catch (err) {
+        console.error("Approve error:", err);
+        alert(`Error: ${err.message}`);
+        if (approveBtn) {
+            approveBtn.classList.remove("active");
+            approveBtn.textContent = originalText || "Approve & Finalize";
+        }
+    } finally {
+        if (approveBtn) approveBtn.disabled = false;
+    }
+}
+
+
+/* ============================================================
+   END OF da.js
+============================================================ */
