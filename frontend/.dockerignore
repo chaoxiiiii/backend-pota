@@ -1,5 +1,6 @@
-# Keep deployment-only files out of the served web root
+# Keep deployment-only files out of the served web root.
+# NOTE: start.sh and nginx.conf must NOT be excluded here — the
+# Dockerfile COPYs them into the image (to /start.sh and
+# /etc/nginx/conf.d/ — they never land in the web root).
 Dockerfile
 .dockerignore
-nginx.conf
-start.sh
